@@ -1,9 +1,10 @@
-import { isReactNative } from "../../utils"
+import { isElectron, isReactNative } from "../../utils"
 import { useBindings } from "../bindings"
 import { useReactNative } from "./ReactNative"
 
 export const usePlatformIntegration = () => {
     const reactNative = useReactNative()
+
     const getPlatform = ()=> {
         if (isElectron())
             return 'desktop'
@@ -13,7 +14,7 @@ export const usePlatformIntegration = () => {
     }
 
     useBindings()
-    const platform = getPlatform
+    const platform = getPlatform()
 
     if (isReactNative())
         reactNative.init()
