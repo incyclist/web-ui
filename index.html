@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <!-- 1. Change %PUBLIC_URL%/ to ./ -->
+    <link rel="shortcut icon" href="./favicon.ico" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#000000" />
+    <meta http-equiv="Access-Control-Allow-Origin" content="*">
+
+    <meta
+      name="description"
+      content="Web site created using create-react-app"
+    />
+    <!-- 2. Use relative paths for local assets -->
+    <link rel="apple-touch-icon" href="./logo192.png" />
+    
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+     integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+     crossorigin=""/>
+
+    <script>
+      window.env={};
+      window.app={};
+      //--SERVER-INJECT
+    </script>
+    
+    <!-- 3. Change %PUBLIC_URL%/ to ./ -->
+    <link rel="manifest" href="./manifest.json" />
+
+    <title>Incyclist</title>
+    <style>
+      .leaflet-container {
+        height: 100%;
+        width: 100%;
+        margin: 0 auto;
+      }      
+    </style>
+  </head>
+  <body>
+    <noscript>You need to enable JavaScript to run this app.</noscript>
+    <div id="root"></div>
+
+    <!-- 4. CRITICAL: Point to your entry file so Vite can bundle the app -->
+    <!-- Assuming your entry file is src/index.js -->
+    <script type="module" src="/src/index.jsx"></script>
+  </body>
+</html>

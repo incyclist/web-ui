@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" 
+     xmlns:se="http://svg-edit.googlecode.com" xmlns:xlink="http://www.w3.org/1999/xlink" 
+     xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" 
+     xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" 
+     xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" 
+     width="256" height="256" viewBox="0 0 256.000000 256.000000">
+    <g style="" class="currentLayer">
+        <title>Layer 1</title>
+        <rect fill="#b6b6b6" stroke="#222222" stroke-width="2" stroke-linejoin="round" stroke-dashoffset="" fill-rule="nonzero" id="svg_4" x="37" y="153" width="39" height="94" style="color: rgb(0, 0, 0);" class=""/>
+        <rect fill="#b6b6b6" stroke="#222222" stroke-width="2" stroke-linejoin="round" stroke-dashoffset="" fill-rule="nonzero" x="103.37681198120117" y="152.71014535427094" width="39" height="94" style="color: rgb(0, 0, 0);" class="" id="svg_7"/>
+        <rect fill="#6d6d6d" stroke="#222222" stroke-width="2" stroke-linejoin="round" stroke-dashoffset="" fill-rule="nonzero" id="svg_8" x="76.55072498321533" y="125.33333492279053" width="26.449275016784668" height="121.66666507720947" style="color: rgb(0, 0, 0);" class=""/>
+        <rect fill="#6d6d6d" stroke="#222222" stroke-width="2" stroke-linejoin="round" stroke-dashoffset="" fill-rule="nonzero" x="142.9275369644165" y="125.04347896575928" width="26.449275016784668" height="121.66666507720947" style="color: rgb(0, 0, 0);" class="" id="svg_12"/>
+        <path fill="#b6b6b6" fill-opacity="1" stroke="#222222" stroke-opacity="1" stroke-width="2" stroke-dasharray="none" stroke-linejoin="round" stroke-linecap="butt" stroke-dashoffset="" fill-rule="nonzero" opacity="1" marker-start="" marker-mid="" marker-end="" id="svg_17" d="M169.07039522384292,246.7453378550652 C169.07039522384292,246.7453378550652 169.07039522384292,140.2235983565614 169.07039522384292,140.2235983565614 C169.07039522384292,140.2235983565614 205.30227940700746,165.5859172847766 205.07246376811597,165.21739131039467 C205.30227940700746,165.5859172847766 205.30227940700746,246.86171404566997 205.07246376811597,246.37681160024977 C205.07246376811597,246.87374973825027 169.07039522384292,246.7453378550652 169.07039522384292,246.7453378550652 z" style="color: rgb(0, 0, 0);" class=""/><path fill="#b6b6b6" fill-opacity="1" stroke="#222222" stroke-opacity="1" stroke-width="2" stroke-dasharray="none" stroke-linejoin="round" stroke-linecap="butt" stroke-dashoffset="" fill-rule="nonzero" opacity="1" marker-start="" marker-mid="" marker-end="" id="svg_19" d="M298.05590291590875,264.8612799431045 " style="color: rgb(0, 0, 0);"/>
+    </g>
+</svg>

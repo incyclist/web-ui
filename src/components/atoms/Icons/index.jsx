@@ -1,0 +1,6 @@
+export * from './RouteIcon'
+export * from './WorkoutIcon'
+export * from './UserIcon'
+export * from './SettingsIcon'
+export * from './ExitIcon'
+export * from './ActivityIcon'

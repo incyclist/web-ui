@@ -1,0 +1,47 @@
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# dependencies
+/node_modules
+/.pnp
+.pnp.js
+
+# testing
+/coverage
+/test-results
+/.scannerwork
+/.nyc_output
+
+# server
+/app/node_modules
+
+# production
+/build
+
+# misc
+.DS_Store
+.env
+.env.prod
+.env.dev
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.fuse_*
+
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+sonar-project.properties
+*.code-workspace
+
+cypress/screenshots/
+cypress/videos/
+
+#editor
+.vscode
+.vscode/launch.json
+nohup.out
+
+*storybook.log
+storybook-static
