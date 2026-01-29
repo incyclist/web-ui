@@ -50,7 +50,6 @@ export const CoachEdit = ({name,type,power,speed,lead,onOK, onCancel}) => {
             setState( current => ({...current,lead:updated}))
         }
         else {
-            console.log('#on lead change',lead)
             setState( current => ({...current,lead: lead===undefined?undefined:lead*1000}))
         }
         
@@ -107,7 +106,6 @@ export const CoachEdit = ({name,type,power,speed,lead,onOK, onCancel}) => {
         ( (getMode()==='Power' && state.power!==undefined) || 
           (getMode()==='Speed' && state.speed!==undefined) )
     
-          console.log('# render coach', state)
     return (
         <ErrorBoundary>
             <Dialog title='Coach Setting' level={6} onESC={onCancel}>
