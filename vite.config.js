@@ -86,7 +86,7 @@ export default defineConfig(({ command}) => {
     const prev = config.resolve.alias??{}
 
     config.resolve.alias =  { ...prev ,
-        'incyclist-services': path.resolve(__dirname, '../services/lib/index.js'),
+        'incyclist-services': path.resolve(__dirname, '../services/lib/esm/index.js'),
         'incyclist-devices': path.resolve(__dirname, '../devices/lib/esm/index.js')
     }
 
@@ -112,7 +112,6 @@ export default defineConfig(({ command}) => {
         }        
     }
 
-    console.log (JSON.stringify(config,null,2))
   return config
 
 })
