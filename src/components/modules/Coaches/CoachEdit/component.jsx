@@ -35,10 +35,25 @@ export const CoachEdit = ({name,type,power,speed,lead,onOK, onCancel}) => {
         setState( current => ({...current,power }))
     }
     const onSpeedChanged = (speed) => {
-        setState( current => ({...current,speed}))
+        if (state.speed?.unit) {
+            const  updated = {...state.speed, value:speed}
+            setState( current => ({...current,speed:updated}))
+        }
+        else {
+            setState( current => ({...current,speed}))
+        }
+        
     }
     const onLeadChanged = (lead) => {
-        setState( current => ({...current,lead:lead*1000}))
+        if (state.lead?.unit) {
+            const  updated = {...state.lead, value:lead}
+            setState( current => ({...current,lead:updated}))
+        }
+        else {
+            console.log('#on lead change',lead)
+            setState( current => ({...current,lead: lead===undefined?undefined:lead*1000}))
+        }
+        
     }
 
     const getMode = ()=> {
@@ -55,19 +70,44 @@ export const CoachEdit = ({name,type,power,speed,lead,onOK, onCancel}) => {
     }
 
     const getLead = () => {
+        const {lead} = state
         try {
-            if (state.lead===undefined)
+            if (lead===undefined)
                 return ''
-            return Number(state.lead/1000).toFixed(2)
+            if (typeof lead ==='number')
+                return Number(state.lead/1000).toFixed(2)
+            if (lead.value!==undefined && lead.unit)
+                return lead.value.toFixed(2)
+
         }
-        catch(err) {
-            return ''
-        }
+        catch { /*ignore */ }
+        return ''
     }
+    const getSpeed = () => {
+        const {speed} = state
+        try {
+            if (speed.unit)
+                return speed.value===undefined ? '' : speed.value.toFixed(1)
+            
+            return speed
+        }
+        catch { /*ignore */ }
+        return ''
+    }
+
+    const getLeadUnit =() =>{
+
+        return state.lead?.unit ??'km'
+    }
+    const getSpeedUnit =() =>{
+        return state.speed?.unit??'km/h'
+    }
+
     const isComplete = state.type!==undefined  && 
         ( (getMode()==='Power' && state.power!==undefined) || 
           (getMode()==='Speed' && state.speed!==undefined) )
     
+          console.log('# render coach', state)
     return (
         <ErrorBoundary>
             <Dialog title='Coach Setting' level={6} onESC={onCancel}>
@@ -77,9 +117,9 @@ export const CoachEdit = ({name,type,power,speed,lead,onOK, onCancel}) => {
                     <SingleSelect label='Mode' options={modes} selected={getMode()} {...editProps}
                         onValueChange={onModeChanged}
                         />
-                    {getMode()==='Power' ? <Row><EditNumber label='Power' value={ state.power} onValueChange={onPowerChanged} align='right' min={25} max={2000} maxLength={4} {...editProps} /> <Text margin='0 0 0 0.5vw' >W</Text></Row>:null}
-                    {getMode()==='Speed' ? <Row><EditNumber label='Speed' value={ state.speed} onValueChange={onSpeedChanged} align='right' min={1} max={60} maxLength={5} {...editProps} /> <Text margin='0 0 0 0.5vw' >km/h</Text></Row>:null}
-                    {getMode()!==undefined ? <Row><EditNumber label='Lead' value={getLead()} onValueChange={onLeadChanged} align='right' min={-100} max={100} maxLength={5} {...editProps} /> <Text margin='0 0 0 0.5vw' >km</Text></Row>:null}
+                    {getMode()==='Power' ? <Row><EditNumber label='Power' value={ state.power} unit='W' allowEmpty onValueChange={onPowerChanged} align='right' min={25} max={2000} maxLength={4} {...editProps} /> </Row>:null}
+                    {getMode()==='Speed' ? <Row><EditNumber label='Speed' value={getSpeed()} unit={getSpeedUnit()} allowEmpty onValueChange={onSpeedChanged} align='right' min={1} max={60} maxLength={5} {...editProps} /></Row>:null}
+                    {getMode()!==undefined ? <Row><EditNumber label='Lead' value={getLead()} unit={getLeadUnit() } allowEmpty onValueChange={onLeadChanged} align='right' min={-100} max={100} maxLength={5} {...editProps} /></Row>:null}
 
                 </ContentArea>
 

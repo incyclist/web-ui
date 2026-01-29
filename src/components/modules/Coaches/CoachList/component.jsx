@@ -26,11 +26,20 @@ export const CoachList = (props) => {
         if (s.power && !s.speed)
             return `${Math.round(s.power)}W`
         if (!s.power && s.speed)
-            return `${Math.round(s.speed)}km/h`
-        return `${Math.round(s.power)}W,${Math.round(s.speed)}km/h`                
+            return formatSpeed(s.speed)
+        return `${Math.round(s.power)}W,${formatSpeed(s.speed)}`                
+    }
+
+    const formatSpeed = v => {
+        if (v?.unit)
+            return v.value == undefined ? '-' : `${Number(v.value).toFixed(0)}${v.unit}`
+        
+        return v ? `${ Number(v).toFixed(0)}km/h` : '-'            
     }
 
     const formatLead = v => {
+        if (v?.unit)
+            return v.value == undefined ? '-' : `${Number(v.value).toFixed(1)}${v.unit}`
         
         return v ? `${ Number(v/1000).toFixed(1)} km` : '-'            
     }

@@ -4,7 +4,7 @@ import {CoachEdit} from './component';
 
 export default {
   component: CoachEdit,
-  title: 'Coaches/Edit',
+  title: 'Modules/Coaches/Edit',
   argTypes: { 
     onOK: { action: 'ok' },
     onCancel: { action: 'cancel' } 
@@ -40,6 +40,14 @@ EditPowerWithLead.args = {
   type:'Power',
   power:100,
   lead: 500
+}
+
+export const Imperial = Template.bind({})
+Imperial.args = {
+  name: '20mph Coach',
+  type:'Speed',
+  speed: { value:20.0, unit:'mph'},
+  lead:  {value:0.5, unit:'mi'}
 }
 
 export const EditSpeed = Template.bind({})
