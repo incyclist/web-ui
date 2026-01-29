@@ -56,6 +56,7 @@ export class MapOverlay extends React.Component {
         this.logger = new EventLogger('MapOverlay')
 
         this.isLegacy = false
+        this.prevCenter;
     }
    
 
@@ -108,13 +109,15 @@ export class MapOverlay extends React.Component {
             const viewportOverwrite = this.isLegacy ? true : this.props.viewportOverwrite
 
 
-            let center = this.props.center ?? position
-
+            let center = this.props.center ?? position ?? this.prevCenter
+            
             if (!this.props.center && preview) {
             
                 const path = routeData.points??routeData.decoded
                 center = path[path.length-1];
             }
+            this.prevCenter = center
+        
 
             return (
 

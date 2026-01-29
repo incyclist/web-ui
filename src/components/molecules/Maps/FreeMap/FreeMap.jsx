@@ -354,6 +354,12 @@ export  class FreeMap  extends React.Component {
             dragend: this.onUpdateMarkerPosition.bind(this)
         }
 
+
+        // avoid component error when no center is defined
+        if ( (mapProps.center===undefined || mapProps.center===null) && !this.polyline?.length) 
+            return null
+        
+
         try {
             return (
                 <IncyclistMap 
