@@ -23,7 +23,7 @@ export const CoachList = (props) => {
 
     const formatConfig = (s) => {
         if (!s) return '';
-        if (s.power && !s.speed)
+        if (s.power && (!s.speed || (s.speed.unit&& s.speed.value===undefined)))
             return `${Math.round(s.power)}W`
         if (!s.power && s.speed)
             return formatSpeed(s.speed)

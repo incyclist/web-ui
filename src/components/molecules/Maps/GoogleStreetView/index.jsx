@@ -138,7 +138,6 @@ export const GoogleStreetView =  (props) => {
 
     useUnmountEffect( ()=>{
         if (props.id) {
-            console.log('# unmount street view', props.id)
 
             if (refObserver.current) 
                 refObserver.current.off('position-update', setPosition)

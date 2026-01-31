@@ -50,12 +50,10 @@ export default class CryptoAppBinding {
     randomBytes(size) {
         if (hasFeature('crypto.randomBytes')) {
             const bytes = api.crypto.randomBytes(size)
-            console.log('#desktop randomBytes', bytes)
             return bytes
         }
 
         const bytes =  crypto.randomBytes(size)
-        console.log('#nodejs randomBytes', bytes)
         return bytes
     }
 

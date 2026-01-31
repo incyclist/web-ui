@@ -6,7 +6,6 @@ export default class LanguageDetector {
         if (typeof navigator !== 'undefined') {
           if (navigator.languages) { // chrome only; iterate with for-of to handle iterable
 
-            console.log('# navigator languages', navigator.languages)
             for (const lang of navigator.languages) {
               found.push(lang);
             }

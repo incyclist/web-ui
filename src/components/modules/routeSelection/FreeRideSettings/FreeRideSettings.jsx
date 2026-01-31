@@ -52,7 +52,6 @@ export const FreeRideSettingsDialog = (props) => {
     const onChangeHandler = (position,props) =>  {
 
         
-        console.log('# position',position)
         const prevSettings = settings
 
         const search = position?.query

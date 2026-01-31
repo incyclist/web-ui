@@ -55,7 +55,6 @@ export const FreeRideSettingsView = ({
 
     const handlePositionChanged = (pos, props = { eventSource: 'user' }) => {
 
-        console.log('# handlePositionChange', pos,props)
         if (onChange) {
             onChange(pos, props);
         }
