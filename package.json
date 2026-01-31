@@ -1,13 +1,13 @@
 {
   "name": "incyclist",
-  "version": "26.1.30-beta.1",
+  "version": "26.1.31-beta.1",
   "private": true,
   "homepage": "./",
   "dependencies": {
     "@floating-ui/react": "^0.27.16",
     "@primer/octicons-react": "^19.21.1",
     "gd-eventlog": "^0.1.27",
-    "incyclist-services": "^1.7.6",
+    "incyclist-services": "^1.7.7",
     "leaflet": "^1.9.4",
     "leaflet-geosearch": "^4.2.2",
     "react": "^19.2.3",
