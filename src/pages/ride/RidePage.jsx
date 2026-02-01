@@ -96,19 +96,24 @@ export const RidePage = ({simulate}) => {
 
     const onNewRide = useCallback(async () => {
         // stop listening to state updates (which could trigger re-render)
-        const observer = refObserver.current
-        if (observer) {
-            observer.stop()
-            await waitNextTick()
-            refObserver.current =null
+        try {
+            const observer = refObserver.current
+            if (observer) {
+                observer.stop()
+                await waitNextTick()
+                refObserver.current =null
+            }
+            await ride.stop()
         }
-        await ride.stop()
+        catch {}
 
-
-        const target = location.state?.source ?? -1
-        closeDialog();
-        navigate(target)
-        closePage();
+        try {
+            const target = location.state?.source ?? -1
+            closeDialog();
+            navigate(target)
+            closePage();
+        }
+        catch {}
 
     },[closePage, onBack, ride])
 
@@ -179,6 +184,7 @@ export const RidePage = ({simulate}) => {
             case 'Video': return VideoRidePage
             default: 
                 logger.logEvent({message:'unknown ride type',rideType:getRideType()})
+                onNewRide()
                 return null
         }        
     }
