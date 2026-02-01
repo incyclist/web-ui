@@ -75,7 +75,7 @@ export const WorkoutsPage =  () => {
 
             const logger = new EventLogger('WorkoutsPage')
             const cards = Math.floor((w-210)/cardSize.width)
-            logger.logEvent( {message:'carousel calculated', width:w, height:h, cardSize, cards} )
+            logger.logEvent( {message:'carousel calculated', width:w, height:h, cardSize, cardsCnt:cards} )
         }
 
     },[service])

@@ -173,7 +173,8 @@ export const PairingPage =  ({mode}) =>{
         const selectedRoute = getRouteList().getSelected()
         const selectedWorkout = workoutList.getSelected()
         const startSettings = getRouteList().getStartSettings()
-        const isRideReady = selectedRoute||selectedWorkout||startSettings?.type==='Free-Ride'
+        const isRideReadyS = (selectedRoute||selectedWorkout||startSettings?.type==='Free-Ride')
+        const isRideReady =  isRideReadyS!==undefined && isRideReadyS!==false
 
 
         const pathname =  isRideReady ? '/rideDeviceOK': getNextPage()
@@ -192,7 +193,8 @@ export const PairingPage =  ({mode}) =>{
         const selectedRoute = getRouteList().getSelected()
         const selectedWorkout = workoutList.getSelected()
         const startSettings = getRouteList().getStartSettings()
-        const isRideReady = selectedRoute||selectedWorkout||startSettings?.type==='Free-Ride'
+        const isRideReadyS = selectedRoute||selectedWorkout||startSettings?.type==='Free-Ride'
+        const isRideReady =  isRideReadyS!==undefined && isRideReadyS!==false
 
 
         const pathname =  isRideReady ? '/rideSimulate':  getNextPage()
