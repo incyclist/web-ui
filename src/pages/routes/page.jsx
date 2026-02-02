@@ -336,7 +336,7 @@ export const RoutesPage =  () => {
     const onAddWorkout = useCallback( async (settings) => {
         service.close()
 
-        const next =  './workouts' 
+        const next =  '/workouts' 
         navigate(next)
         closePage()
     },[closePage, navigate])
