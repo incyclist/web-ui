@@ -96,17 +96,24 @@ export class RepositoryAppBinding  { // implements extends AbstractJsonRepositor
 
     async delete(repoName,resourceName){
 
-        if (hasFeature('fileSystem.unlink')) {
-            const repo= await this.get(repoName)
-            const path = usePath()
-            const fileName = path.join(repo.repoDir, `${resourceName}.json`)
-            return await api.fs.unlink(fileName)
-            
-        }
-        // not yet implemented in App
-        // workaround: write empty file
+        try {
+            if (hasFeature('fileSystem.unlink')) {
+                const repo= await this.get(repoName)
+                const path = usePath()
+                const fileName = path.join(repo.repoDir, `${resourceName}.json`)
+                return await api.fs.unlink(fileName)
+                
+            }
+            // not yet implemented in App
+            // workaround: write empty file
 
-        return await this.write(repoName,resourceName,{})
+            return await this.write(repoName,resourceName,{})
+        }
+        catch(err) {
+            if (err.message?.startsWith('ENOENT'))
+                return true
+            throw err
+        }
     }
 
     async write(repoName,resourceName,data){
