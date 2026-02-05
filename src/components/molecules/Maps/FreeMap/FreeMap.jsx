@@ -1,5 +1,5 @@
 import React from 'react';
-import {MapContainer, TileLayer, Marker,Polyline} from 'react-leaflet';
+import {MapContainer, TileLayer, Marker,Polyline, useMapEvents, } from 'react-leaflet';
 //import Route from '../../../../models/route/route'
 import TileLayers  from './TileLayers'
 import styled from 'styled-components';
@@ -14,19 +14,40 @@ const IncyclistMap = styled(MapContainer)`
     display:${props=> props.noAttribution ? 'none' : undefined};
  }
 `
+
+const FreeMapListeners = (props) => {
+
+    const map = useMapEvents( {
+        zoomlevelschange:(...args)=> {
+            console.log('# zoom changed', ...args)
+        }
+    })
+    try {
+    if (props.center)
+        map.setView(props.center, map.getZoom())
+
+    }
+    catch {}
+
+    return null
+
+}
+
 export  class FreeMap  extends React.Component {
 
     constructor(props) {
         super(props);
 
+
         this.logger = new EventLogger('FreeMap')
 
-        const { position, viewport } = this.updateFromProps();
         
+        const { position, viewport,routeOptions=[] } = this.updateFromProps();
 
         this.state = {
             position,
-            viewport
+            viewport,
+            routeOptions
 
         }
     }
@@ -47,7 +68,7 @@ export  class FreeMap  extends React.Component {
                     routeOptions.push( {polyline:poly,color} )
                 });             
             }
-            this.routeOptions = routeOptions;        
+            
 
             this.polyline = this.getPathPolyline(this.getPoints(),startPos, endPos) ?? []
 
@@ -56,18 +77,18 @@ export  class FreeMap  extends React.Component {
 
                 
                 if (before && before.length>0) {
-                    this.routeOptions.push( {polyline:before, color:this.props.colorInactive||'grey'})
+                    routeOptions.push( {polyline:before, color:this.props.colorInactive||'grey'})
                 }
                 if (during && during.length>0) 
-                    this.routeOptions.push( {polyline:during, color:this.props.colorActive||'blue'})
+                    routeOptions.push( {polyline:during, color:this.props.colorActive||'blue'})
 
                 if (after && after.length>0) {
-                    this.routeOptions.push( {polyline:after, color:this.props.colorInactive||'grey'})
+                    routeOptions.push( {polyline:after, color:this.props.colorInactive||'grey'})
                 }
                 
             }
 
-            this.bounds = this.props.bound || this.calculateBounds(this.getPoints(),options);
+            this.bounds = this.props.bound??this.props.bounds ?? this.calculateBounds(this.getPoints(),options);
 
             position = this.getMarker(this.props.marker,this.polyline)
 
@@ -78,16 +99,17 @@ export  class FreeMap  extends React.Component {
         catch(err) {
             this.logger.logEvent({message:'error',fn:'updateFromProps', error:err.message, props:this.props, stack:err.stack})
         }
-        return { viewport, position, polyline:this.polyline, options:routeOptions }
+        return { viewport, position, polyline:this.polyline, routeOptions:structuredClone(routeOptions) }
     }
 
 
     componentDidUpdate(prevProps,prevState) {
 
-        if ( (this.props.startPos && this.props.startPos !== prevProps.startPos) || (this.props.endPos && this.props.endPos !== prevProps.endPos) ) {
-            const { position } = this.updateFromProps();
+        if ( (this.props.startPos && this.props.startPos !== prevProps.startPos) || (this.props.endPos && this.props.endPos !== prevProps.endPos) 
+                || this.props.options!==prevProps.options || this.props.bounds!==prevProps.bounds) {
+            const { position,routeOptions } = this.updateFromProps();
 
-            this.setState({position})
+            this.setState({position,routeOptions})
         }
     }
 
@@ -308,7 +330,7 @@ export  class FreeMap  extends React.Component {
         if (!isOnline)
             return null;
         
-        this.updateFromProps();
+        //const {routeOptions} = this.updateFromProps();
         let {position,viewport} = this.state;
         const {center,draggable=true,noAttribution=false,viewportOverwrite,bounds,scrollWheelZoom=true,zoomControl=true,attributionControl=true,boxZoom=false,trackResize,zoom } = this.props;
         const {width='100%',height='100%'} = this.props;
@@ -343,7 +365,7 @@ export  class FreeMap  extends React.Component {
             if (mapProps.zoom!==undefined && mapProps.zoom!==null) {
                 mapProps.zoom = Number(mapProps.zoom)
                 if (isNaN(mapProps.zoom))
-                    delete mapProps.zzom
+                    delete mapProps.zoom
             }
             mapProps.maxZoom = 28
 
@@ -358,16 +380,29 @@ export  class FreeMap  extends React.Component {
         // avoid component error when no center is defined
         if ( (mapProps.center===undefined || mapProps.center===null) && !this.polyline?.length) 
             return null
-        
+
+        const RouteOptions = ( {routeOptions}) => 
+            <>
+                        { (routeOptions!==undefined && routeOptions.length>0) && routeOptions.map((pathInfo,index) => 
+                    <Polyline  
+                        key={index}
+                        positions={ pathInfo.polyline }
+                        color={ pathInfo.color || 'blue'}
+                        weight={5}
+                        opacity={0.5}
+                    />
+                )}
+            </>
+
 
         try {
             return (
                 <IncyclistMap 
                     animate={false}
                     style={{ width,height}}
-                    {...mapProps}                    
-                    onViewportChanged={(v)=>{this.onViewportChanged(v)}}
+                    {...mapProps}                                        
                 >
+                    <FreeMapListeners center={mapProps?.center} zoom={mapProps?.zoom}/>
                     <TileLayer                         
                         {...tileConfig}
                     />
@@ -389,16 +424,10 @@ export  class FreeMap  extends React.Component {
                     />
                 }
 
-                { (this.routeOptions!==undefined && this.routeOptions.length>0) && this.routeOptions.map((pathInfo,index) => 
-                    <Polyline  
-                        key={index}
-                        positions={ pathInfo.polyline }
-                        color={ pathInfo.color || 'blue'}
-                        weight={5}
-                        opacity={0.5}
-                    />
-                )}
-                    { this.props.children}
+                <RouteOptions  routeOptions={this.state.routeOptions} />
+                
+
+                { this.props.children}
 
                 </IncyclistMap>
 
