@@ -77,11 +77,20 @@ export const GoogleSatelliteView = (props)  =>{
 
                 });    
 
-                mapsService.getApiKey().then(key=> {
-                    if (  !!key && !mapsService.hasPersonalApiKey()) {
-                        logger.logEvent( {message:'map license consumed', cnt:1})
-                    }
+                mapsService.getApiKey().then( ()=> {
+                        if (  !mapsService.hasDevelopmentApiKey() && !mapsService.hasPersonalApiKey()) {
+                            logger.logEvent( {message:'map license consumed', cnt:1})
+                        }
+                        else {
+                            const keyType = mapsService.hasPersonalApiKey() ?  'personal' :'development' 
+                            logger.logEvent( {message:'local API key used', cnt:1, keyType})
+                        }
                 })
+                .catch(err => {
+                    logger.logEvent({message:'error', fn:'maps init effect', error:err.message})
+                })
+
+
 
                 refInitialized.current = true
                 emit('Loaded')      

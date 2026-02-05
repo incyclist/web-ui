@@ -77,6 +77,7 @@ export const GoogleStreetView =  (props) => {
         }
         else if (!mapsApi&&maps!==null) {
             setMapsApi(maps)
+            return
         }
             
         try {
@@ -93,10 +94,17 @@ export const GoogleStreetView =  (props) => {
             });    
 
             if (refPanorama.current) {
-                mapsService.getApiKey().then(key=> {
-                    if (  !!key && !mapsService.hasPersonalApiKey()) {
-                        logger.logEvent( {message:'streetview license consumed', cnt:1})
-                    }
+                mapsService.getApiKey().then(()=> {
+                        if (  !mapsService.hasDevelopmentApiKey() && !mapsService.hasPersonalApiKey()) {
+                            logger.logEvent( {message:'streetview license consumed', cnt:1})
+                        }
+                        else {
+                            const keyType = mapsService.hasPersonalApiKey() ?  'personal' :'development' 
+                            logger.logEvent( {message:'local API key used', cnt:1, keyType})
+                        }
+                })
+                .catch(err => {
+                    logger.logEvent({message:'error', fn:'maps init effect', error:err.message})
                 })
                 
                 setInitialized(true)
