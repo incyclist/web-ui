@@ -19,6 +19,12 @@ export const App = ()=> {
     const [initialized, setInitialized] = useState(false)
     const [terminating, setTerminating] = useState(false)
 
+    const features = {
+        interfaces: '*',
+        ble: '*',
+        wifi: '*'
+    }
+
     useEffect( ()=> {
         if (initialized)
             return
@@ -40,7 +46,7 @@ export const App = ()=> {
 
         window.addEventListener('beforeunload', handleBeforeUnload);
         
-        service.onAppLaunch(platform,version).then( ()=> {
+        service.onAppLaunch(platform,version,features).then( ()=> {
             setInitialized(true)
         }) 
 
