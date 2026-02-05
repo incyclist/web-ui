@@ -26,8 +26,8 @@
   },
   "scripts": {
     "postversion": "git push --tags",
-    "dev": "vite",
-    "start": "PROD=true vite",
+    "dev": "vite  --host",
+    "start": "PROD=true vite --host",
     "build": "vite build",
     "preview": "vite preview",
     "storybook": "storybook dev -p 6006",
