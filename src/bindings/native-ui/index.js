@@ -1,7 +1,8 @@
 
+import { useNavigate } from "react-router";
 import { isReactNative } from "../../utils";
 import { api,hasFeature } from "../../utils/electron/integration";
-import LanguageDetector from "./browser";
+import LanguageDetector from "./i18n";
 
 
 export const useAppUI = () => NativeUiService.getInstance()
@@ -127,6 +128,17 @@ export default class NativeUiService   {
             return detector.detect()
         
         return ['en']
+    }
+
+    openPage(route) {
+        try {
+            useNavigate().navigate(route)
+
+        }
+        catch(er) {
+            
+        }
+
     }
 
 
