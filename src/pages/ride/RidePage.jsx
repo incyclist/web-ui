@@ -301,6 +301,7 @@ export const RidePage = ({simulate}) => {
     const ESC = 27;
     const defaultHotkeys = [
         {key: ESC,          handler:()=>openSettings() },
+        {key: 'p',          handler:()=>openSettings() },
         {key: 'f',          handler:onToggleFullScreen },
         {key: 'F10',        handler:onTakeScreenShot}, 
         {key: 'c',          handler:onToggleCyclingMode},
