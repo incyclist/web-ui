@@ -86,16 +86,17 @@ export const ActivitySummaryView = ( {activity,position,preview, units, xScale,
                                 marker={position}
                                 onViewportChanged={onViewportChanged }>
 
-                                {(screenshots?.length>0) && screenshots.map ( (s) => 
-                                    <Marker
-                                        icon = {myIcon}
-                                        key = {`${s.position}`}
-                                        draggable={false}
-                                        position={ s.position}
-                                    >
-                                        <ScreenshotPopup screenshot={s} />
-                                    </Marker>
-                                
+                                {(screenshots?.length>0) && screenshots.filter(s => !!s.position).map ( (s) => 
+                                    <ErrorBoundary hideOnError>
+                                        <Marker
+                                            icon = {myIcon}
+                                            key = {`${s.position}`}
+                                            draggable={false}
+                                            position={ s.position}
+                                        >
+                                            <ScreenshotPopup screenshot={s} />
+                                        </Marker>
+                                    </ErrorBoundary>
                                     
                                 )}                
                             </FreeMap> 

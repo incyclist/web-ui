@@ -114,7 +114,8 @@ export  class FreeMap  extends React.Component {
     }
 
     componentDidCatch(err){
-        this.logger.logEvent({message:'error',fn:'componentDidCatch', error:err.message, stack:err.stack})
+        this.logger.logEvent({message:'error',fn:'componentDidCatch', component:'FreeMap',error:err.message, state:this.state, stack:err.stack })
+        
     }
 
     isFullDistance(startPos,endPos) {
@@ -126,12 +127,14 @@ export  class FreeMap  extends React.Component {
 
 
     isInside(p,startPos,endPos) {
-        if (startPos===undefined||endPos===undefined)
-            return true;
         if (!p) return false
         if (p.routeDistance===undefined) return true;
 
-        return p.routeDistance>=startPos && p.routeDistance<=endPos
+        const start = startPos??0
+        if (!endPos)
+            return p.routeDistance>=start
+
+        return p.routeDistance>=start && p.routeDistance<=endPos
     }
 
     isBefore(p,startPos) {
@@ -154,10 +157,12 @@ export  class FreeMap  extends React.Component {
 
     getPathPolyline = (path, startPos, endPos) => {
 
-        if (path===undefined || !this.isFullDistance(startPos,endPos))
+        if (path===undefined ) {
             return [];
+        }
         else {
-            return path.filter(p=>p!==undefined && p.lat && p.lng  && this.isInside(p,startPos,endPos)).map( point => {return  [ point.lat,point.lng ] })
+            const polyline =  path.filter(p=>p!==undefined && p.lat && p.lng  && this.isInside(p,startPos,endPos)).map( point => {return  [ point.lat,point.lng ] })
+            return polyline
         }
     }
 
@@ -327,8 +332,11 @@ export  class FreeMap  extends React.Component {
 
         const isOnline = (typeof window !==undefined) ? window.navigator.onLine : true
 
-        if (!isOnline)
+        if (!isOnline )
             return null;
+
+        if (!this.polyline?.length)
+            return <></>
         
         //const {routeOptions} = this.updateFromProps();
         let {position,viewport} = this.state;
@@ -339,7 +347,7 @@ export  class FreeMap  extends React.Component {
         if ( this.props.marker)
             position = this.getMarker(this.props.marker)
 
-        const mapProps = {scrollWheelZoom,zoomControl,attributionControl,noAttribution,boxZoom,trackResize,keayboard:true,dragging:draggable}
+        const mapProps = {scrollWheelZoom,zoomControl,attributionControl,noAttribution,boxZoom,trackResize,keyboard:true,dragging:draggable}
 
 
 
@@ -372,6 +380,12 @@ export  class FreeMap  extends React.Component {
         }
         catch {}
 
+        if (mapProps.center === undefined && mapProps.zoom ===undefined && mapProps.bounds===undefined) {
+            this.logger.logEvent({message:'error',fn:'FreeMap.render',error:'no map size specified'})
+            mapProps.center = this.polyline?.[0]
+            mapProps.zoom  = 10
+        }
+
         const eventHandlers= {
             dragend: this.onUpdateMarkerPosition.bind(this)
         }
@@ -397,6 +411,7 @@ export  class FreeMap  extends React.Component {
 
         try {
             return (
+                
                 <IncyclistMap 
                     animate={false}
                     style={{ width,height}}
@@ -430,7 +445,7 @@ export  class FreeMap  extends React.Component {
                 { this.props.children}
 
                 </IncyclistMap>
-
+                
         )
 
         }
