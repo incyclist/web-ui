@@ -6,8 +6,10 @@ import {version} from '../package.json'
 import {AppLoadingPage,ActivitiesPage,RidePage, PairingPage,RoutesPage,SearchPage,ExitPage,WorkoutsPage} from './pages';
 import { UpdateChecker } from './components/modules';
 import { MapsApiLoader,MessageBox,MonitorOnlineStatus,MainPage } from './components/molecules';
-import { Center, ErrorBoundary, Text } from './components/atoms';
+import { ErrorBoundary } from './components/atoms';
 import { useInitAppTheme, usePlatformIntegration } from './hooks';
+import NativeUiService from './bindings/native-ui';
+import { api, hasFeature, sleep } from './utils';
 
 
 export const App = ()=> {
@@ -29,27 +31,54 @@ export const App = ()=> {
         if (initialized)
             return
 
-        const handleBeforeUnload = (event) => {
-            // Standard way to trigger the confirmation dialog
-            event.preventDefault();
-            // Legacy support for older browsers
-            event.returnValue = ''; 
+        if (hasFeature('ui.confirmExit')) {
 
-            setTerminating(true)
-            service.onAppExit()
-                .then( (ok)=>{
-                    if (ok) {
-                        window.removeEventListener('beforeunload', handleBeforeUnload);
-                    }
-                })            
-        };
+            const handleAppMessage = async (event) => {
+                const {closing,component} = event??{}
+                if (component==='app' && closing) {
+                    setTerminating(true)
+                    await service.onAppExit()
+                    api.ui.confirmExit()
+                }
+            }
 
-        window.addEventListener('beforeunload', handleBeforeUnload);
+            api.ipc.onMessage(handleAppMessage)
+
+        }
+        else {
+            const handleBeforeUnload = (event) => {
+
+                // Standard way to trigger the confirmation dialog
+                event.preventDefault();
+                // Legacy support for older browsers
+                event.returnValue = ''; 
+
+                const wasTerminating = terminating
+                setTimeout( ()=> {
+                    NativeUiService.getInstance().quit();
+                    window.removeEventListener('beforeunload', handleBeforeUnload);
+                }, 5000 )
+
+                setTerminating(true)
+
+                if (!wasTerminating) {
+                    service.onAppExit()
+                        .then( (ok)=>{
+                            if (ok) {
+                                window.removeEventListener('beforeunload', handleBeforeUnload);
+                            }
+                        })            
+                }
+            };
+
+            window.addEventListener('beforeunload', handleBeforeUnload);
+
+        }
+
         
         service.onAppLaunch(platform,version,features).then( ()=> {
             setInitialized(true)
         }) 
-
 
 
     },[service])
