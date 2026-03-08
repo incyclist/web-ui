@@ -322,7 +322,11 @@ export const RoutesPage =  () => {
 
     }
 
-    onStart = useCallback( async () => {
+    onStart = useCallback( async (selected) => {
+
+        if (selected===null || selected===undefined)
+            return;
+
         const {id,title,videoUrl} = service.getStartSettings()??{}
         logger.logEvent( {message:'Attempting to start a ride',id,title,videoUrl,readyToStart:pairing.isReadyToStart(), } )
         
