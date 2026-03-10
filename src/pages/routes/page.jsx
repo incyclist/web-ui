@@ -30,6 +30,7 @@ export const RoutesPage =  () => {
     const refListsVisibleArea = useRef({})
     const refStateUpdates = useRef(null)
     const refSyncBusy = useRef(0)
+    const refStarting = useRef(false)
 
     const [logger,closePageLogger] = usePageLogger(PAGE_ID,pageState)
 
@@ -196,7 +197,6 @@ export const RoutesPage =  () => {
                     setLoading(true)
             })
             .on( 'updated', onListsUpdated)
-            .on( 'selected', onStart)
             .on( 'loaded', onListsUpdated)
             .on('sync-start', onSyncStart)
             .on('sync-done', onSyncDone)
@@ -282,6 +282,7 @@ export const RoutesPage =  () => {
         if (refObserver.current)
             refObserver.current.stop()
         refObserver.current = null
+        refStarting.current = false
             
     },[])
 
@@ -324,9 +325,10 @@ export const RoutesPage =  () => {
 
     onStart = useCallback( async (selected) => {
 
-        if (selected===null || selected===undefined)
+        if (selected===null || selected===undefined || refStarting.current)
             return;
 
+        refStarting.current = true
         const {id,title,videoUrl} = service.getStartSettings()??{}
         logger.logEvent( {message:'Attempting to start a ride',id,title,videoUrl,readyToStart:pairing.isReadyToStart(), } )
         

@@ -104,6 +104,7 @@ export const ActivitiesPage = () => {
     const dialogRef = useRef(null)
     const pairing = useDevicePairing()
     const navigate = useNavigate()
+    const refStarting = useRef(false)
 
     const nop = (fn) => { 
         return ()=>{
@@ -164,6 +165,9 @@ export const ActivitiesPage = () => {
 
 
     const onStart =  async (route) => {
+        if (refStarting.current)
+            return;
+        
         const {id,title,videoUrl} = route??{}
         logger.logEvent( {message:'Attempting to start a ride',id,title,videoUrl,readyToStart:pairing.isReadyToStart(), } )
 
@@ -205,6 +209,7 @@ export const ActivitiesPage = () => {
 
     useUnmountEffect( ()=> {
         //console.log('# activities page unmounted')
+        refStarting.current = false
     })
 
     const closePage = useCallback(async ()=> {

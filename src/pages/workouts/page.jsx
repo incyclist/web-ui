@@ -42,6 +42,8 @@ export const WorkoutsPage =  () => {
     const [pageState,setPageState] = useState(null)
     const listsRef = useRef()
     const ref = useRef();
+    const refStarting = useRef(false)
+    
     const navigate = useNavigate()
     let onStart;
     
@@ -123,7 +125,6 @@ export const WorkoutsPage =  () => {
                 setLoading(false)
             setData( current => ({...current,lists}))
         })
-        .on( 'selected', onStart)
            
         setData(res)
         setInitialized(true)
@@ -157,6 +158,7 @@ export const WorkoutsPage =  () => {
 
     useUnmountEffect( ()=> {
         //console.log('# workout page unmounted')
+        refStarting.current = false
     })
 
     const [logger,closePageLogger] = usePageLogger(PAGE_ID,pageState)
@@ -188,7 +190,9 @@ export const WorkoutsPage =  () => {
 
 
     onStart = useCallback( async (card,settings) => {
-
+        if (refStarting.current)
+            return;
+        
         try {
 
             if (settings.noRoute) {                
