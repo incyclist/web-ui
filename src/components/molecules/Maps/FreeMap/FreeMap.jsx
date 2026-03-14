@@ -6,7 +6,7 @@ import styled from 'styled-components';
 import { getPosition } from 'incyclist-services';
 import { EventLogger } from 'gd-eventlog';
 
-const DEFAULT_MAP = 'OpenStreetMap';//OpenMapSurfer';
+const DEFAULT_MAP = 'Carto';// 'OpenStreetMap';//OpenMapSurfer';
 
 const IncyclistMap = styled(MapContainer)`
 
@@ -344,6 +344,8 @@ export  class FreeMap  extends React.Component {
         const {width='100%',height='100%'} = this.props;
 
         let tileConfig = TileLayers.get(DEFAULT_MAP);
+
+        console.log('# tile config', tileConfig)
         if ( this.props.marker)
             position = this.getMarker(this.props.marker)
 

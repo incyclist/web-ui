@@ -13,7 +13,7 @@ import './RouteSelectorMap.css'
 import { ErrorBoundary } from '../../../atoms';
 import { EventLogger } from 'gd-eventlog';
 
-const DEFAULT_MAP = 'OpenStreetMap';
+const DEFAULT_MAP = 'Carto';
 const DEFAULT_ZOOM = 13;
 
 const Container = styled(MapContainer)`
