@@ -4,7 +4,6 @@ import { geo  } from 'incyclist-services';
 import styled from 'styled-components';
 
 import { getPolyline } from '../../../../utils/points';
-import TileLayers  from '../FreeMap/TileLayers'
 import { MapSearch } from './MapSearch';
 import { MarkerIcon } from './MarkerIcon';
 
@@ -12,8 +11,8 @@ import "leaflet-geosearch/dist/geosearch.css";
 import './RouteSelectorMap.css'
 import { ErrorBoundary } from '../../../atoms';
 import { EventLogger } from 'gd-eventlog';
+import { getTiteConfig } from '../../../../utils/tiles';
 
-const DEFAULT_MAP = 'Carto';
 const DEFAULT_ZOOM = 13;
 
 const Container = styled(MapContainer)`
@@ -47,7 +46,7 @@ export const RouteSelectorMap = ({position, viewport,mapType, onPositionChanged,
 
     try {
 
-        const tileConfig = TileLayers.get( mapType??DEFAULT_MAP);
+        const tileConfig = getTiteConfig()
 
         const mapProps = {
             onKeyPress: onKeyPress

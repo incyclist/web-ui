@@ -1,10 +1,11 @@
 import React from 'react';
 import {MapContainer, TileLayer, Marker,Polyline, useMapEvents, } from 'react-leaflet';
 //import Route from '../../../../models/route/route'
-import TileLayers  from './TileLayers'
+import TileLayers  from '../../../../utils/tiles/TileLayers'
 import styled from 'styled-components';
 import { getPosition } from 'incyclist-services';
 import { EventLogger } from 'gd-eventlog';
+import { getTiteConfig } from '../../../../utils/tiles';
 
 const DEFAULT_MAP = 'Carto';// 'OpenStreetMap';//OpenMapSurfer';
 
@@ -14,6 +15,8 @@ const IncyclistMap = styled(MapContainer)`
     display:${props=> props.noAttribution ? 'none' : undefined};
  }
 `
+
+
 
 const FreeMapListeners = (props) => {
 
@@ -343,9 +346,8 @@ export  class FreeMap  extends React.Component {
         const {center,draggable=true,noAttribution=false,viewportOverwrite,bounds,scrollWheelZoom=true,zoomControl=true,attributionControl=true,boxZoom=false,trackResize,zoom } = this.props;
         const {width='100%',height='100%'} = this.props;
 
-        let tileConfig = TileLayers.get(DEFAULT_MAP);
+        let tileConfig = getTiteConfig()
 
-        console.log('# tile config', tileConfig)
         if ( this.props.marker)
             position = this.getMarker(this.props.marker)
 
