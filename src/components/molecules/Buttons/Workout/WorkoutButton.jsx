@@ -41,7 +41,7 @@ export const WorkoutButton = (props) => {
     const {width,height,size=60,hotkey,color,image,children,text,showHotkey=true } = props
 
     const btnProps = copyPropsExcluding(props,['image','children', 'width', 'height', 'size','text'])    
-    const icnProps = copyPropsExcluding(props,['size','width', 'height'])
+    const icnProps = copyPropsExcluding(props,['size','width', 'height','onClick'])
 
     icnProps.width = width??size
     icnProps.height = height??size
