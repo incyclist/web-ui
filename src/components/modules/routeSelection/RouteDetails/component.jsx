@@ -6,6 +6,8 @@ import {Button,ButtonBar, Divider, EditNumber, SingleSelect,Column, Overlay, Row
         Text, Loader, EditText,ErrorBoundary, CheckBox, Image, Center, ErrorText } from '../../../atoms'
 import {  Dialog, Dropzone, FreeMap,ElevationGraph } from '../../../molecules'
 import {VideoPreview } from '../../video'
+import { useUnitConverter } from 'incyclist-services'
+import { EventLogger } from 'gd-eventlog'
 
 const ContentArea = styled(Column)`
     height: calc(100% - 7.7vh);
@@ -66,6 +68,7 @@ export const RouteDetails = ( {route, markers,segment, startPos,endPos,realityFa
     }
 
     const [data,setData] = useState(dataFromProps)
+    const logger = new EventLogger('Incyclist')
 
 
     useEffect( ()=>{
@@ -180,22 +183,41 @@ export const RouteDetails = ( {route, markers,segment, startPos,endPos,realityFa
             })
         }
         catch (err) {
-            console.log('# ERROR',err)
+            logger.logEvent({message:'error',fn:'onStartPosChanged', error:err.message, stack:err.stack})
         }            
     }
 
     const onSegmentChanged =(value) => {
+        const converter = useUnitConverter();
+
         try {
             const prev = data.segment||'Please select ...'
+            
             if (value!==prev) {
+
+
                 data.segment = value
-                const start = Number(routeDescr?.segments.find( s=>s.name===value)?.start)
-                const endPos = Number(routeDescr?.segments.find( s=>s.name===value)?.end)
-    
-                if (start!==undefined && (start!==data.startPos || endPos!==data.endPos)) {
+                const segmentDefs = routeDescr?.segments??[]
+                
+                const seg = segmentDefs.find(s => s.name === value);
+
+                if (!seg)
+                    return;
+
+                const startPos = { 
+                    value: converter.convert(seg.start, 'distance', { from: 'm', to: data.startPos?.unit ?? 'km' }), 
+                    unit: data.startPos?.unit ?? 'km' 
+                }
+                const endPos = seg.end ? { 
+                    value: converter.convert(seg.end, 'distance', { from: 'm', to: data.startPos?.unit ?? 'km' }), 
+                    unit: data.startPos?.unit ?? 'km' 
+                } : undefined
+
+
+                if (startPos?.value!==undefined && (startPos.value!==data.startPos?.value || endPos!==data.endPos?.value)) {
                     setData( prev=> {
                         const updated = {...prev}
-                        updated.startPos = start
+                        updated.startPos = startPos
                         updated.endPos = endPos
                         if (updateMarkers) {
                             updated.markers = updateMarkers(updated)
@@ -208,7 +230,9 @@ export const RouteDetails = ( {route, markers,segment, startPos,endPos,realityFa
             }
     
         }        
-        catch{}
+        catch (err) {
+            logger.logEvent({message:'error',fn:'onSegmentChanged', error:err.message, stack:err.stack})
+        }            
     }
 
     const onRealityFactorChanged =(value) => {
@@ -225,7 +249,9 @@ export const RouteDetails = ( {route, markers,segment, startPos,endPos,realityFa
                 return updated
             })
         }
-        catch {}        
+        catch (err) {
+            logger.logEvent({message:'error',fn:'onRealityFactorChanged', error:err.message, stack:err.stack})
+        }            
     }
 
     const onLoopOverwriteChanged = (value) => {
