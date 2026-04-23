@@ -1,12 +1,14 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import styled from 'styled-components'
 import { Button, ButtonBar,  Column, Divider, ErrorBoundary, Loader, Row, Text } from '../../../atoms'
 import { Dialog, FreeMap } from '../../../molecules'
 import { formatDateTime, useActivityList} from 'incyclist-services'
-import { ActivityGraph,FilePill,UploadPill} from '../../../molecules/Activity'
+import { ActivityGraph,FilePill,UploadPill,ScreenshotPopup} from '../../../molecules/Activity'
 import { EventLogger } from 'gd-eventlog'
 import { useAppUI } from '../../../../bindings/native-ui'
 
+import { Marker } from "react-leaflet";
+import L, { icon } from 'leaflet';
 
 const ContentArea = styled(Column)`
     height: calc(100% - 7.7vh);
@@ -29,6 +31,29 @@ export const ActivityDetails = ({activity, units, title,started,duration, distan
 
     const [dialogState,setDialogState] = useState(null)
     const logger = useRef(new EventLogger('ActivityDetails')).current
+
+    const [markerSize, setMarkerSize] = useState()
+
+    
+
+    const screenshots = activity?.screenshots??[]
+    const myIcon = useMemo( ()=> {
+        let size = Number(markerSize)
+        if (Number.isNaN(size))
+            size = 24;
+        return new L.Icon({
+            iconUrl: 'images/camera.svg',
+            iconRetinaUrl: 'images/camera.svg',
+            popupAnchor:  [-0, -0],
+            iconSize: [size,size],     
+        })
+    },[markerSize]);
+
+    const onViewportChanged = (v)=> {
+        if ( !v?.zoom)
+            return;
+        setMarkerSize (Number(24/20*v.zoom).toFixed(0))   
+    }    
 
     useEffect(() => {
         if (dialogState===null)
@@ -231,7 +256,25 @@ export const ActivityDetails = ({activity, units, title,started,duration, distan
             <ContentArea>
                 <Row height='33%'>
                     <Column width='50%' margin='0 1vw 0 1vw'>
-                        {showMap ? <FreeMap  zoomControl={true} points={points} startPos={0} draggable={false}/> : null}
+                        {showMap ? <FreeMap  
+                            zoomControl={true} points={points} startPos={0} draggable={false}
+                            onViewportChanged={onViewportChanged }
+                        >
+                                {(screenshots?.length>0) && screenshots.filter(s => !!s.position).map ( (s) => 
+                                    <ErrorBoundary hideOnError>
+                                        <Marker
+                                            icon = {myIcon}
+                                            key = {`${s.position}`}
+                                            draggable={false}
+                                            position={ [s.position.lat, s.position.lng]}
+                                        >
+                                            <ScreenshotPopup screenshot={s} />
+                                        </Marker>
+                                    </ErrorBoundary>
+                                    
+                                )}                
+
+                        </FreeMap> : null}
 
                     </Column>
                     <Column width='50%'>

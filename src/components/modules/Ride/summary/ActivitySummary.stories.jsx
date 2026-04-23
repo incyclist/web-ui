@@ -105,6 +105,23 @@ const activity = {
 
 }
 
+
+
+const screenShotActivity = {
+    ...activity,
+    screenshots: [
+        {
+            fileName: 'screenshot.jpg',
+            position: {
+                routeDistance:38.54962168589918,
+                lat: 59.40020972352558,
+                lng: 6.507674281984977
+            }
+
+        }
+    ]
+}
+
 const imperial = { ...activity}
 imperial.distance = {value:'123', unit:'mi'}
 imperial.stats.speed = { 
@@ -116,6 +133,12 @@ imperial.stats.speed = {
 export const Default = Template.bind({});
 Default.args = {
     activity,
+    showMap:true,
+    showSave: true       
+}
+export const WithScreenshot = Template.bind({});
+WithScreenshot.args = {
+    activity:screenShotActivity,
     showMap:true,
     showSave: true       
 }

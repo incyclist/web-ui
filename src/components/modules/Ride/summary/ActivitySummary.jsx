@@ -1,5 +1,5 @@
 /* eslint-disable jsx-a11y/accessible-emoji */
-import React, { useState } from "react"
+import React, { useMemo, useState } from "react"
 import { Button, ButtonBar, Column, ErrorBoundary, Row, View, Image, UrlLink  } from "../../../atoms"
 import { AppThemeProvider } from "../../../../theme"
 import styled from "styled-components";
@@ -7,7 +7,7 @@ import { FreeMap } from "../../../molecules/Maps";
 import { ActivityGraph,ActivityStats,ScreenshotPopup } from "../../../molecules/Activity";
 
 import { Marker } from "react-leaflet";
-import L from 'leaflet';
+import L, { icon } from 'leaflet';
 import Loader from "react-spinners/ClipLoader";
 
 export const ContentArea = styled.div`
@@ -57,13 +57,20 @@ export const ActivitySummaryView = ( {activity,position,preview, units, xScale,
 
     const [markerSize, setMarkerSize] = useState()
 
+    
+
     const screenshots = activity?.screenshots??[]
-    const myIcon = new L.Icon({
-        iconUrl: 'images/camera.svg',
-        iconRetinaUrl: 'images/camera.svg',
-        popupAnchor:  [-0, -0],
-        iconSize: [markerSize,markerSize],     
-    });
+    const myIcon = useMemo( ()=> {
+        let size = Number(markerSize)
+        if (Number.isNaN(size))
+            size = 24;
+        return new L.Icon({
+            iconUrl: 'images/camera.svg',
+            iconRetinaUrl: 'images/camera.svg',
+            popupAnchor:  [-0, -0],
+            iconSize: [size,size],     
+        })
+    },[markerSize]);
 
     const onViewportChanged = (v)=> {
         if ( !v?.zoom)
@@ -92,7 +99,7 @@ export const ActivitySummaryView = ( {activity,position,preview, units, xScale,
                                             icon = {myIcon}
                                             key = {`${s.position}`}
                                             draggable={false}
-                                            position={ s.position}
+                                            position={ [s.position.lat, s.position.lng]}
                                         >
                                             <ScreenshotPopup screenshot={s} />
                                         </Marker>
