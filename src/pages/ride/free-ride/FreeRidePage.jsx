@@ -18,7 +18,7 @@ export const FreeRideRidePage = ( { workout, activity, route, state,initialized,
                                        displayObserver, onDisplayEvent,displayPosition, sideViews,
                                        showShiftingButtons, showDashboard, showWorkout,
                                        map,optionProps,dbColumns,
-                                       onScreenshot, onSettings, onFreeRideOptionSelected,
+                                       screenshotRequested, onScreenshot, onSettings, onFreeRideOptionSelected,
                                        onStartRetry, onStartIgnore, onStartCancel, onToggleCyclingMode
                                     } ) => { 
 
@@ -63,11 +63,11 @@ export const FreeRideRidePage = ( { workout, activity, route, state,initialized,
 
                             {/* dashboards and controls */}
                             <DynamicRideDashboard visible={showDashboard} scheme='light'fold='top-right' foldId='gpx-ride-dashboard' opacity={1.0}  height={'10vh'} top={0} left={`${(100-dbWidth)/2}vw`} width={`${dbWidth}vw`}  />
-                            <ShiftingControl visible={showShiftingButtons} background='none' top={'calc(10vh + 10px);'}  justify='center' onToggleMode={ onToggleCyclingMode} />
+                            <ShiftingControl visible={showShiftingButtons&& !screenshotRequested} background='none' top={'calc(10vh + 10px);'}  justify='center' onToggleMode={ onToggleCyclingMode} />
 
-                            <DynamicWorkoutDashboard visible={showWorkout} showSlope={false} background='none' scheme='light' opacity={1.0}  height={'10vh'} top={'10vh'} left={`${(100-dbWidth)/2}vw`} width={`${dbWidth}vw`} />                            
+                            <DynamicWorkoutDashboard visible={showWorkout && !screenshotRequested} showSlope={false} background='none' scheme='light' opacity={1.0}  height={'10vh'} top={'10vh'} left={`${(100-dbWidth)/2}vw`} width={`${dbWidth}vw`} />                            
                             <WorkoutControl visible={showWorkout} background='none' top={'calc(20vh + 10px);'} left={`${(100-dbWidth)/2}vw`} onToggleMode={ onToggleCyclingMode}/>
-                            <RouteOptions visible={!isStarting} top='65vh' left='26vw' height='35vh' width='48vw'
+                            <RouteOptions visible={!isStarting && !screenshotRequested} top='65vh' left='26vw' height='35vh' width='48vw'
                                 options={options}  settings={true} screenshot={true}                                 
                                 {...optionProps}
                                 transparent={true} pinned={false} 

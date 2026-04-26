@@ -21,13 +21,16 @@ export const RidePage = ({simulate}) => {
 
     const [state, setState] = useState({ state: 'Idle' });
     const [initState, setInitState] = useState(null);
-    const [pageState, setPageState] = useState(null);
+    const [pageState, setPageState] = useState(null);    
+    const [screenshotRequested, SetScreenShotRequested] = useState(null)
     const [logger, closePageLogger] = usePageLogger(PAGE_ID, pageState);
 
 
     const refDialogs = useRef(null);
     const refSettingsOpened = useRef(false);
     const refObserver = useRef(undefined)
+    const refScreenshotState = useRef(undefined)
+    
     const navigate = useNavigate()    
     const location = useLocation()
 
@@ -163,8 +166,7 @@ export const RidePage = ({simulate}) => {
     }
 
     const onTakeScreenShot = async () => {
-        cameraSound.play();
-        ride.takeScreenshot();
+        SetScreenShotRequested(true)
     };
 
     
@@ -336,6 +338,19 @@ export const RidePage = ({simulate}) => {
     })
 
 
+    useEffect( ()=> {
+        if (screenshotRequested && !refScreenshotState.current) {
+            refScreenshotState.current = 'taking'
+            cameraSound.play();
+            ride.takeScreenshot().then( ()=> {
+                delete refScreenshotState.current
+                SetScreenShotRequested(false)
+            })
+
+        }
+    })
+
+
     useEffect(() => {
         if (initState!=='init-service-done')
             return;
@@ -427,7 +442,8 @@ export const RidePage = ({simulate}) => {
             onFreeRideOptionSelected={onFreeRideOptionSelected}    
             onBack={onBack}
             onPairing={onPairing}
-            logger={logger}        
+            logger={logger}    
+            screenshotRequested={screenshotRequested}    
             />
         <DialogLauncher ref={refDialogs} />
     </>;
