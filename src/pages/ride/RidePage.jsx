@@ -341,11 +341,17 @@ export const RidePage = ({simulate}) => {
     useEffect( ()=> {
         if (screenshotRequested && !refScreenshotState.current) {
             refScreenshotState.current = 'taking'
-            cameraSound.play();
-            ride.takeScreenshot().then( ()=> {
-                delete refScreenshotState.current
-                SetScreenShotRequested(false)
+
+            // give UI time to finish rendering
+            waitNextTick().then( ()=> {
+                cameraSound.play();
+                ride.takeScreenshot().then( ()=> {
+                    delete refScreenshotState.current
+                    SetScreenShotRequested(false)
+                })
+
             })
+
 
         }
     })
