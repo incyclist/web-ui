@@ -4,6 +4,7 @@ import styled from 'styled-components';
 import {Column, EditText, FileLink, Icon, Row, View} from '../../../atoms';
 import { usePath } from '../../../../bindings/path';
 import { PencilIcon, XIcon } from '@primer/octicons-react';
+import { EventLogger } from 'gd-eventlog';
 //import path from 'path'
 
 const Title = styled.h2`
@@ -85,62 +86,69 @@ export const ActivityStats = ( {activity, fileLinks,onTitleChange})=> {
 
     
     const format =( field,value,includeUnit=true) =>{
-        if ( value===undefined)
+        try {
+            if ( value===undefined)
+                return ''
+
+            
+            let ignoreValue = false;
+            let ignoreUnit = !includeUnit; 
+
+            if ( value==='$unit') {
+                ignoreValue = true;
+                ignoreUnit = false;
+            }
+
+
+            if (value.value!==undefined && value.unit) {
+                if (!ignoreValue && !ignoreUnit)
+                    return `${value.value} ${value.unit}`
+                if (ignoreValue)
+                    return value.unit
+                if (ignoreUnit)
+                    return value.value
+            }
+
+
+
+            let unit='';
+            let val =''
+            if ( field==='distance')  {
+                unit = ignoreUnit ? '' : 'km';
+                val  = ignoreValue? '': Number(value/1000).toFixed(2)
+            }
+            else if ( field==='speed')  {
+                unit = ignoreUnit ? '' : 'km/h';
+                val  = ignoreValue? '': Number(value).toFixed(1)
+            }
+            else if ( field==='time') {
+                unit = '';
+                val  = ignoreValue? '': timeFormat(Number(value))
+            }
+            else if ( field==='power')  {
+                unit = ignoreUnit ? '' : 'W';
+                val  = ignoreValue? '': Number(value).toFixed(0)
+            }
+            else if ( field==='hrm')  {
+                unit = ignoreUnit ? '' : 'bpm';
+                val  = ignoreValue? '': Number(value).toFixed(0)
+            }
+            else if ( field==='cadence')  {
+                unit = ignoreUnit ? '' : 'rpm';
+                val  = ignoreValue? '': Number(value).toFixed(0)
+            }
+            else {
+                unit = '';
+                val  = ignoreValue? '': value
+            }
+            let space = ignoreUnit || ignoreValue ? '' : ' '
+            return `${val}${space}${unit}` 
+        }
+        catch(err) {
+            const logger = new EventLogger('ActivityStats')
+            logger.logEvent({message:'error',fn:'format', error:err.message, stack:err.stack})
             return ''
-
-        
-        let ignoreValue = false;
-        let ignoreUnit = !includeUnit; 
-
-        if ( value==='$unit') {
-            ignoreValue = true;
-            ignoreUnit = false;
         }
-
-
-        if (value.value!==undefined && value.unit) {
-            if (!ignoreValue && !ignoreUnit)
-                return `${value.value} ${value.unit}`
-            if (ignoreValue)
-                return value.unit
-            if (ignoreUnit)
-                return value.value
-        }
-
-
-
-        let unit='';
-        let val =''
-        if ( field==='distance')  {
-            unit = ignoreUnit ? '' : 'km';
-            val  = ignoreValue? '': Number(value/1000).toFixed(2)
-        }
-        else if ( field==='speed')  {
-            unit = ignoreUnit ? '' : 'km/h';
-            val  = ignoreValue? '': Number(value).toFixed(1)
-        }
-        else if ( field==='time') {
-            unit = '';
-            val  = ignoreValue? '': timeFormat(Number(value))
-        }
-        else if ( field==='power')  {
-            unit = ignoreUnit ? '' : 'W';
-            val  = ignoreValue? '': Number(value).toFixed(0)
-        }
-        else if ( field==='hrm')  {
-            unit = ignoreUnit ? '' : 'bpm';
-            val  = ignoreValue? '': Number(value).toFixed(0)
-        }
-        else if ( field==='cadence')  {
-            unit = ignoreUnit ? '' : 'rpm';
-            val  = ignoreValue? '': Number(value).toFixed(0)
-        }
-        else {
-            unit = '';
-            val  = ignoreValue? '': value
-        }
-        let space = ignoreUnit || ignoreValue ? '' : ' '
-        return `${val}${space}${unit}`
     }
 
     const [titleEditMode, setTitleEditMode] = useState(false)

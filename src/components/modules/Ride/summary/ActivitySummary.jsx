@@ -112,31 +112,36 @@ export const ActivitySummaryView = ( {activity,position,preview, units, xScale,
                             { preview ? <Block><Image width='100%' height='100%' src={preview}/></Block> : null }
                         </Column>
                         
-                        <Column width='42%' className='activity-stats'>                       
-                            <ActivityStats activity={activity} onTitleChange={onTitleChange}/>
+                        <Column width='42%' className='activity-stats'>        
+                            <ErrorBoundary>
+                                <ActivityStats activity={activity} onTitleChange={onTitleChange}/>
+                            </ErrorBoundary>               
                         </Column>
 
 
                     </CRow>
 
                     { showDonate && donateText ? 
-                        <CRow height='3.5vh' style={{ minHeight:'3.5vh', fontSize:'1.5vh',textAlign:'center', background:'darkgrey', marginBottom:'1vh'}}>
-                            <Column style={ {textAlign:'center', verticalAlign:'middle', minHeight:'3.5vh', fontSize:'3vh'   }}>
-                                <span role='img' area-label='info' >ℹ️</span>
-                            </Column>
-                            <Column  width='90%'>
-                                <span>{donateText}</span>
-                                <span>Click <UrlLink text='here' url={donateUrl} onOpened={onDonateClicked}/> to donate </span>
-                            </Column>
-                        </CRow> 
-                            
+                        <ErrorBoundary>
+                            <CRow height='3.5vh' style={{ minHeight:'3.5vh', fontSize:'1.5vh',textAlign:'center', background:'darkgrey', marginBottom:'1vh'}}>
+                                <Column style={ {textAlign:'center', verticalAlign:'middle', minHeight:'3.5vh', fontSize:'3vh'   }}>
+                                    <span role='img' area-label='info' >ℹ️</span>
+                                </Column>
+                                <Column  width='90%'>
+                                    <span>{donateText}</span>
+                                    <span>Click <UrlLink text='here' url={donateUrl} onOpened={onDonateClicked}/> to donate </span>
+                                </Column>
+                            </CRow> 
+                        </ErrorBoundary>                            
                         : null
                     }
                 
                     <CRow className='activity-graph' height='40%'  style={{ textAlign:'left'}}>
-                        <Column width='100%' >
-                            <ActivityGraph activity={activity} units={units} xScale={xScale} />
-                        </Column>
+                        <ErrorBoundary>
+                            <Column width='100%' >
+                                <ActivityGraph activity={activity} units={units} xScale={xScale} />
+                            </Column>
+                        </ErrorBoundary>
 
                     </CRow>
                 </DataArea>
