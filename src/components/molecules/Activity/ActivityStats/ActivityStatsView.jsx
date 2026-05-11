@@ -87,7 +87,7 @@ export const ActivityStats = ( {activity, fileLinks,onTitleChange})=> {
     
     const format =( field,value,includeUnit=true) =>{
         try {
-            if ( value===undefined)
+            if ( value===undefined || value===null)
                 return ''
 
             
