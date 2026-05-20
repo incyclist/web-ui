@@ -7,7 +7,7 @@
     "@floating-ui/react": "^0.27.19",
     "@primer/octicons-react": "^19.25.0",
     "gd-eventlog": "^0.1.27",
-    "incyclist-services": "^1.7.60",
+    "incyclist-services": "^1.7.61",
     "leaflet": "^1.9.4",
     "leaflet-geosearch": "^4.4.0",
     "react": "^19.2.5",
