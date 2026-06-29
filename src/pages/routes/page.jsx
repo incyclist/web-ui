@@ -108,7 +108,7 @@ export const RoutesPage =  () => {
             return;
         }
               
-        if (!lists)
+        if (!Array.isArray(lists))
             return;
 
         try {
@@ -123,6 +123,10 @@ export const RoutesPage =  () => {
 
 
             lists.forEach( (list,idx) => {
+
+                if (!list || !Array.isArray(list)) {
+                    return;
+                }
 
                 const currentHash = refLists.current[idx].hash
                 const newHash = hash(list)
@@ -402,9 +406,11 @@ export const RoutesPage =  () => {
     if (!pageState)
         return <RoutesScreen data={[]} loading={true}/>
 
+    const screenData = data?.lists && Array.isArray(data.lists) ? data.lists : undefined
+
     return <>
     
-        <RoutesScreen data={data?.lists} loading={loading||!refInitialized.current} {...screenProps}  
+        <RoutesScreen data={screenData} loading={loading||!refInitialized.current} {...screenProps}  
             closePage={closePage}
             onOK={onOKClicked}
             onDelete={onDeleteClicked}

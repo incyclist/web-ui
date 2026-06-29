@@ -358,9 +358,9 @@ export const RoutesScreen =  /*forwardRef(*/
 
                     <AppThemeProvider>                    
                         <ListContainer className='routes' width='100%' height='100%' ref={refDiv}>
-                        {  !loading && cardSize && data    ? 
-                            data.map( (list,idx) => <RouteList list={list} key={idx} />)              
-                            : 
+                        {  !loading && cardSize && data    ?
+                            data.map( (list,idx) => <RouteList list={list} key={idx} />)
+                            :
                             null
                         }
                         </ListContainer>
