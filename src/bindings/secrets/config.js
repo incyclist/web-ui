@@ -1,6 +1,5 @@
 export const SECRETS = [
-    'STRAVA_CLIENT_ID', 
-    'GOOGLE_API_KEY',
+    'STRAVA_CLIENT_ID',
     'STRAVA_CLIENT_SECRET',
     'INCYCLIST_API_KEY'
 ]

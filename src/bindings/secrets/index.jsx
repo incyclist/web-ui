@@ -27,9 +27,14 @@ export class SecretsBinding  {
     }
 
     async loadSecret(key) {
-        if (hasFeature('appSettings.secret.v2')) { 
+        if (hasFeature('secrets')) {
+            const secret = api.secrets.getSecret(key)
+            if (secret)
+                this.secrets[key] = secret
+            return secret
+        }
+        if (hasFeature('appSettings.secret.v2')) {
             const secret = await api.appSettings.getSecret(key)
-
             if (secret)
                 this.secrets[key] = secret
             return secret
