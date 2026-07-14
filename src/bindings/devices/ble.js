@@ -15,7 +15,10 @@ export default function getBleBinding() {
             if (hasFeature('appSettings.appInfo')) {
                 const {platform}  = api.appSettings.getOSSync()
                 if (platform==='linux') {
-                    return null;            
+                    if (hasFeature('webble')) {
+                        return api.webble.getInstance()
+                    }
+                    return null
                 }
             }
             
