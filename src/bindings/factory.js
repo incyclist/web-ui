@@ -11,6 +11,7 @@ import { FormPostBinding } from "./http/formPost"
 import NativeUiService from "./native-ui"
 import { getRepositoryBinding } from "./repository"
 import { getCryptoBinding} from './crypto'
+import { getFetchBinding } from './fetch'
 import { OAuthBinding } from "./oauth"
 import { getUserSettingsBinding } from "./user-settings"
 import { getLogBinding } from "./logging"
@@ -36,6 +37,7 @@ export class BindingFactory {
             bindings.form = FormPostBinding.getInstance()
             bindings.ui = NativeUiService.getInstance()
             bindings.crypto = getCryptoBinding()
+            bindings.fetch = getFetchBinding()
             bindings.outh = OAuthBinding.getInstance()
             bindings.settings = getUserSettingsBinding()
             bindings.logging = getLogBinding()
