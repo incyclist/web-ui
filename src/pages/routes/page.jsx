@@ -124,7 +124,7 @@ export const RoutesPage =  () => {
 
             lists.forEach( (list,idx) => {
 
-                if (!list || !Array.isArray(list)) {
+                if (!list || typeof list.getCards !== 'function' || !refLists.current[idx]) {
                     return;
                 }
 

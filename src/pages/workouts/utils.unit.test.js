@@ -1,4 +1,4 @@
-const {getResponsiveHorizontal} = require('./utils')
+import { getResponsiveHorizontal } from './utils'
 
 describe ('utils',()=>{
     describe('getResponsiveHorizontal',()=>{
