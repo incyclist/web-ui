@@ -78,6 +78,16 @@ export default defineConfig(({ command}) => {
           },
           setupFiles: ['.storybook/vitest.setup.js']
         }
+      },
+      {
+        extends: true,
+        test: {
+          name: 'unit',
+          environment: 'jsdom',
+          globals: true,
+          include: ['src/**/*.unit.test.{js,jsx}'],
+          setupFiles: ['src/setupTests.js']
+        }
       }]
     }
   }
