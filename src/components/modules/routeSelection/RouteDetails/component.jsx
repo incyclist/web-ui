@@ -4,7 +4,7 @@ import {FileDirectoryIcon } from '@primer/octicons-react'
 
 import {Button,ButtonBar, Divider, EditNumber, SingleSelect,Column, Overlay, Row, 
         Text, Loader, EditText,ErrorBoundary, CheckBox, Image, Center, ErrorText } from '../../../atoms'
-import {  Dialog, Dropzone, FreeMap,ElevationGraph } from '../../../molecules'
+import {  Dialog, Dropzone, FreeMap,ElevationGraph, VideoProbe } from '../../../molecules'
 import {VideoPreview } from '../../video'
 import { useUnitConverter } from 'incyclist-services'
 import { EventLogger } from 'gd-eventlog'
@@ -350,9 +350,10 @@ export const RouteDetails = ( {route, markers,segment, startPos,endPos,realityFa
     if (!initialized)
         return false
 
-    return ( 
+    return (
         <ErrorBoundary>
             <Dialog id='RouteDetails' log={{title:route?.title}} title={route?.title} /*onOutsideClicked={onUserCancel}*/ width="60vw" height="70vh" zIndex={100} onESC={onCancelClicked}>
+            {hasVideo && videoUrl && !videoMissing ? <VideoProbe url={videoUrl} routeId={routeDescr?.id} extension={videoFormat}/> : null}
             <ContentArea>
 
                 <Row>                
