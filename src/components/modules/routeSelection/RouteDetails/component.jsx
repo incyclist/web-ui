@@ -353,7 +353,7 @@ export const RouteDetails = ( {route, markers,segment, startPos,endPos,realityFa
     return (
         <ErrorBoundary>
             <Dialog id='RouteDetails' log={{title:route?.title}} title={route?.title} /*onOutsideClicked={onUserCancel}*/ width="60vw" height="70vh" zIndex={100} onESC={onCancelClicked}>
-            {hasVideo && videoUrl && !videoMissing ? <VideoProbe url={videoUrl} routeId={routeDescr?.id} extension={videoFormat}/> : null}
+            {hasVideo && videoUrl && !videoMissing && videoFormat!=='avi' ? <VideoProbe url={videoUrl} routeId={routeDescr?.id} extension={videoFormat}/> : null}
             <ContentArea>
 
                 <Row>                
