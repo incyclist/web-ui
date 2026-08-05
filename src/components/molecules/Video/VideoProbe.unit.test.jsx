@@ -62,8 +62,9 @@ describe('VideoProbe', () => {
     })
 
     test('logs a combined event once both the box-parse and the playback check resolve (success case)', async () => {
+        const codecDetails = { profile: 'High', profileId: 100, level: '4.1', chromaFormat: '4:2:0', bitDepthLuma: 8, bitDepthChroma: 8 }
         probeMp4Codec.mockResolvedValue({
-            videoCodec: 'avc1', audioCodec: 'mp4a', containerBrand: 'isom',
+            videoCodec: 'avc1', audioCodec: 'mp4a', containerBrand: 'isom', codecDetails,
             width: 1920, height: 1080, moovLocation: 'head', incomplete: false
         })
 
@@ -84,6 +85,7 @@ describe('VideoProbe', () => {
             extension: 'mp4',
             videoCodec: 'avc1',
             audioCodec: 'mp4a',
+            codecDetails,
             containerBrand: 'isom',
             width: 1920,
             height: 1080,

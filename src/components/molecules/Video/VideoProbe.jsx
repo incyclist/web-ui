@@ -50,6 +50,7 @@ export const VideoProbe = ({ url, routeId, extension }) => {
             extension,
             videoCodec: boxInfo.videoCodec,
             audioCodec: boxInfo.audioCodec,
+            codecDetails: boxInfo.codecDetails,
             containerBrand: boxInfo.containerBrand,
             width: boxInfo.width,
             height: boxInfo.height,
