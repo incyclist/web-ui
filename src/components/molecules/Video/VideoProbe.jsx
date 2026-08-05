@@ -3,6 +3,7 @@ import { EventLogger } from 'gd-eventlog'
 import { parseMp4Boxes, resolvePlaybackUrl } from 'incyclist-services'
 
 import { probeMp4Codec } from './videoProbeReaders'
+import { withLegacyLocalUrlWorkaround } from '../../../utils/legacyVideoUrlWorkaround'
 
 /**
  * Silently probes a video route's file, before the user starts a ride, to understand
@@ -25,12 +26,19 @@ import { probeMp4Codec } from './videoProbeReaders'
  * uses) but passes a custom, non-special scheme like `video:` through literally. Probing the
  * raw url would have logged a false decode failure that doesn't reflect real playback.
  *
+ * withLegacyLocalUrlWorkaround() is applied for the same reason: resolvePlaybackUrl() can
+ * resolve to desktop's custom video: protocol, whose handler (Electron's
+ * protocol.registerFileProtocol) hits older desktop's getFileInfo() bug the same way a real
+ * ride's <video> element would - Video.jsx applies the identical fix, keeping this probe's
+ * verdict in sync with what a real ride actually experiences.
+ *
  * Renders an invisible (opacity:0, not display:none - some browsers skip/delay decode work
  * on display:none media elements) 1x1 <video> element; nothing here is shown to the user.
  */
 export const VideoProbe = ({ url, routeId, extension }) => {
 
-    const playbackUrl = resolvePlaybackUrl(url, false) // desktop only - see design doc, mobile deferred
+    // desktop only - see design doc, mobile deferred
+    const playbackUrl = withLegacyLocalUrlWorkaround(resolvePlaybackUrl(url, false))
     const refVideo = useRef(null)
     const refLogger = useRef(new EventLogger('VideoProbe'))
     const refState = useRef({ boxInfo: undefined, playbackResult: undefined, logged: false, mountTs: 0 })

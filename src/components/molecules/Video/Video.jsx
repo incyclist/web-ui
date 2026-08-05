@@ -5,6 +5,7 @@ import { EventLogger } from 'gd-eventlog';
 
 import { Autosize, ErrorBoundary, Loader } from '../../atoms';
 import { useUnmountEffect } from '../../../hooks';
+import { withLegacyLocalUrlWorkaround } from '../../../utils/legacyVideoUrlWorkaround';
 
 
 export const VideoContainer = styled(Autosize)`
@@ -22,6 +23,12 @@ export const VideoView = styled.video`
 
 export const Video = ( { src, startTime, observer, width, height,muted=true,loop=false,hidden=false,
                          onPlaybackUpdate, onLoaded, onLoadError, onPlaybackError, onStalled, onWaiting, onEnded } ) => {
+
+    // src already went through resolvePlaybackUrl() (incyclist-services), which can resolve
+    // to desktop's custom video: protocol depending on which scheme the route was stored
+    // with - that protocol handler is a direct Electron/Chromium resource request, invisible
+    // to the IPC-level workaround in bindings/video/desktop.js, so it needs its own fix here.
+    const resolvedSrc = withLegacyLocalUrlWorkaround(src)
 
     const refVideo = useRef(null)
     const [state,setState] = useState({mounted:false})
@@ -304,7 +311,7 @@ export const Video = ( { src, startTime, observer, width, height,muted=true,loop
                         width={width} height={height} hidden={hidden}
                         preload='auto'
                         loop
-                        src={src} 
+                        src={resolvedSrc} 
                         onTimeUpdate={onTimeUpdate}
                         onLoadedMetadata={onLoadedMetadata}
                         onError={onError}
@@ -319,7 +326,7 @@ export const Video = ( { src, startTime, observer, width, height,muted=true,loop
                     <VideoView  ref={refVideo}    className='video-no-loop'
                         width={width} height={height} hidden={hidden}
                         preload='auto'
-                        src={src} 
+                        src={resolvedSrc} 
                         onTimeUpdate={onTimeUpdate}
                         onLoadedMetadata={onLoadedMetadata}
                         onError={onError}

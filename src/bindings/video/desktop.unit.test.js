@@ -1,6 +1,6 @@
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 
-const { hasFeatureMock, apiMock } = vi.hoisted(() => ({
+const { hasFeatureMock, apiMock, workaroundMock } = vi.hoisted(() => ({
     hasFeatureMock: vi.fn(),
     apiMock: {
         video: {
@@ -8,12 +8,17 @@ const { hasFeatureMock, apiMock } = vi.hoisted(() => ({
             convert: vi.fn(),
             convertOffline: vi.fn()
         }
-    }
+    },
+    workaroundMock: vi.fn((url) => `fixed(${url})`)
 }))
 
 vi.mock('../../utils/electron/integration', () => ({
     hasFeature: hasFeatureMock,
     api: apiMock
+}))
+
+vi.mock('../../utils/legacyVideoUrlWorkaround', () => ({
+    withLegacyLocalUrlWorkaround: workaroundMock
 }))
 
 import { DesktopBinding } from './desktop'
@@ -24,83 +29,36 @@ describe('DesktopBinding', () => {
 
     beforeEach(() => {
         vi.clearAllMocks()
+        workaroundMock.mockImplementation((url) => `fixed(${url})`)
+        hasFeatureMock.mockReturnValue(true)
         binding = new DesktopBinding()
     })
 
-    describe('legacy local URL workaround (desktop installs without video.localUrlFix)', () => {
+    test('convertOnline() runs the url through the legacy-url workaround before calling api.video.convert', async () => {
+        apiMock.video.convert.mockResolvedValue('client')
 
-        const oldDesktop = () => hasFeatureMock.mockImplementation((f) => f !== 'video.localUrlFix')
+        await binding.convertOnline('video:///home/dirk/route.avi', { foo: 1 })
 
-        test('adds a slash to a well-formed local video:/// url', async () => {
-            oldDesktop()
-            apiMock.video.convert.mockResolvedValue('client')
-
-            await binding.convertOnline('video:///home/dirk/incyclist/sonstige/NO_Ocean_Road/NO_Ocean Road.avi')
-
-            expect(apiMock.video.convert).toHaveBeenCalledWith(
-                'video:////home/dirk/incyclist/sonstige/NO_Ocean_Road/NO_Ocean Road.avi', {}
-            )
-        })
-
-        test('adds a slash to a well-formed local file:/// url', async () => {
-            oldDesktop()
-            apiMock.video.convert.mockResolvedValue('client')
-
-            await binding.convertOnline('file:///home/dirk/route.avi')
-
-            expect(apiMock.video.convert).toHaveBeenCalledWith('file:////home/dirk/route.avi', {})
-        })
-
-        test('leaves an already-4-slash url alone (already compensated)', async () => {
-            oldDesktop()
-            apiMock.video.convert.mockResolvedValue('client')
-
-            await binding.convertOnline('video:////home/dirk/route.avi')
-
-            expect(apiMock.video.convert).toHaveBeenCalledWith('video:////home/dirk/route.avi', {})
-        })
-
-        test('leaves a Windows drive-letter path alone (never had this bug)', async () => {
-            oldDesktop()
-            apiMock.video.convert.mockResolvedValue('client')
-
-            await binding.convertOnline('video:///C:/Users/Guido/route.avi')
-
-            expect(apiMock.video.convert).toHaveBeenCalledWith('video:///C:/Users/Guido/route.avi', {})
-        })
-
-        test('leaves a remote http url alone', async () => {
-            oldDesktop()
-            apiMock.video.convert.mockResolvedValue('client')
-
-            await binding.convertOnline('https://example.com/route.mp4')
-
-            expect(apiMock.video.convert).toHaveBeenCalledWith('https://example.com/route.mp4', {})
-        })
-
-        test('applies the same workaround to screenshot() and convert() (offline)', async () => {
-            oldDesktop()
-            apiMock.video.screenshot.mockResolvedValue('preview.png')
-            apiMock.video.convertOffline.mockResolvedValue('offline')
-
-            await binding.screenshot('video:///home/dirk/route.avi')
-            await binding.convert('video:///home/dirk/route.avi')
-
-            expect(apiMock.video.screenshot).toHaveBeenCalledWith('video:////home/dirk/route.avi', {})
-            expect(apiMock.video.convertOffline).toHaveBeenCalledWith('video:////home/dirk/route.avi', {})
-        })
+        expect(workaroundMock).toHaveBeenCalledWith('video:///home/dirk/route.avi')
+        expect(apiMock.video.convert).toHaveBeenCalledWith('fixed(video:///home/dirk/route.avi)', { foo: 1 })
     })
 
-    describe('fixed desktop (video.localUrlFix present)', () => {
+    test('convert() (offline) runs the url through the legacy-url workaround before calling api.video.convertOffline', async () => {
+        apiMock.video.convertOffline.mockResolvedValue('offline')
 
-        test('passes a well-formed local url through unchanged', async () => {
-            hasFeatureMock.mockReturnValue(true)
-            apiMock.video.convert.mockResolvedValue('client')
+        await binding.convert('video:///home/dirk/route.avi')
 
-            await binding.convertOnline('video:///home/dirk/route.avi')
+        expect(workaroundMock).toHaveBeenCalledWith('video:///home/dirk/route.avi')
+        expect(apiMock.video.convertOffline).toHaveBeenCalledWith('fixed(video:///home/dirk/route.avi)', {})
+    })
 
-            expect(apiMock.video.convert).toHaveBeenCalledWith('video:///home/dirk/route.avi', {})
-        })
+    test('screenshot() runs the url through the legacy-url workaround before calling api.video.screenshot', async () => {
+        apiMock.video.screenshot.mockResolvedValue('preview.png')
+
+        await binding.screenshot('video:///home/dirk/route.avi')
+
+        expect(workaroundMock).toHaveBeenCalledWith('video:///home/dirk/route.avi')
+        expect(apiMock.video.screenshot).toHaveBeenCalledWith('fixed(video:///home/dirk/route.avi)', {})
     })
 
     test('throws when desktop does not support the underlying feature', async () => {
