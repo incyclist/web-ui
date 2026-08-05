@@ -1,8 +1,8 @@
 import React from 'react'
-import { describe, test, expect, vi, afterEach } from 'vitest'
+import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render, fireEvent, waitFor } from '@testing-library/react'
 
-const { logEventMock } = vi.hoisted(() => ({ logEventMock: vi.fn() }))
+const { logEventMock, hasFeatureMock } = vi.hoisted(() => ({ logEventMock: vi.fn(), hasFeatureMock: vi.fn() }))
 
 vi.mock('gd-eventlog', () => ({
     EventLogger: class {
@@ -19,10 +19,18 @@ vi.mock('./videoProbeReaders', () => ({
     probeMp4Codec: vi.fn()
 }))
 
+vi.mock('../../../utils/electron/integration', () => ({
+    hasFeature: hasFeatureMock
+}))
+
 import { probeMp4Codec } from './videoProbeReaders'
 import { VideoProbe } from './VideoProbe'
 
 describe('VideoProbe', () => {
+
+    beforeEach(() => {
+        hasFeatureMock.mockReturnValue(false) // old desktop by default, matches most real installs today
+    })
 
     afterEach(() => {
         vi.clearAllMocks()
@@ -52,6 +60,25 @@ describe('VideoProbe', () => {
 
         const video = container.querySelector('video')
         expect(video.src).toBe('file:////mnt/nas/route.mp4')
+    })
+
+    test('applies the legacy local-url workaround to the resolved playback url on old desktop', () => {
+        // file:///local/route.mp4 -> resolvePlaybackUrl swaps to video:///local/route.mp4
+        // (desktop, non-avi) -> old desktop's getFileInfo() bug would strip that url's own
+        // leading slash, so the workaround inserts a compensating one before it reaches the
+        // custom video: protocol handler
+        probeMp4Codec.mockReturnValue(new Promise(() => {}))
+        const { container } = render(<VideoProbe url="file:///local/route.mp4" routeId="r9" />)
+
+        expect(container.querySelector('video').src).toBe('video:////local/route.mp4')
+    })
+
+    test('leaves the resolved playback url unchanged on desktop with the fix', () => {
+        hasFeatureMock.mockReturnValue(true)
+        probeMp4Codec.mockReturnValue(new Promise(() => {}))
+        const { container } = render(<VideoProbe url="file:///local/route.mp4" routeId="r10" />)
+
+        expect(container.querySelector('video').src).toBe('video:///local/route.mp4')
     })
 
     test('remote urls are unaffected by the playback-url rewrite', () => {
