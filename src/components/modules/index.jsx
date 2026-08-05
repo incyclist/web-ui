@@ -9,7 +9,6 @@ export * from './Search'
 export * from './Settings'
 export * from './shifting'
 export * from './UpdateChecker'
-export * from './VeloHero'
 export * from './video'
 export * from './workout'
 

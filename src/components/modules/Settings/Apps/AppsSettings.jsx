@@ -5,7 +5,6 @@ import { AppThemeProvider } from "../../../../theme";
 import { Row  } from "../../../atoms";
 import { AppsItem } from "../../../molecules/Apps/AppsItem";
 import { StravaSettings } from "./Strava";
-import { VeloHeroSettings } from "./VeloHero/VeloHeroSettings";
 import { KomootSettings } from "./Komoot/KomootSettings";
 import {IntervalsSettings} from './Intervals/IntervalsSettings'
 
@@ -31,7 +30,6 @@ export const ContentArea = styled.div`
 const getMapping = (service) => {
     const mapping = {
         strava: StravaSettings,
-        velohero: VeloHeroSettings,
         komoot: KomootSettings,
         intervals: IntervalsSettings
     }
