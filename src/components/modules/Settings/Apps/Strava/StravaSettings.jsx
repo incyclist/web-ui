@@ -48,12 +48,13 @@ export const StravaSettings = ({onBack})=> {
     }
 
     const onDisconnect = ()=>{
+        service.disconnect('strava')
         setSettings( {isConnected:false})
     }
 
     const onOperationsChanged = (operation, enabled) => {
         const operations = service.enableOperation('strava',operation,enabled,true )
-        setSettings( current=> ({...current,operations} ))
+        setSettings( current=> ({...current,operations} ))        
     }
 
     return <StravaSettingsView {...settings} isConnecting={connecting} 
