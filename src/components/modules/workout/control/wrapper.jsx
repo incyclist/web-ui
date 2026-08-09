@@ -111,6 +111,8 @@ export const WorkoutControl =  ({visible,onToggleMode})=> {
                 showHotkeys={showHotkeys}
                 pinned={pinned}
                 mode={state.mode}
+                loadButtons={state.loadButtons}
+                loadButtonMode={state.loadButtonMode}
 
                 onBackward={ onBackward }
                 onForward={ onForward }
@@ -125,7 +127,7 @@ export const WorkoutControl =  ({visible,onToggleMode})=> {
                 </div>
             </AutoHide >
         </ErrorBoundary>,
-        [pinned, showHotkeys, state.mode, onBackward, onForward, onStop, onPowerDown, onPowerUp, onToggleModeHandler])
+        [pinned, showHotkeys, state.mode, state.loadButtons, state.loadButtonMode, onBackward, onForward, onStop, onPowerDown, onPowerUp, onToggleModeHandler])
 
     if (!initialized || !state?.observer || !state?.workout || !visible)
         return null
