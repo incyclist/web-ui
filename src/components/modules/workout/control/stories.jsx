@@ -30,3 +30,10 @@ SimMode.args = {mode:'SIM'}
 
 export const ErgMode = Template.bind({});
 ErgMode.args = {mode:'ERG'}
+
+// FIXES_BACKLOG #35: load-adjustment button labels reflect what a click will actually do -
+// '%' when it scales the Workout FTP, 'W' when it nudges targetPower within the current step's
+// power range (services#505). This story simulates being at the bottom edge of a power range
+// step, where the down-buttons flip to FTP (%) and the up-buttons stay in-range (W).
+export const LoadButtonsInWatt = Template.bind({});
+LoadButtonsInWatt.args = {loadButtons:{inc5:'+5W', inc1:'+1W', dec1:'-1%', dec5:'-5%'}}
