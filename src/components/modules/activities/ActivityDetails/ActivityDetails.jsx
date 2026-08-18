@@ -184,9 +184,12 @@ export const ActivityDetails = ({activity, units, title,started,duration, distan
             const files = (uploads??[]).map(e => {
                 const failed = e?.status === 'failed'
                 const success = e?.status === 'success'
+                // activity details haven't arrived yet - the real status is still unknown, so the
+                // pill must not offer Synchronize/Open until the details finish loading (issue #48)
+                const stillLoading = e?.status === 'loading'
                 const canOpen = success;
-                const canSynchronize = !success
-                const loading = e?.synchronizing
+                const canSynchronize = !success && !stillLoading
+                const loading = e?.synchronizing || stillLoading
 
                 let color, textColor = 'white'
                 if (failed)
@@ -197,15 +200,15 @@ export const ActivityDetails = ({activity, units, title,started,duration, distan
                     color = 'lightgrey'
                     textColor = 'black'
                 }
-                
+
                 return{
-                        size:'large',                
+                        size:'large',
                         color, textColor,
                         text:e?.text??e?.type,
                         canOpen,canSynchronize,
                         type:e?.type,
                         loading
-                    
+
             }})
             return files
         }
