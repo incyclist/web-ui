@@ -145,7 +145,7 @@ export class RepositoryAppBinding  { // implements extends AbstractJsonRepositor
 
                 if (!writeOK) {
                     const logInfo = {repo:repoName, resource:resourceName,bytes,bytesWritten}
-                    this.logger.logEvent({message:'error', fn:'write', ...logInfo, error:'could not write all bytes'})
+                    this.logger.logEvent({message:'warning', fn:'write', ...logInfo, error:'could not write all bytes'})
                     done(false)
                     return
                 }
