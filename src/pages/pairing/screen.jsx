@@ -87,20 +87,14 @@ export const PairingScreen = ( {onOK,onSkip,onSimulate, onCapabilityClick,onCapa
 
     const initCapabilites = () => {
 
-        const ftController = appState.hasFeature('CONTROLLERS')
 
-        if (ftController)
-            initCapability(top,'Resistance', 'control')    
-        else 
-            initCapability(top,'Control')    
+        initCapability(top,'Resistance', 'control')    
         initCapability(top,'Power')    
         initCapability(top,'Heartrate')        
 
         initCapability(bottom,'Cadence')    
         initCapability(bottom,'Speed')    
-        if (ftController) {
-            initCapability(bottom,'Controller','app_control')    
-        }
+        initCapability(bottom,'Controller','app_control')    
 
     }
 
