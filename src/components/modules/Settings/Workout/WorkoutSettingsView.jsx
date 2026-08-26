@@ -37,6 +37,10 @@ const SettingsArea = styled.div`
     bottom: 1vh;
 `
 
+const SettingsAreaUpper = styled(SettingsArea)`
+    bottom: 3.2vh;
+`
+
 const WorkoutInfo = (props) => {
     
     if (props===undefined || props.workout===undefined) return ('');
@@ -55,14 +59,19 @@ const WorkoutInfo = (props) => {
     
 }
 
-export const WorkoutSettingsView = ( {workout,workouts,settings,error,width,height,onDrop,onDelete,onClearError,onChangeErgMode}) =>{
-  
-    
+export const WorkoutSettingsView = ( {workout,workouts,settings,error,width,height,onDrop,onDelete,onClearError,onChangeErgMode,stepChangeAudioSignal=true,onChangeStepChangeAudioSignal}) =>{
+
+
     const onHandleChangeErgMode = (enabled) =>{
         if (onChangeErgMode)
             onChangeErgMode(enabled)
     }
-    
+
+    const onHandleChangeStepChangeAudioSignal = (enabled) =>{
+        if (onChangeStepChangeAudioSignal)
+            onChangeStepChangeAudioSignal(enabled)
+    }
+
 
     const {useErgMode=true,ftp=200} = settings??{};
     
@@ -95,14 +104,21 @@ export const WorkoutSettingsView = ( {workout,workouts,settings,error,width,heig
                 <DetailArea  >
                     {workout?<WorkoutGraph workout={workout} ftp={ftp}/>:null}
                 </DetailArea>
-                {workout ? 
-                    <SettingsArea style={{height:'2vh'}}> 
+                {workout ?
+                    <>
+                    <SettingsAreaUpper style={{height:'2vh'}}>
+                        <input type="checkbox" checked={stepChangeAudioSignal}
+                            onChange={ (event) => {onHandleChangeStepChangeAudioSignal(event.target.checked)} }
+                            name= 'step-change-audio-signal'/>
+                        <label style={{fontSize:'1.5vh'}}>Audio Step-Change Signal</label>
+                    </SettingsAreaUpper>
+                    <SettingsArea style={{height:'2vh'}}>
                         <input type="checkbox" checked={useErgMode}
                             onChange={ (event) => {onHandleChangeErgMode(event.target.checked)} }
-                            name= 'erg-mode'/> 
+                            name= 'erg-mode'/>
                         <label style={{fontSize:'1.5vh'}}>Use ERG Mode</label>
                     </SettingsArea>
-                
+                    </>
                 :null}
             </ContentArea>
             </AppThemeProvider>

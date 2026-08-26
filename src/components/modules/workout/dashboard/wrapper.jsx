@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react'
 import WorkoutDashboard from './component';
-import { useWorkoutRide } from 'incyclist-services';
-import { copyPropsExcluding } from '../../../../utils/props';
+import { useWorkoutRide, useUserSettings } from 'incyclist-services';
+import { copyPropsExcluding } from '../../../../utils/props'
+import { playTone, STEP_COUNTDOWN_TICK_TONE, STEP_CHANGE_TONE } from '../../../../utils/stepChangeTone';
 
 
 export const DynamicWorkoutDashboard = ({visible, showSlope,zIndex, scheme='light'})=> {
@@ -9,6 +10,7 @@ export const DynamicWorkoutDashboard = ({visible, showSlope,zIndex, scheme='ligh
     const [state,setState] = useState(null)    
     const [initialized,setInitialized] = useState(false)
     const service = useWorkoutRide()
+    const userSettings = useUserSettings()
     //const logError = useErrorLogging('DynamicWorkoutDashboard')
     const observer = service.getObserver()
 
@@ -37,11 +39,34 @@ export const DynamicWorkoutDashboard = ({visible, showSlope,zIndex, scheme='ligh
                         //logError(err,'onUpdate')
                     }
                 })
+                .on('step-countdown', tick => {
+                    try {
+                        if (!tick)
+                            return;
+                        const audioEnabled = userSettings.getValue('preferences.workouts.stepChangeAudioSignal', true)
+                        if (audioEnabled)
+                            playTone(STEP_COUNTDOWN_TICK_TONE)
+                        setState( prev=> ({...prev,stepPulse:{type:'tick',ts:Date.now()}}) )
+                    }
+                    catch(err) {
+                        console.log('~~~ ERROR',err)
+                        //logError(err,'onUpdate')
+                    }
+                })
                 .on('step-changed', update => {
                     try {
-                        if (!update) 
+                        if (!update)
                             return;
-                        setState( prev=> ({...prev,...update,forceStepButtons:true}) ) 
+
+                        const hasSignal = update.stepChangeSignal===true
+                        if (hasSignal) {
+                            const audioEnabled = userSettings.getValue('preferences.workouts.stepChangeAudioSignal', true)
+                            if (audioEnabled)
+                                playTone(STEP_CHANGE_TONE)
+                        }
+
+                        setState( prev=> ({...prev,...update,forceStepButtons:true,
+                            ...(hasSignal ? {stepPulse:{type:'flash',ts:Date.now()}} : {})}) )
                     }
                     catch(err) {
                         console.log('~~~ ERROR',err)
@@ -61,7 +86,7 @@ export const DynamicWorkoutDashboard = ({visible, showSlope,zIndex, scheme='ligh
 
 
 
-    },[initialized, service,observer])
+    },[initialized, service,observer, userSettings])
 
 
     if (!initialized || !state?.observer || !state?.workout || !visible)

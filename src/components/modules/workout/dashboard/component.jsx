@@ -1,5 +1,5 @@
 import React from 'react';
-import styled from 'styled-components';
+import styled, { keyframes } from 'styled-components';
 import { EventLogger } from 'gd-eventlog';
 
 import { Column,  ErrorBoundary,  Row } from '../../../atoms';
@@ -102,6 +102,28 @@ export const StepIndicator = styled(Column)`
   font-size: 1vh;
   font-weight: bold;
   color:white;
+`
+
+// Subtle scale pulse for the once-per-second countdown ticks in the last 4s before a step ends.
+const tickPulse = keyframes`
+  0% { transform: scale(1); }
+  50% { transform: scale(1.18); }
+  100% { transform: scale(1); }
+`;
+
+// Stronger background flash for the step-change transition itself (0s).
+const stepFlash = keyframes`
+  0% { background-color: rgba(255, 221, 0, 0.65); }
+  100% { background-color: transparent; }
+`;
+
+// Keyed on stepPulse?.ts by the caller so React remounts this wrapper (and therefore
+// restarts the CSS animation) on every new event, even consecutive same-type ones.
+export const StepPulseWrapper = styled.div`
+  display: inline-block;
+  animation-name: ${props => props.$pulseType === 'tick' ? tickPulse : props.$pulseType === 'flash' ? stepFlash : 'none'};
+  animation-duration: ${props => props.$pulseType === 'flash' ? '0.5s' : '0.3s'};
+  animation-timing-function: ease-in-out;
 `
 
 function pad (num,size) {
@@ -250,7 +272,9 @@ export default class WorkoutDashboard extends React.Component {
                         <WorkoutDetails>                    
                             
                             
-                            <PanelItem {...panelProps} rows={2} data={[{value:time.currentStep},{value:time.remaining}]} ></PanelItem>
+                            <StepPulseWrapper key={this.props.stepPulse?.ts} $pulseType={this.props.stepPulse?.type}>
+                                <PanelItem {...panelProps} rows={2} data={[{value:time.currentStep},{value:time.remaining}]} ></PanelItem>
+                            </StepPulseWrapper>
                             
                             <Box width={wBlank}><WorkoutGraph dashboard={true} scheme={scheme} ftp={ftp} start={start} stop={stop} position={[{x:woTime}]} workout={workout}/></Box> 
                             <PanelItem {...panelProps} data={{ value:woPI.power.value, unit:woPI.power.unit}} ></PanelItem>

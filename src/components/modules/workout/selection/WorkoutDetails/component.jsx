@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react"
 import { Button, ButtonBar, CheckBox, Column, Divider, EditNumber, EditText, Row, SingleSelect, Text } from "../../../../atoms"
 import styled from "styled-components"
 import { Dialog,WorkoutGraph } from "../../../../molecules"
+import { useUserSettings } from "incyclist-services"
 
 const ContentArea = styled(Column)`
     height: calc(100% - 7.7vh);
@@ -14,10 +15,12 @@ const ContentArea = styled(Column)`
 export const WorkoutDetails = ({title,workout,ftp, ftpRequired, useErgMode, duration,stress,canStart,canStartWorkoutOnly, category, categories,
     onStart, onSelect,onCancel, onCategorySelected, date})=>{
 
+    const userSettings = useUserSettings()
     const [dialogState,setDialogState] = useState(null)
     const [initialized,setInitialized] = useState(false)
 
-    const [state,setState] = useState( {ftp,useErgMode,categories, category, showCategoryEdit:false})
+    const [state,setState] = useState( {ftp,useErgMode,categories, category, showCategoryEdit:false,
+        stepChangeAudioSignal: userSettings.getValue('preferences.workouts.stepChangeAudioSignal', true)})
     const isScheduled = !!date
 
     const dateStr = date?.toLocaleDateString()
@@ -74,6 +77,10 @@ export const WorkoutDetails = ({title,workout,ftp, ftpRequired, useErgMode, dura
     }
     const onERGModeChanged = (newValue) => {
         setState( current => ({...current,useErgMode:newValue}))
+    }
+    const onStepChangeAudioSignalChanged = (newValue) => {
+        userSettings.set('preferences.workouts.stepChangeAudioSignal', newValue)
+        setState( current => ({...current,stepChangeAudioSignal:newValue}))
     }
     const onCategoryChanged = (newValue) => {
 
@@ -132,7 +139,8 @@ export const WorkoutDetails = ({title,workout,ftp, ftpRequired, useErgMode, dura
                     
                 
                 <CheckBox {...styling} label='Use ERG Mode'  value={state.useErgMode} onValueChange={onERGModeChanged} />
-                
+                <CheckBox {...styling} label='Audio Step-Change Signal'  value={state.stepChangeAudioSignal} onValueChange={onStepChangeAudioSignalChanged} />
+
                 <Row height='100%' width='100%' className="graph"> 
                     <WorkoutGraph workout={workout} ftp={state.ftp??200} />
                 </Row>
