@@ -1,14 +1,14 @@
 /**
  * Web Audio API tone generator for the "Workout Step Change Audio Signal" feature.
  *
- * Tone spec (Garmin-matched, kept numerically identical to mobile's equivalent
- * `stepChangeAudio.ts` implementation):
- * - Countdown tick (-4s/-3s/-2s/-1s before a step ends): 2731 Hz, 100 ms, sine
- * - Step-change tone (at the transition itself): 4096 Hz, 250 ms, sine
+ * Tone spec (kept numerically identical to mobile's equivalent `stepChangeAudio.ts`
+ * implementation):
+ * - Countdown tick (-4s/-3s/-2s/-1s before a step ends): 440 Hz, 100 ms, sine
+ * - Step-change tone (at the transition itself): 660 Hz, 250 ms, sine
  */
 
-export const STEP_COUNTDOWN_TICK_TONE = { frequencyHz: 2731, durationMs: 100, waveform: 'sine' }
-export const STEP_CHANGE_TONE = { frequencyHz: 4096, durationMs: 250, waveform: 'sine' }
+export const STEP_COUNTDOWN_TICK_TONE = { frequencyHz: 440, durationMs: 100, waveform: 'sine' }
+export const STEP_CHANGE_TONE = { frequencyHz: 660, durationMs: 250, waveform: 'sine' }
 
 // Module-scope AudioContext, created lazily on first playTone() call - NOT at module
 // load time - so we don't trip the browser's autoplay-gesture policy. Safe here because

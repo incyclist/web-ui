@@ -63,14 +63,14 @@ describe('stepChangeTone', () => {
         delete window.webkitAudioContext
     })
 
-    test('STEP_COUNTDOWN_TICK_TONE matches the Garmin spec (2731 Hz, 100 ms, sine)', async () => {
+    test('STEP_COUNTDOWN_TICK_TONE matches the tone spec (440 Hz, 100 ms, sine)', async () => {
         const { STEP_COUNTDOWN_TICK_TONE } = await import('./stepChangeTone')
-        expect(STEP_COUNTDOWN_TICK_TONE).toEqual({ frequencyHz: 2731, durationMs: 100, waveform: 'sine' })
+        expect(STEP_COUNTDOWN_TICK_TONE).toEqual({ frequencyHz: 440, durationMs: 100, waveform: 'sine' })
     })
 
-    test('STEP_CHANGE_TONE matches the Garmin spec (4096 Hz, 250 ms, sine)', async () => {
+    test('STEP_CHANGE_TONE matches the tone spec (660 Hz, 250 ms, sine)', async () => {
         const { STEP_CHANGE_TONE } = await import('./stepChangeTone')
-        expect(STEP_CHANGE_TONE).toEqual({ frequencyHz: 4096, durationMs: 250, waveform: 'sine' })
+        expect(STEP_CHANGE_TONE).toEqual({ frequencyHz: 660, durationMs: 250, waveform: 'sine' })
     })
 
     test('playTone(STEP_COUNTDOWN_TICK_TONE) configures an oscillator with the exact frequency/type and stops it after 100ms', async () => {
@@ -81,7 +81,7 @@ describe('stepChangeTone', () => {
         expect(oscillators).toHaveLength(1)
         const osc = oscillators[0]
         expect(osc.type).toBe('sine')
-        expect(osc.frequency.value).toBe(2731)
+        expect(osc.frequency.value).toBe(440)
         expect(osc.started).toBe(10)
         expect(osc.stopped).toBe(10.1)
     })
@@ -94,7 +94,7 @@ describe('stepChangeTone', () => {
         expect(oscillators).toHaveLength(1)
         const osc = oscillators[0]
         expect(osc.type).toBe('sine')
-        expect(osc.frequency.value).toBe(4096)
+        expect(osc.frequency.value).toBe(660)
         expect(osc.started).toBe(10)
         expect(osc.stopped).toBe(10.25)
     })
