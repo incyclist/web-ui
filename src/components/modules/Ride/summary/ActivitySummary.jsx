@@ -1,10 +1,12 @@
 /* eslint-disable jsx-a11y/accessible-emoji */
 import React, { useMemo, useState } from "react"
+import { createPortal } from "react-dom"
 import { Button, ButtonBar, Column, ErrorBoundary, Row, View, Image, UrlLink  } from "../../../atoms"
 import { AppThemeProvider } from "../../../../theme"
 import styled from "styled-components";
 import { FreeMap } from "../../../molecules/Maps";
 import { ActivityGraph,ActivityStats,ScreenshotPopup } from "../../../molecules/Activity";
+import { MessageBox } from "../../../molecules";
 
 import { Marker } from "react-leaflet";
 import L, { icon } from 'leaflet';
@@ -50,9 +52,10 @@ const DEFAULT_DONATE_TEXT = 'You seem to be enjoying Incyclist. Please consider 
 const DEFAULT_DONATE_URL = 'https://www.paypal.com/paypalme/incyclist'
 
 export const ActivitySummaryView = ( {activity,position,preview, units, xScale,
-                                  showMap,showSave,showNew=true,showContinue=true,showExit=true,isSaving=false,
+                                  showMap,showSave,showNew=true,showContinue=true,showExit=true,showDelete=true,
+                                  isSaving=false,showDeleteConfirm=false,
                                   showDonate,donateText=DEFAULT_DONATE_TEXT,donateUrl=DEFAULT_DONATE_URL,onDonateClicked,
-                                  onTitleChange, onSave, onNew, onContinue, onExit
+                                  onTitleChange, onSave, onNew, onContinue, onExit, onDelete, onDeleteConfirm, onDeleteCancel
                                  }) => {
 
     const [markerSize, setMarkerSize] = useState()
@@ -146,13 +149,25 @@ export const ActivitySummaryView = ( {activity,position,preview, units, xScale,
                     </CRow>
                 </DataArea>
 
-                <ButtonBar justify='center'>                    
-                    {showSave && <Button height={'5vh'} primary={true} text={isSaving ? '' : 'Save'} disabled={isSaving} onClick={onSave}>{isSaving && <Loader size='2.2vh'/>}</Button>} 
-                    {showNew && <Button height={'5vh'} primary={true} text='New Ride' disabled={isSaving} onClick={onNew} />} 
-                    {showContinue && <Button height={'5vh'} primary={false} text='Continue' onClick={onContinue} />} 
-                    {showExit && <Button height={'5vh'} primary={false} text='Exit App' onClick={onExit} />}                                 
-                </ButtonBar> 
+                <ButtonBar justify='center'>
+                    {showSave && <Button height={'5vh'} primary={true} text={isSaving ? '' : 'Save'} disabled={isSaving} onClick={onSave}>{isSaving && <Loader size='2.2vh'/>}</Button>}
+                    {showNew && <Button height={'5vh'} primary={true} text='New Ride' disabled={isSaving} onClick={onNew} />}
+                    {showContinue && <Button height={'5vh'} primary={false} text='Continue' onClick={onContinue} />}
+                    {showDelete && <Button height={'5vh'} primary={false} text='Delete' onClick={onDelete} />}
+                    {showExit && <Button height={'5vh'} primary={false} text='Exit App' onClick={onExit} />}
+                </ButtonBar>
             </ContentArea>
+
+            {showDeleteConfirm && createPortal(
+                <MessageBox
+                    title='Delete Ride'
+                    text='This will permanently delete this ride. Are you sure?'
+                    defaultButton='No'
+                    onYes={onDeleteConfirm}
+                    onNo={onDeleteCancel}
+                />,
+                document.body
+            )}
         </AppThemeProvider>
     </ErrorBoundary>
 }
