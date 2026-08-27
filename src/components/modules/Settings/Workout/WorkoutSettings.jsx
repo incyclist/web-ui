@@ -20,7 +20,8 @@ export const WorkoutSettings = (props) => {
         const workout = service.getSelected()
         const settings = service.getStartSettings()
         const user = userSettings.getValue('user',{})
-        setState({workout,settings,user})
+        const stepChangeAudioSignal = userSettings.getValue('preferences.workouts.stepChangeAudioSignal', true)
+        setState({workout,settings,user,stepChangeAudioSignal})
 
     },[service, userSettings,initialized])
 
@@ -77,9 +78,15 @@ export const WorkoutSettings = (props) => {
         setState( current => ({...current,settings}))
     }
 
+    const onChangeStepChangeAudioSignal = (enabled) => {
+        userSettings.set('preferences.workouts.stepChangeAudioSignal', enabled)
+        setState( current => ({...current,stepChangeAudioSignal:enabled}))
+    }
+
     const {onOK} = props
 
     return <WorkoutSettingsView {...state} {...props}
-                 onDelete={onDelete} onDrop={onDrop} onChangeErgMode={onChangeErgMode} onOK={onOK} />
+                 onDelete={onDelete} onDrop={onDrop} onChangeErgMode={onChangeErgMode}
+                 onChangeStepChangeAudioSignal={onChangeStepChangeAudioSignal} onOK={onOK} />
 
 }
