@@ -5,12 +5,14 @@ describe('stepChangeTone', () => {
     let created
     let oscillators
     let gains
+    let audioContexts
 
     beforeEach(() => {
         vi.resetModules()
         created = { oscillators: 0, gains: 0, audioContexts: 0 }
         oscillators = []
         gains = []
+        audioContexts = []
 
         class FakeGainParam {
             constructor() { this.values = [] }
@@ -47,10 +49,14 @@ describe('stepChangeTone', () => {
             constructor() {
                 this.currentTime = 10
                 this.destination = { id: 'destination' }
+                this.state = 'running'
+                this.resumeCalls = 0
                 created.audioContexts++
+                audioContexts.push(this)
             }
             createOscillator() { return new FakeOscillator() }
             createGain() { return new FakeGain() }
+            resume() { this.resumeCalls++; return Promise.resolve() }
         }
 
         window.AudioContext = FakeAudioContext
@@ -133,5 +139,29 @@ describe('stepChangeTone', () => {
         await import('./stepChangeTone')
 
         expect(created.audioContexts).toBe(0)
+    })
+
+    // Regression: a context created outside a direct user-gesture call stack (this one is, since
+    // it's lazily created from an async timer callback, not a click handler) can come up
+    // 'suspended', in which case oscillator.start()/stop() run without error but produce no sound.
+    test('resumes the context when it comes up suspended', async () => {
+        const BaseFakeAudioContext = window.AudioContext
+        window.AudioContext = class extends BaseFakeAudioContext {
+            constructor() { super(); this.state = 'suspended' }
+        }
+        const { playTone, STEP_CHANGE_TONE } = await import('./stepChangeTone')
+
+        playTone(STEP_CHANGE_TONE)
+
+        expect(audioContexts[0].resumeCalls).toBe(1)
+    })
+
+    test('does not call resume() when the context is already running', async () => {
+        const { playTone, STEP_CHANGE_TONE, STEP_COUNTDOWN_TICK_TONE } = await import('./stepChangeTone')
+
+        playTone(STEP_CHANGE_TONE)
+        playTone(STEP_COUNTDOWN_TICK_TONE)
+
+        expect(audioContexts[0].resumeCalls).toBe(0)
     })
 })

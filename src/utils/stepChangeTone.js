@@ -20,6 +20,16 @@ const getAudioContext = () => {
         const Ctor = window.AudioContext || window.webkitAudioContext
         audioContext = new Ctor()
     }
+    // A freshly-constructed AudioContext starts 'suspended' unless created synchronously inside a
+    // user-gesture call stack - this one is created lazily on the first playTone() call, which
+    // happens from an async timer (WorkoutRide's step-countdown schedule), not a click handler, so
+    // it comes up suspended and produces no sound even though start()/stop() run without error.
+    // resume() succeeds once the page has seen ANY prior user gesture (e.g. the "Start ride" click)
+    // - it does not need to be called synchronously inside that gesture's handler. Best-effort/
+    // fire-and-forget: a rejected resume() here must not block the tone from being scheduled.
+    if (audioContext.state !== 'running') {
+        audioContext.resume().catch(() => {})
+    }
     return audioContext
 }
 
