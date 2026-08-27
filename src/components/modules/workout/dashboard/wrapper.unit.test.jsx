@@ -97,12 +97,14 @@ describe('DynamicWorkoutDashboard', () => {
         expect(pulse.type).toBe('tick')
     })
 
-    test('plays the step-change tone and sets a "flash" stepPulse on step-changed, when stepChangeSignal is true and the setting is enabled', async () => {
+    test('plays the step-change tone and sets a "flash" stepPulse on step-countdown secondsRemaining:0, when the setting is enabled', async () => {
+        // secondsRemaining:0 is the transition instant itself - precisely scheduled by WorkoutRide,
+        // decoupled from 'step-changed' (which is no longer used for audio/visual timing at all).
         renderDashboard()
         expect(await screen.findByTestId('dashboard')).toBeInTheDocument()
 
         act(() => {
-            mockRideService.__observer.emit('step-changed', { stepChangeSignal: true, title: 'next step' })
+            mockRideService.__observer.emit('step-countdown', { secondsRemaining: 0 })
         })
 
         expect(playToneMock).toHaveBeenCalledWith(STEP_CHANGE_TONE)
@@ -111,33 +113,33 @@ describe('DynamicWorkoutDashboard', () => {
         expect(pulse.type).toBe('flash')
     })
 
-    test('does not play a tone or set a pulse on step-changed when stepChangeSignal is false', async () => {
-        renderDashboard()
-        expect(await screen.findByTestId('dashboard')).toBeInTheDocument()
-
-        act(() => {
-            mockRideService.__observer.emit('step-changed', { stepChangeSignal: false, title: 'next step' })
-        })
-
-        expect(playToneMock).not.toHaveBeenCalled()
-        const el = screen.getByTestId('dashboard')
-        const pulse = JSON.parse(el.dataset.steppulse)
-        expect(pulse).toBeNull()
-    })
-
-    test('does not play the step-change tone when stepChangeSignal is true but the setting is disabled', async () => {
+    test('does not play the step-change tone on secondsRemaining:0 when the setting is disabled, but still sets the flash pulse', async () => {
         mockUserSettings.getValue.mockReturnValue(false)
         renderDashboard()
         expect(await screen.findByTestId('dashboard')).toBeInTheDocument()
 
         act(() => {
-            mockRideService.__observer.emit('step-changed', { stepChangeSignal: true, title: 'next step' })
+            mockRideService.__observer.emit('step-countdown', { secondsRemaining: 0 })
         })
 
         expect(playToneMock).not.toHaveBeenCalled()
         const el = screen.getByTestId('dashboard')
         const pulse = JSON.parse(el.dataset.steppulse)
         expect(pulse.type).toBe('flash')
+    })
+
+    test('step-changed no longer drives audio/visual - it only merges display state', async () => {
+        renderDashboard()
+        expect(await screen.findByTestId('dashboard')).toBeInTheDocument()
+
+        act(() => {
+            mockRideService.__observer.emit('step-changed', { title: 'next step' })
+        })
+
+        expect(playToneMock).not.toHaveBeenCalled()
+        const el = screen.getByTestId('dashboard')
+        const pulse = JSON.parse(el.dataset.steppulse)
+        expect(pulse).toBeNull()
     })
 
     test('reads the stepChangeAudioSignal setting with a default of true', async () => {

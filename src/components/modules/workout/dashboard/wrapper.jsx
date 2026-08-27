@@ -40,13 +40,19 @@ export const DynamicWorkoutDashboard = ({visible, showSlope,zIndex, scheme='ligh
                     }
                 })
                 .on('step-countdown', tick => {
+                    // Precisely scheduled by WorkoutRide via wall-clock timers - independent of
+                    // this loop's own event timing, so it isn't subject to poll/event-loop jitter.
+                    // secondsRemaining:0 is the step-change instant itself (transition tone/flash);
+                    // 4/3/2/1 are the lead-in ticks. Both audio and visual pulse are driven from
+                    // this single event now, not from 'step-changed'.
                     try {
                         if (!tick)
                             return;
+                        const isChangeTone = tick.secondsRemaining===0
                         const audioEnabled = userSettings.getValue('preferences.workouts.stepChangeAudioSignal', true)
                         if (audioEnabled)
-                            playTone(STEP_COUNTDOWN_TICK_TONE)
-                        setState( prev=> ({...prev,stepPulse:{type:'tick',ts:Date.now()}}) )
+                            playTone(isChangeTone ? STEP_CHANGE_TONE : STEP_COUNTDOWN_TICK_TONE)
+                        setState( prev=> ({...prev,stepPulse:{type:isChangeTone ? 'flash' : 'tick',ts:Date.now()}}) )
                     }
                     catch(err) {
                         console.log('~~~ ERROR',err)
@@ -57,16 +63,7 @@ export const DynamicWorkoutDashboard = ({visible, showSlope,zIndex, scheme='ligh
                     try {
                         if (!update)
                             return;
-
-                        const hasSignal = update.stepChangeSignal===true
-                        if (hasSignal) {
-                            const audioEnabled = userSettings.getValue('preferences.workouts.stepChangeAudioSignal', true)
-                            if (audioEnabled)
-                                playTone(STEP_CHANGE_TONE)
-                        }
-
-                        setState( prev=> ({...prev,...update,forceStepButtons:true,
-                            ...(hasSignal ? {stepPulse:{type:'flash',ts:Date.now()}} : {})}) )
+                        setState( prev=> ({...prev,...update,forceStepButtons:true}) )
                     }
                     catch(err) {
                         console.log('~~~ ERROR',err)

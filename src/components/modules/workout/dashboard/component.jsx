@@ -119,8 +119,14 @@ const stepFlash = keyframes`
 
 // Keyed on stepPulse?.ts by the caller so React remounts this wrapper (and therefore
 // restarts the CSS animation) on every new event, even consecutive same-type ones.
+// display:flex + explicit width (matching the sibling PanelItems' slot) so this wrapper behaves
+// like a transparent pass-through flex item: PanelItem's own Box relies on being a direct flex
+// child of WorkoutDetails for both its width (percentage-based) and height (via flex `stretch`,
+// since Box itself sets no explicit height) - a plain block/inline-block wrapper with no size of
+// its own broke both.
 export const StepPulseWrapper = styled.div`
-  display: inline-block;
+  display: flex;
+  width: ${props => props.$width ?? '100%'};
   animation-name: ${props => props.$pulseType === 'tick' ? tickPulse : props.$pulseType === 'flash' ? stepFlash : 'none'};
   animation-duration: ${props => props.$pulseType === 'flash' ? '0.5s' : '0.3s'};
   animation-timing-function: ease-in-out;
@@ -272,8 +278,8 @@ export default class WorkoutDashboard extends React.Component {
                         <WorkoutDetails>                    
                             
                             
-                            <StepPulseWrapper key={this.props.stepPulse?.ts} $pulseType={this.props.stepPulse?.type}>
-                                <PanelItem {...panelProps} rows={2} data={[{value:time.currentStep},{value:time.remaining}]} ></PanelItem>
+                            <StepPulseWrapper key={this.props.stepPulse?.ts} $pulseType={this.props.stepPulse?.type} $width={panelProps.width}>
+                                <PanelItem {...panelProps} width="100%" rows={2} data={[{value:time.currentStep},{value:time.remaining}]} ></PanelItem>
                             </StepPulseWrapper>
                             
                             <Box width={wBlank}><WorkoutGraph dashboard={true} scheme={scheme} ftp={ftp} start={start} stop={stop} position={[{x:woTime}]} workout={workout}/></Box> 
