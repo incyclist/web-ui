@@ -83,7 +83,7 @@ const Right = styled(Column)`
 
 
 
-export const RiderInfo = ( {name, diffDistance,diffTime,distance,lap,power,wpower,speed,avatar, isUser=false,width, height, backgroundColor,textColor,zIndex}) =>{
+export const RiderInfo = ( {name, diffDistance,diffTime,distance,lap,power,mpower,speed,avatar, isUser=false,width, height, backgroundColor,textColor,zIndex}) =>{
 
 
     const formatted = (v, withPrefix=false)=> {
