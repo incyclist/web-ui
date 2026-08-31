@@ -32,7 +32,7 @@ const Body = styled.div`
     padding: 0.5vh 0.5vw 0.5vw 0.5vw;    
     top:0;
     left:0;
-    height: calc(100% - 10.7vh);
+    height: calc(100% - 11.7vh);
     background: ${props => props.theme.title.background??props.background?? 'white'};
     justify-content:${props => props.$verticallyCentered ? 'center' : undefined};
     text-align: ${props => props.$horizontallyCentered ? 'center' : 'left'};

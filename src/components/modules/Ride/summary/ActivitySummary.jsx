@@ -52,7 +52,7 @@ const DEFAULT_DONATE_TEXT = 'You seem to be enjoying Incyclist. Please consider 
 const DEFAULT_DONATE_URL = 'https://www.paypal.com/paypalme/incyclist'
 
 export const ActivitySummaryView = ( {activity,position,preview, units, xScale,
-                                  showMap,showSave,showNew=true,showContinue=true,showExit=true,showDelete=true,
+                                  showMap,showSave,showNew=true,showContinue=true,showExit=true,showDelete:showDeleteProp,
                                   isSaving=false,showDeleteConfirm=false,
                                   showDonate,donateText=DEFAULT_DONATE_TEXT,donateUrl=DEFAULT_DONATE_URL,onDonateClicked,
                                   onTitleChange, onSave, onNew, onContinue, onExit, onDelete, onDeleteConfirm, onDeleteCancel
@@ -60,7 +60,8 @@ export const ActivitySummaryView = ( {activity,position,preview, units, xScale,
 
     const [markerSize, setMarkerSize] = useState()
 
-    
+    // delete button shown if specified by props, otherwise fallback to always show when save is shown
+    const showDelete = showDeleteProp??showSave
 
     const screenshots = activity?.screenshots??[]
     const myIcon = useMemo( ()=> {
@@ -163,6 +164,7 @@ export const ActivitySummaryView = ( {activity,position,preview, units, xScale,
                     title='Delete Ride'
                     text='This will permanently delete this ride. Are you sure?'
                     defaultButton='No'
+                    center
                     onYes={onDeleteConfirm}
                     onNo={onDeleteCancel}
                 />,
