@@ -64,7 +64,7 @@ export const PrevRides = (props) => {
 
     return (
     <PanelArea width={width} max={listSize}> 
-        <Title>{title}</Title>
+        <Title>{title??'Previous Rides'}</Title>
         {list.map((item,index) => <PrevRideInfo {...item} key={index}/>)}
     </PanelArea>
     );
