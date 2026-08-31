@@ -57,7 +57,7 @@ export const NearbyRidersView = ( {activeRides=[],title,max=10,width,backgroundC
 
     return (
     <PanelArea width={width}> 
-        <Title>{title}</Title>
+        <Title>{title??'Incyclists Nearby'}</Title>
         {list.map((item,index) => <RiderInfo {...item} key={index}/>)}
     </PanelArea>
     );
