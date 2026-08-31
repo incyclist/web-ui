@@ -2,7 +2,7 @@ import React from 'react';
 import styled from 'styled-components'
 import AppTheme from '../../../../../theme';
 import { RiderInfo } from '../../../../molecules/Ride/RiderInfo/rider-info';
-import { Dynamic } from '../../../../atoms';
+import { Dynamic, ErrorBoundary } from '../../../../atoms';
 import { copyPropsExcluding } from '../../../../../utils/props';
 
 const listTheme = AppTheme.get().list
@@ -56,10 +56,12 @@ export const NearbyRidersView = ( {activeRides=[],title,max=10,width,backgroundC
         return null;
 
     return (
-    <PanelArea width={width}> 
-        <Title>{title??'Incyclists Nearby'}</Title>
-        {list.map((item,index) => <RiderInfo {...item} key={index}/>)}
-    </PanelArea>
+        <ErrorBoundary hideOnError>
+            <PanelArea width={width}> 
+                <Title>{title??'Incyclists Nearby'}</Title>
+                {list.map((item,index) => <RiderInfo {...item} key={index}/>)}
+            </PanelArea>
+        </ErrorBoundary>
     );
 
 }

@@ -3,6 +3,7 @@ import styled from 'styled-components'
 
 import AppTheme from '../../../../../theme';
 import { PrevRideInfo } from '../../../../molecules/Ride/PrevRideInfo/component';
+import { ErrorBoundary } from '../../../../atoms';
 
 const listTheme = AppTheme.get().list
 
@@ -63,10 +64,12 @@ export const PrevRides = (props) => {
     const listSize = Math.min(max,list.length);
 
     return (
-    <PanelArea width={width} max={listSize}> 
-        <Title>{title??'Previous Rides'}</Title>
-        {list.map((item,index) => <PrevRideInfo {...item} key={index}/>)}
-    </PanelArea>
+        <ErrorBoundary hideOnError>
+            <PanelArea width={width} max={listSize}> 
+                <Title>{title??'Previous Rides'}</Title>
+                {list.map((item,index) => <PrevRideInfo {...item} key={index}/>)}
+            </PanelArea>
+        </ErrorBoundary>
     );
 
 }
