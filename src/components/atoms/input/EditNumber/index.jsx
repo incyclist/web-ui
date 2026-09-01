@@ -43,11 +43,11 @@ export const EditNumber = ( props) => {
         }
 
         const val = Number(newValue)
-        if (min!==undefined && (val<min||value===undefined||value===null||value.length===0 ))
+        if (min!==undefined && (val<min||value===undefined||value===null||value.trim().length===0 ))
             return max===undefined ? `Value must be > ${min}` :`Value must be between ${min} and ${max}`
-        if (max!==undefined && (val>max||value===undefined||value===null||value.length===0 ) )
+        if (max!==undefined && (val>max||value===undefined||value===null||value.trim().length===0 ) )
             return min===undefined ? `Value must be < ${max}` :`Value must be between ${min} and ${max}`
-        if (max===undefined && min===undefined && (value===undefined||value===null||value.length===0 ) )
+        if (max===undefined && min===undefined && (value===undefined||value===null||value.trim().length===0 ) )
             return `Please enter a number`
 
         if (validate) {
