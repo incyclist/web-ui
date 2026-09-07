@@ -1,20 +1,22 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { WorkoutControl as WorkoutControlComponent } from "./component";
-import { useWorkoutList, useWorkoutRide } from "incyclist-services";
+import { useWorkoutList, useWorkoutRide, useRideDisplay } from "incyclist-services";
 import {AutoHide, ErrorBoundary} from "../../../atoms";
 
+const OVERLAY_ID = 'workout-control'
 
 export const WorkoutControl =  ({visible,onToggleMode})=> {
 
     const service = useWorkoutRide()
     const workoutList = useWorkoutList()
+    const rideDisplay = useRideDisplay()
 
 
     const [showHotkeys,setShowHotkeys] = useState(true)
-    const [state,setState] = useState( {} )    
+    const [state,setState] = useState( {} )
     const [initialized,setInitialized] = useState(false)
-    const [pinned,setPinned] = useState(false)
-    
+    const [pinned,setPinned] = useState( ()=>rideDisplay.isOverlayPinned(OVERLAY_ID))
+
     const observer = service.getObserver()
 
     useEffect( ()=>{
@@ -69,9 +71,11 @@ export const WorkoutControl =  ({visible,onToggleMode})=> {
 
     const onPin = () => {
         setPinned(true)
+        rideDisplay.setOverlayPinned(OVERLAY_ID, true)
     }
     const onUnpin = () => {
         setPinned(false)
+        rideDisplay.setOverlayPinned(OVERLAY_ID, false)
     }
 
     const onBackward = useCallback(() => {
