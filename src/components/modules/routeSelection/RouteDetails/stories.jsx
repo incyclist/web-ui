@@ -171,3 +171,50 @@ Loading.args = {
     hasVideo:true,
     loading:true
 };
+
+// stand-in for what the service returns as a preview - a plain moving average over the elevations,
+// enough to give the second line a visibly different shape in the stories
+const smooth = (points,window=15) => points.map( (p,i) => {
+    const from = Math.max(0,i-window)
+    const to = Math.min(points.length-1,i+window)
+    const slice = points.slice(from,to+1)
+    return {...p, elevation: slice.reduce( (sum,q)=>sum+q.elevation,0)/slice.length}
+})
+
+const smoothingArgs = (level) => ({
+    smoothingAvailable: true,
+    smoothingMaxLevel: 5,
+    smoothingLevel: level,
+    totalElevation: { value: 202, unit:'m'},
+    smoothedPoints: level>0 ? smooth(sydney.decoded) : undefined,
+    smoothedElevation: level>0 ? { value: 178, unit:'m'} : undefined,
+    onSmoothingPreview: (l) => l>0
+        ? { smoothedPoints: smooth(sydney.decoded, 5*l), smoothedElevation: {value: 202-8*l, unit:'m'}}
+        : {}
+})
+
+export const SmoothingOff = Template.bind({});
+SmoothingOff.args = {
+    route:new Route(routeDescr), markers:[routeDescr.points[0]],
+    ...smoothingArgs(0)
+};
+
+export const SmoothingSelected = Template.bind({});
+SmoothingSelected.args = {
+    route:new Route(routeDescr), markers:[routeDescr.points[0]],
+    ...smoothingArgs(3)
+};
+
+export const SmoothingOnGpxRoute = Template.bind({});
+SmoothingOnGpxRoute.args = {
+    route:new Route(gpxDescr), markers:[routeDescr.points[0]],
+    ...smoothingArgs(3),
+    totalElevation: { value: 35, unit:'m'},
+    smoothedElevation: { value: 28, unit:'m'}
+};
+
+export const SmoothingUnavailable = Template.bind({});
+SmoothingUnavailable.args = {
+    route:new Route(routeDescr), markers:[routeDescr.points[0]],
+    smoothingAvailable: false, smoothingMaxLevel: 5
+};
