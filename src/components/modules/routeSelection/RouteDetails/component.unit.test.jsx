@@ -18,7 +18,8 @@ vi.mock('../../../molecules', async (importOriginal) => {
             data-version={props.dataVersion} />,
         GradientBands: (props) => <div data-testid="gradient-bands"
             data-route-points={props.routeData?.points?.length ?? 0}
-            data-smoothed-points={props.smoothedRouteData?.points?.length ?? 0} />,
+            data-smoothed-points={props.smoothedRouteData?.points?.length ?? 0}
+            data-active={String(!!props.active)} />,
     }
 })
 
@@ -244,21 +245,24 @@ describe('RouteDetails - Terrain Smoothing', () => {
     describe('the gradient bands', () => {
 
         // the bands container mounts (reserving its height) whenever the route is eligible, Off
-        // included - but at Off there is nothing to compare against, so neither band draws content
-        test('both bands are empty while smoothing is off, even though the container is mounted', () => {
+        // included - but at Off there is nothing to compare against, so it is fully inactive
+        // (invisible, not merely empty): no label, no band, only the reserved height survives
+        test('both bands are inactive while smoothing is off, even though the container is mounted', () => {
             renderDialog({ onSmoothingPreview })
 
             const bands = screen.getByTestId('gradient-bands')
+            expect(bands).toHaveAttribute('data-active', 'false')
             expect(bands).toHaveAttribute('data-route-points', '0')
             expect(bands).toHaveAttribute('data-smoothed-points', '0')
         })
 
-        test('both bands fill in once a level is active', () => {
+        test('both bands fill in and become active once a level is active', () => {
             renderDialog({ onSmoothingPreview })
 
             fireEvent.click(screen.getByRole('radio', { name: '3' }))
 
             const bands = screen.getByTestId('gradient-bands')
+            expect(bands).toHaveAttribute('data-active', 'true')
             expect(bands).toHaveAttribute('data-route-points', String(routePoints.length))
             expect(bands).toHaveAttribute('data-smoothed-points', String(smoothedPoints.length))
         })

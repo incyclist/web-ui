@@ -23,6 +23,11 @@ import { ElevationGraphData } from './data'
 const Wrapper = styled.div`
     width: 100%;
     opacity: ${props => props.dimmed ? 0.6 : 1};
+    /* reserves this row's height so toggling smoothing never reflows the panel, but at Off there
+       is nothing to compare against - so nothing here should be visible at all, not even an empty
+       band or a label with nothing next to it. visibility:hidden (not display:none) keeps the box
+       in flow without painting it. */
+    visibility: ${props => props.active ? 'visible' : 'hidden'};
 `
 
 const BandRow = styled.div`
@@ -80,16 +85,13 @@ const Band = ({ label, columns, height }) => (
     </BandRow>
 )
 
-const GradientBandsInner = ({ routeData, smoothedRouteData, width, pctReality, dimmed, bandHeight }) => {
+const GradientBandsInner = ({ routeData, smoothedRouteData, width, pctReality, dimmed, bandHeight, active }) => {
     const routeColumns = buildGradientColumns(routeData, width, pctReality)
-    // the Smoothed band's slot is always reserved (see Band above rendering an empty track), and
-    // only filled once a level is active - so turning smoothing on/off never changes this
-    // container's height or position
     const smoothedColumns = smoothedRouteData ? buildGradientColumns(smoothedRouteData, width, pctReality) : []
 
     return (
-        <Wrapper dimmed={dimmed}>
-            <Band label='Route' columns={routeColumns} height={bandHeight} />
+        <Wrapper dimmed={dimmed} active={active}>
+            <Band label='Original' columns={routeColumns} height={bandHeight} />
             <Band label='Smoothed' columns={smoothedColumns} height={bandHeight} />
         </Wrapper>
     )

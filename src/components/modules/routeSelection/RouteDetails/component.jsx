@@ -55,6 +55,16 @@ const GraphSlot = styled.div`
     position: relative;
 `
 
+// GradientBands renders through Autosize, which defaults an unset height to CSS `height:100%`.
+// With no explicit height of its own, this wrapper's height stays content-based (`auto`), which
+// makes that 100% resolve to `auto` too (percentage heights against a non-definite ancestor height
+// compute to auto per spec) - so GradientBands sizes to its real ~2-row content instead of
+// claiming the whole panel as its flex-basis and starving GraphSlot next to it down to nothing.
+const BandsSlot = styled.div`
+    flex: 0 0 auto;
+    width: 100%;
+`
+
 // aligns the copy with the chips rather than with the label column (10vw label + 0.4vw margin)
 const SmoothingCopy = styled.div`
     padding: 0 0 1vh 10.4vw;
@@ -502,8 +512,10 @@ export const RouteDetails = ( {route, markers,segment, startPos,endPos,realityFa
                                 />
                             </GraphSlot>
                             {showGradientBands ?
-                                <GradientBands routeData={bandRouteData} smoothedRouteData={smoothedBandRouteData}
-                                               pctReality={data.realityFactor} bandHeight='8px' dimmed={smoothingComputing}/>
+                                <BandsSlot>
+                                    <GradientBands routeData={bandRouteData} smoothedRouteData={smoothedBandRouteData}
+                                                   pctReality={data.realityFactor} bandHeight='8px' dimmed={smoothingComputing} active={smoothingOn}/>
+                                </BandsSlot>
                             : null}
                         </ElevationContainer>
                     : null}
@@ -559,8 +571,10 @@ export const RouteDetails = ( {route, markers,segment, startPos,endPos,realityFa
                                     />
                                 </GraphSlot>
                                 {showGradientBands ?
-                                    <GradientBands routeData={bandRouteData} smoothedRouteData={smoothedBandRouteData}
-                                                   pctReality={data?.realityFactor} bandHeight='8px' dimmed={smoothingComputing}/>
+                                    <BandsSlot>
+                                        <GradientBands routeData={bandRouteData} smoothedRouteData={smoothedBandRouteData}
+                                                       pctReality={data?.realityFactor} bandHeight='8px' dimmed={smoothingComputing} active={smoothingOn}/>
+                                    </BandsSlot>
                                 : null}
                             </ElevationContainer>
                         : null}
