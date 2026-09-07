@@ -14,9 +14,11 @@ vi.mock('../../../molecules', async (importOriginal) => {
         VideoProbe: () => <div data-testid="video-probe" />,
         ElevationGraph: (props) => <div data-testid="elevation-graph"
             data-points={props.routeData?.points?.length ?? 0}
-            data-comparison={props.comparisonPoints?.length ?? 0}
             data-line={props.line?.color}
             data-version={props.dataVersion} />,
+        GradientBands: (props) => <div data-testid="gradient-bands"
+            data-route-points={props.routeData?.points?.length ?? 0}
+            data-smoothed-points={props.smoothedRouteData?.points?.length ?? 0} />,
     }
 })
 
@@ -75,6 +77,7 @@ describe('RouteDetails - Terrain Smoothing', () => {
         onSmoothingPreview = vi.fn(() => ({
             smoothedPoints,
             smoothedElevation: { value: 1180, unit: 'm' },
+            smoothedGradient: { routeSteepest: 20.4, smoothedSteepest: 8.5, hasVisibleEffect: true },
         }))
     })
 
@@ -125,15 +128,31 @@ describe('RouteDetails - Terrain Smoothing', () => {
             expect(onStart).not.toHaveBeenCalled()
         })
 
-        test('switches the copy and shows the real numbers below the chips', () => {
+        test('switches the copy and shows the gradient figures, then the elevation numbers, below the chips', () => {
             renderDialog({ onSmoothingPreview })
 
             fireEvent.click(screen.getByRole('radio', { name: '3' }))
 
             expect(screen.getByRole('radio', { name: '3' })).toBeChecked()
             expect(screen.getByText(ON_COPY)).toBeInTheDocument()
-            expect(screen.getByText('This ride records 1180 m elevation gain instead of 1240 m.')).toBeInTheDocument()
+            // the gradient number leads - it is what the rider will feel through the trainer, and
+            // it moves by a factor rather than by the percent or two elevation gain typically moves
+            expect(screen.getByText('Steepest gradient 20% → 9%. This ride records 1180 m elevation gain instead of 1240 m.')).toBeInTheDocument()
             expect(screen.queryByText(OFF_COPY)).toBeNull()
+        })
+
+        test('reports when a level barely changes this route, instead of the gradient/elevation numbers', () => {
+            onSmoothingPreview.mockReturnValue({
+                smoothedPoints,
+                smoothedElevation: { value: 1238, unit: 'm' },
+                smoothedGradient: { routeSteepest: 5.1, smoothedSteepest: 5.0, hasVisibleEffect: false },
+            })
+            renderDialog({ onSmoothingPreview })
+
+            fireEvent.click(screen.getByRole('radio', { name: '1' }))
+
+            expect(screen.getByText(ON_COPY)).toBeInTheDocument()
+            expect(screen.getByText('This level changes very little on this route — try a higher one.')).toBeInTheDocument()
         })
 
         test('does not query the preview again when the already selected level is tapped', () => {
@@ -184,27 +203,28 @@ describe('RouteDetails - Terrain Smoothing', () => {
 
     describe('the preview profile', () => {
 
-        test('draws the route line only while smoothing is off', () => {
+        // the elevation curve itself moves by a fraction of a pixel on a real track - no colour or
+        // draw order recovers that, so the comparison lives on the gradient bands, not a second line
+        test('draws a single line, from the route points, while smoothing is off', () => {
             renderDialog({ onSmoothingPreview })
 
             const graph = screen.getByTestId('elevation-graph')
-            expect(graph).toHaveAttribute('data-comparison', '0')
+            expect(graph).toHaveAttribute('data-points', String(routePoints.length))
             expect(graph).toHaveAttribute('data-line', 'white')
         })
 
-        test('draws the smoothed points with the route points as a second series once a level is active', () => {
+        test('draws a single line, from the smoothed points, once a level is active - never a second series', () => {
             renderDialog({ onSmoothingPreview })
 
             fireEvent.click(screen.getByRole('radio', { name: '3' }))
 
             const graph = screen.getByTestId('elevation-graph')
             expect(graph).toHaveAttribute('data-points', String(smoothedPoints.length))
-            expect(graph).toHaveAttribute('data-comparison', String(routePoints.length))
-            expect(graph).toHaveAttribute('data-line', '#EEEEEE')
+            expect(graph).toHaveAttribute('data-line', 'white')
             expect(graph).toHaveAttribute('data-version', 'smoothed-3')
         })
 
-        test('gives the video still way to the expanded profile while a level is active', () => {
+        test('never hides the video still - only the specified expansion behaviour was ever correct', () => {
             const withVideo = {
                 ...baseRoute,
                 description: { ...baseRoute.description, hasVideo: true, previewUrl: 'http://example.com/p.png' },
@@ -214,10 +234,37 @@ describe('RouteDetails - Terrain Smoothing', () => {
             expect(screen.getByRole('img')).toBeInTheDocument()
 
             fireEvent.click(screen.getByRole('radio', { name: '3' }))
-            expect(screen.queryByRole('img')).toBeNull()
+            expect(screen.getByRole('img')).toBeInTheDocument()
 
             fireEvent.click(screen.getByRole('radio', { name: 'Off' }))
             expect(screen.getByRole('img')).toBeInTheDocument()
+        })
+    })
+
+    describe('the gradient bands', () => {
+
+        test('the Route band is present even while smoothing is off, the Smoothed slot empty', () => {
+            renderDialog({ onSmoothingPreview })
+
+            const bands = screen.getByTestId('gradient-bands')
+            expect(bands).toHaveAttribute('data-route-points', String(routePoints.length))
+            expect(bands).toHaveAttribute('data-smoothed-points', '0')
+        })
+
+        test('the Smoothed band fills in once a level is active', () => {
+            renderDialog({ onSmoothingPreview })
+
+            fireEvent.click(screen.getByRole('radio', { name: '3' }))
+
+            const bands = screen.getByTestId('gradient-bands')
+            expect(bands).toHaveAttribute('data-route-points', String(routePoints.length))
+            expect(bands).toHaveAttribute('data-smoothed-points', String(smoothedPoints.length))
+        })
+
+        test('are absent entirely when the route is not eligible', () => {
+            renderDialog({ smoothingAvailable: false })
+
+            expect(screen.queryByTestId('gradient-bands')).toBeNull()
         })
     })
 
@@ -234,16 +281,17 @@ describe('RouteDetails - Terrain Smoothing', () => {
             expect(screen.getByRole('radio', { name: '2' })).toBeChecked()
             expect(screen.getByText(ON_COPY)).toBeInTheDocument()
             expect(figure('Smoothed')).toHaveTextContent('1180 m (−60 m)')
-            expect(screen.getByTestId('elevation-graph')).toHaveAttribute('data-comparison', String(routePoints.length))
+            expect(screen.getByTestId('elevation-graph')).toHaveAttribute('data-points', String(smoothedPoints.length))
+            expect(screen.getByTestId('gradient-bands')).toHaveAttribute('data-smoothed-points', String(smoothedPoints.length))
             expect(onSmoothingPreview).not.toHaveBeenCalled()
         })
 
-        test('keeps the row hidden when the route is no longer eligible, even with a stored level', () => {
+        test('keeps the row and the bands hidden when the route is no longer eligible, even with a stored level', () => {
             renderDialog({ smoothingAvailable: false, smoothingLevel: 2, smoothedPoints })
 
             expect(screen.queryByRole('radiogroup', { name: 'Terrain Smoothing' })).toBeNull()
             expect(figure('Smoothed')).toBeNull()
-            expect(screen.getByTestId('elevation-graph')).toHaveAttribute('data-comparison', '0')
+            expect(screen.queryByTestId('gradient-bands')).toBeNull()
         })
     })
 
@@ -298,7 +346,8 @@ describe('RouteDetails - Terrain Smoothing', () => {
 
             // only the strings this feature introduces - the rest of the dialog is out of scope
             const introduced = [OFF_COPY, ON_COPY, 'Terrain Smoothing', 'Smoothed', 'Route',
-                'This ride records 1180 m elevation gain instead of 1240 m.'].join(' ').toLowerCase()
+                'Steepest gradient 20% → 9%. This ride records 1180 m elevation gain instead of 1240 m.',
+                'This level changes very little on this route — try a higher one.'].join(' ').toLowerCase()
 
             FORBIDDEN.forEach(word => {
                 expect(introduced).not.toContain(word)

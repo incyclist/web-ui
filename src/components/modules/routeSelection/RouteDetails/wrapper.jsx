@@ -364,14 +364,14 @@ export const RouteDetailsDialog = (props) => {
     const dialogProps = propsRef?.current || {}
     const {showLoopOverwrite,showNextOverwrite} = dialogProps
     const {hasWorkout,totalDistance,totalElevation,xScale,yScale, updateStartPos, updateMarkers,
-           smoothingAvailable, smoothingMaxLevel, smoothedElevation, smoothedPoints} = propsRef.current||{}
+           smoothingAvailable, smoothingMaxLevel, smoothedElevation, smoothedPoints, smoothedGradient} = propsRef.current||{}
     const showWorkout = !hasWorkout
     const showPrev = getShowPrev()
     const videoDir = card.getVideoDir()
 
     const args = {route,totalDistance,totalElevation,xScale,yScale,markers,showLoopOverwrite,showNextOverwrite, ...settings,...convertState,...downloadState, requestVideoDir, convertOngoing:valid(convert), downloadOngoing:valid(download),  convertSupported, ...videoState, isOnline, showWorkout,
                   showPrev,prevRides,loading,videoDir,onChangeVideoDir,
-                  smoothingAvailable, smoothingMaxLevel, smoothedElevation, smoothedPoints,
+                  smoothingAvailable, smoothingMaxLevel, smoothedElevation, smoothedPoints, smoothedGradient,
                  onVideoSelected,videoSelectedError}
 
     if(!refInitialized.current || !route)

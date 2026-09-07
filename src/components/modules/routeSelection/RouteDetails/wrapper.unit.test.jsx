@@ -79,7 +79,11 @@ describe('RouteDetailsDialog - Terrain Smoothing plumbing', () => {
     afterEach(() => { vi.clearAllMocks() })
 
     test('passes the smoothing card props and the stored level down to the dialog', async () => {
-        const card = buildCard({ settings: { smoothingLevel: 3 }, props: { smoothedPoints, smoothedElevation: { value: 1180, unit: 'm' } } })
+        const gradient = { routeSteepest: 20.4, smoothedSteepest: 8.5, hasVisibleEffect: true }
+        const card = buildCard({
+            settings: { smoothingLevel: 3 },
+            props: { smoothedPoints, smoothedElevation: { value: 1180, unit: 'm' }, smoothedGradient: gradient },
+        })
         await renderWrapper(card)
 
         expect(rendered.props.smoothingAvailable).toBe(true)
@@ -87,6 +91,7 @@ describe('RouteDetailsDialog - Terrain Smoothing plumbing', () => {
         expect(rendered.props.smoothingLevel).toBe(3)
         expect(rendered.props.smoothedPoints).toBe(smoothedPoints)
         expect(rendered.props.smoothedElevation).toEqual({ value: 1180, unit: 'm' })
+        expect(rendered.props.smoothedGradient).toEqual(gradient)
     })
 
     test('onSmoothingPreview queries the card and writes nothing to the settings', async () => {

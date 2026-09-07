@@ -1,5 +1,5 @@
-import React from 'react';
-import {MapContainer, TileLayer, Marker,Polyline, useMapEvents, } from 'react-leaflet';
+import React, { useEffect } from 'react';
+import {MapContainer, TileLayer, Marker,Polyline, useMapEvents, useMap } from 'react-leaflet';
 //import Route from '../../../../models/route/route'
 import TileLayers  from '../../../../utils/tiles/TileLayers'
 import styled from 'styled-components';
@@ -17,6 +17,29 @@ const IncyclistMap = styled(MapContainer)`
 `
 
 
+
+// Leaflet caches its container's pixel size at creation and never re-measures it on its own.
+// Anything that resizes the container after the map first mounts - e.g. the smoothing preview
+// area growing/shrinking, or the dialog itself resizing - leaves the map rendering at its old
+// size until something calls invalidateSize(). There is no such call anywhere else in this repo.
+const FreeMapResizeHandler = () => {
+    const map = useMap()
+
+    useEffect(() => {
+        const container = map?.getContainer?.()
+        if (!container || typeof ResizeObserver === 'undefined')
+            return undefined
+
+        const observer = new ResizeObserver(() => {
+            map.invalidateSize()
+        })
+        observer.observe(container)
+
+        return () => observer.disconnect()
+    }, [map])
+
+    return null
+}
 
 const FreeMapListeners = (props) => {
 
@@ -422,7 +445,8 @@ export  class FreeMap  extends React.Component {
                     {...mapProps}                                        
                 >
                     <FreeMapListeners center={mapProps?.center} zoom={mapProps?.zoom}/>
-                    <TileLayer                         
+                    <FreeMapResizeHandler/>
+                    <TileLayer
                         {...tileConfig}
                     />
 
