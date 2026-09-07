@@ -13,7 +13,7 @@ export const ShiftingControl =  ({visible,justify})=> {
 
     const [showHotkeys,setShowHotkeys] = useState(true)
     const [initialized,setInitialized] = useState(false)
-    const [pinned,setPinned] = useState( ()=>service.isOverlayPinned(OVERLAY_ID))
+    const [pinned,setPinned] = useState( ()=>service.getDisplayProperties()?.shiftingPinned ?? false)
 
 
     useEffect( ()=>{
@@ -22,13 +22,21 @@ export const ShiftingControl =  ({visible,justify})=> {
         setInitialized(true)
     },[initialized])
 
+    useEffect( ()=>{
+        const observer = service.getObserver()
+        const onOverlayUpdate = (props) => {
+            if (props && 'shiftingPinned' in props)
+                setPinned(props.shiftingPinned)
+        }
+        observer?.on('overlay-update', onOverlayUpdate)
+        return ()=> observer?.off('overlay-update', onOverlayUpdate)
+    },[service])
+
 
     const onPin = () => {
-        setPinned(true)
         service.setOverlayPinned(OVERLAY_ID, true)
     }
     const onUnpin = () => {
-        setPinned(false)
         service.setOverlayPinned(OVERLAY_ID, false)
     }
 
