@@ -408,10 +408,11 @@ export const RouteDetails = ( {route, markers,segment, startPos,endPos,realityFa
     const profileRouteData = smoothedProfile ? {...routeData, points: smoothedProfile} : routeData
     const profileVersion = smoothedProfile ? `smoothed-${smoothing.level}` : 'route'
 
-    // the Route band is present whenever the control could be offered at all - Off included - and
-    // the Smoothed band is the one that fills in once a level is active; both are reserved slots
-    // (GradientBands always renders both rows), so nothing here resizes when the level changes
+    // the bands container mounts whenever the control could be offered at all - Off included - so
+    // its height is reserved and nothing here resizes when the level changes. But at Off there is
+    // nothing to compare against, so neither band draws content there - only its reserved rows do.
     const showGradientBands = smoothingAvailable
+    const bandRouteData = smoothingOn ? routeData : null
     const smoothedBandRouteData = smoothedProfile ? profileRouteData : null
 
     const gradient = smoothingOn ? smoothing.smoothedGradient : undefined
@@ -501,7 +502,7 @@ export const RouteDetails = ( {route, markers,segment, startPos,endPos,realityFa
                                 />
                             </GraphSlot>
                             {showGradientBands ?
-                                <GradientBands routeData={routeData} smoothedRouteData={smoothedBandRouteData}
+                                <GradientBands routeData={bandRouteData} smoothedRouteData={smoothedBandRouteData}
                                                pctReality={data.realityFactor} bandHeight='8px' dimmed={smoothingComputing}/>
                             : null}
                         </ElevationContainer>
@@ -558,7 +559,7 @@ export const RouteDetails = ( {route, markers,segment, startPos,endPos,realityFa
                                     />
                                 </GraphSlot>
                                 {showGradientBands ?
-                                    <GradientBands routeData={routeData} smoothedRouteData={smoothedBandRouteData}
+                                    <GradientBands routeData={bandRouteData} smoothedRouteData={smoothedBandRouteData}
                                                    pctReality={data?.realityFactor} bandHeight='8px' dimmed={smoothingComputing}/>
                                 : null}
                             </ElevationContainer>
