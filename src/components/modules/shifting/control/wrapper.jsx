@@ -1,31 +1,35 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { ShiftingControl as ShiftingControlComponent } from "./component";
-import { useRideDisplay  } from "incyclist-services";
+import { useRideDisplay, useUserSettings } from "incyclist-services";
 import {AutoHide, ErrorBoundary} from "../../../atoms";
 
+const PINNED_SETTING_KEY = 'preferences.shifting.pinned'
 
 export const ShiftingControl =  ({visible,justify})=> {
 
     const service = useRideDisplay()
+    const userSettings = useUserSettings()
 
 
     const [showHotkeys,setShowHotkeys] = useState(true)
     const [initialized,setInitialized] = useState(false)
-    const [pinned,setPinned] = useState(false)
-    
+    const [pinned,setPinned] = useState( ()=>userSettings.getValue(PINNED_SETTING_KEY, false))
+
 
     useEffect( ()=>{
         if (initialized)
-            return;        
+            return;
         setInitialized(true)
     },[initialized])
 
 
     const onPin = () => {
         setPinned(true)
+        userSettings.set(PINNED_SETTING_KEY, true)
     }
     const onUnpin = () => {
         setPinned(false)
+        userSettings.set(PINNED_SETTING_KEY, false)
     }
 
     const onPowerDown = useCallback((val) => {

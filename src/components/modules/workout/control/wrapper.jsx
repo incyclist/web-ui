@@ -1,20 +1,22 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { WorkoutControl as WorkoutControlComponent } from "./component";
-import { useWorkoutList, useWorkoutRide } from "incyclist-services";
+import { useWorkoutList, useWorkoutRide, useUserSettings } from "incyclist-services";
 import {AutoHide, ErrorBoundary} from "../../../atoms";
 
+const PINNED_SETTING_KEY = 'preferences.workouts.controlPinned'
 
 export const WorkoutControl =  ({visible,onToggleMode})=> {
 
     const service = useWorkoutRide()
     const workoutList = useWorkoutList()
+    const userSettings = useUserSettings()
 
 
     const [showHotkeys,setShowHotkeys] = useState(true)
-    const [state,setState] = useState( {} )    
+    const [state,setState] = useState( {} )
     const [initialized,setInitialized] = useState(false)
-    const [pinned,setPinned] = useState(false)
-    
+    const [pinned,setPinned] = useState( ()=>userSettings.getValue(PINNED_SETTING_KEY, false))
+
     const observer = service.getObserver()
 
     useEffect( ()=>{
@@ -69,9 +71,11 @@ export const WorkoutControl =  ({visible,onToggleMode})=> {
 
     const onPin = () => {
         setPinned(true)
+        userSettings.set(PINNED_SETTING_KEY, true)
     }
     const onUnpin = () => {
         setPinned(false)
+        userSettings.set(PINNED_SETTING_KEY, false)
     }
 
     const onBackward = useCallback(() => {
