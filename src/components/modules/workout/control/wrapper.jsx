@@ -3,7 +3,6 @@ import { WorkoutControl as WorkoutControlComponent } from "./component";
 import { useWorkoutList, useWorkoutRide } from "incyclist-services";
 import {AutoHide, ErrorBoundary} from "../../../atoms";
 
-
 export const WorkoutControl =  ({visible,onToggleMode})=> {
 
     const service = useWorkoutRide()
@@ -11,10 +10,9 @@ export const WorkoutControl =  ({visible,onToggleMode})=> {
 
 
     const [showHotkeys,setShowHotkeys] = useState(true)
-    const [state,setState] = useState( {} )    
+    const [state,setState] = useState( {} )
     const [initialized,setInitialized] = useState(false)
-    const [pinned,setPinned] = useState(false)
-    
+
     const observer = service.getObserver()
 
     useEffect( ()=>{
@@ -68,10 +66,10 @@ export const WorkoutControl =  ({visible,onToggleMode})=> {
 
 
     const onPin = () => {
-        setPinned(true)
+        service.setOverlayPinned(true)
     }
     const onUnpin = () => {
-        setPinned(false)
+        service.setOverlayPinned(false)
     }
 
     const onBackward = useCallback(() => {
@@ -104,12 +102,12 @@ export const WorkoutControl =  ({visible,onToggleMode})=> {
     const memo =  useMemo(()=>
         
         <ErrorBoundary hideonError={true} >
-            <AutoHide style={{display:'flex'}} delay={5000} pinned={pinned} onChangeVisible={ (v)=>{if (!v) setShowHotkeys(false)}}>
+            <AutoHide style={{display:'flex'}} delay={5000} pinned={state.pinned} onChangeVisible={ (v)=>{if (!v) setShowHotkeys(false)}}>
                 <div className='autohide'>
 
                 <WorkoutControlComponent
                 showHotkeys={showHotkeys}
-                pinned={pinned}
+                pinned={state.pinned}
                 mode={state.mode}
                 loadButtons={state.loadButtons}
                 loadButtonMode={state.loadButtonMode}
@@ -127,7 +125,7 @@ export const WorkoutControl =  ({visible,onToggleMode})=> {
                 </div>
             </AutoHide >
         </ErrorBoundary>,
-        [pinned, showHotkeys, state.mode, state.loadButtons, state.loadButtonMode, onBackward, onForward, onStop, onPowerDown, onPowerUp, onToggleModeHandler])
+        [state.pinned, showHotkeys, state.mode, state.loadButtons, state.loadButtonMode, onBackward, onForward, onStop, onPowerDown, onPowerUp, onToggleModeHandler])
 
     if (!initialized || !state?.observer || !state?.workout || !visible)
         return null
