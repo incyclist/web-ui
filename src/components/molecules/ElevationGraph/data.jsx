@@ -60,7 +60,9 @@ class ElevationGraphData {
             hasSizeChanged = true;
         }
     
-        const hasRouteChanged = this.hasRouteChanged(newProps) ;
+        // dataVersion lets a caller signal that the points changed while distance and title stayed
+        // the same - hasRouteChanged() alone cannot see that
+        const hasRouteChanged = this.hasRouteChanged(newProps) || newProps.dataVersion!==prevProps.dataVersion;
         if (hasRouteChanged) {
             requiresDataUpdate = true;
         }

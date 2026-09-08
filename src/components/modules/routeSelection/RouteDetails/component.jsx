@@ -2,8 +2,8 @@ import React, { useEffect, useState } from 'react'
 import styled from 'styled-components'
 import {FileDirectoryIcon } from '@primer/octicons-react'
 
-import {Button,ButtonBar, Divider, EditNumber, SingleSelect,Column, Overlay, Row, 
-        Text, Loader, EditText,ErrorBoundary, CheckBox, Image, Center, ErrorText } from '../../../atoms'
+import {Button,ButtonBar, Divider, EditNumber, SingleSelect,Column, Overlay, Row,
+        Text, Loader, EditText,ErrorBoundary, CheckBox, Image, Center, ErrorText, SegmentedControl } from '../../../atoms'
 import {  Dialog, Dropzone, FreeMap,ElevationGraph, VideoProbe } from '../../../molecules'
 import {VideoPreview } from '../../video'
 import { useUnitConverter } from 'incyclist-services'
@@ -14,18 +14,29 @@ const ContentArea = styled(Column)`
     width: calc(100% - 0.8vw);
     padding-left:0.4vw;
     padding-right:0.4vw;
+    overflow-y: auto;
+`
+
+// never yields its height to the rows the smoothing control adds below it - those absorb their
+// own overflow (ContentArea scrolls) instead of squeezing the map/chart above them
+const PreviewRow = styled(Row)`
+    width: 100%;
+    flex-shrink: 0;
 `
 
 const Preview = styled(Column)`
     position: relative;
     width: calc(50% - 0.25vw);
     height: 30vh;
+    flex-shrink: 0;
     padding-right: ${props => props?.position==='left'? '0.25vw' :undefined};
     padding-left: ${props => props?.position==='right'? '0.25vw' :undefined};
     margin-bottom: 1vh;
-    
+
 `
-const ElevationContainer = styled(Row)`
+// height is fixed per route type (video vs GPX), never toggled by the smoothing level - nothing
+// in this container may change size or position as a consequence of the level a user picks
+const ElevationContainer = styled(Column)`
     width:100%;
     height: ${props => props.height || '50%'};
     position:absolute;
@@ -33,6 +44,31 @@ const ElevationContainer = styled(Row)`
     left:0;
     z-index: 100;
     background: none;
+    opacity: ${props => props.dimmed ? 0.6 : 1};
+`
+
+const GraphSlot = styled.div`
+    flex: 1 1 auto;
+    min-height: 0;
+    width: 100%;
+    position: relative;
+`
+
+// aligns the copy with the chips rather than with the label column (10vw label + 0.4vw margin)
+const SmoothingCopy = styled.div`
+    padding: 0 0 1vh 10.4vw;
+    opacity: ${props => props.dimmed ? 0.6 : 1};
+`
+
+const SmoothingNote = styled.div`
+    font-size: 1.2vh;
+    color: #EEEEEE;
+`
+
+const SmoothingDetail = styled.div`
+    font-size: 1.1vh;
+    color: #9fa4a8;
+    padding: 0.3vh 0 0 0;
 `
 
 const ErrorRow = styled.div`
@@ -40,15 +76,32 @@ const ErrorRow = styled.div`
     width: 18vw;
     overflow: hidden;
 `
+
+const ROUTE_LINE_COLOR = '#9fa4a8'
+const PROFILE_LINE = { color: 'white' }
+
+const buildSmoothingOptions = (maxLevel) => {
+    const levels = Number.isFinite(maxLevel) && maxLevel>0 ? Math.round(maxLevel) : 0
+    const options = [{value:0, label:'Off'}]
+    for (let level=1; level<=levels; level++)
+        options.push({value:level, label:String(level)})
+    return options
+}
+
+const formatDelta = (smoothed, original) => {
+    const delta = Math.round(smoothed-original)
+    return delta>0 ? `+${delta}` : `−${Math.abs(delta)}`
+}
 export const RouteDetails = ( {route, markers,segment, startPos,endPos,realityFactor,downloadProgress,convertOngoing, convertSupported,convertProgress,activeRides, convertError,downloadOngoing, downloadError,canStart=true,isOnline=true, requestVideoDir=false,
                                 showLoopOverwrite=false, showNextOverwrite=false,
                                 videoChecking, videoMissing, onVideoSelected,videoDir, 
                                 loopOverwrite, nextOverwrite,showWorkout,
                                 totalDistance, totalElevation, xScale, yScale,
+                                smoothingLevel, smoothingAvailable=false, smoothingMaxLevel=0, smoothedElevation, smoothedPoints, smoothedGradient, onSmoothingPreview,
                                 showPrev=false,prevRides,onRefresh,onPrevRidesClicked,loading,onChangeVideoDir,
                                 onStart, onCancel,onDownload, onCancelDownload,onConvert,onCancelConvert,onSelectVideoDir, onAddWorkout,updateMarkers, updateStartPos })=>{
 
-    
+
     const [dialogState,setDialogState] = useState(null)
     const [initialized,setInitialized] = useState(false)
 
@@ -59,15 +112,22 @@ export const RouteDetails = ( {route, markers,segment, startPos,endPos,realityFa
     if (!routeData.points) routeData.points = points
 
     const dataFromProps = {
-        startPos:startPos===undefined ? {value:0, unit:totalDistance?.unit??'km'} : startPos, 
+        startPos:startPos===undefined ? {value:0, unit:totalDistance?.unit??'km'} : startPos,
         endPos,
         realityFactor:realityFactor===undefined ? 100: realityFactor,
         segment,
         markers,prevRides,
-        loopOverwrite, nextOverwrite,showPrev
+        loopOverwrite, nextOverwrite,showPrev,
+        smoothingLevel: smoothingLevel??0
     }
 
     const [data,setData] = useState(dataFromProps)
+
+    // a route that was left with a level of 1..5 arrives already smoothed - the profile and the
+    // figures have to show that before the user touches the control
+    const [smoothing,setSmoothing] = useState({level: smoothingLevel??0, smoothedPoints, smoothedElevation, smoothedGradient})
+    const [pendingLevel,setPendingLevel] = useState(null)
+
     const logger = new EventLogger('Incyclist')
 
 
@@ -87,8 +147,30 @@ export const RouteDetails = ( {route, markers,segment, startPos,endPos,realityFa
     useEffect(() => {
         if (dialogState===null)
             setDialogState('open')
-        
+
     }, [dialogState]);
+
+    // the recompute runs one render after the tap, so the chip can show the new selection while the
+    // chart and the figures are still showing (dimmed) the previous curve
+    useEffect(() => {
+        if (pendingLevel===null)
+            return
+
+        const level = pendingLevel
+        let preview = {}
+
+        try {
+            if (level>0 && typeof onSmoothingPreview === 'function')
+                preview = onSmoothingPreview(level)??{}
+        }
+        catch (err) {
+            new EventLogger('Incyclist').logEvent({message:'error',fn:'smoothingPreview', error:err.message, stack:err.stack})
+        }
+
+        setPendingLevel(null)
+        setSmoothing({level, smoothedPoints:preview.smoothedPoints, smoothedElevation:preview.smoothedElevation, smoothedGradient:preview.smoothedGradient})
+
+    }, [pendingLevel, onSmoothingPreview]);
 
     const close = async () =>{
         setInitialized(false)
@@ -254,6 +336,22 @@ export const RouteDetails = ( {route, markers,segment, startPos,endPos,realityFa
         }            
     }
 
+    // selecting a level only previews it - it is written to the settings when the ride is started
+    const onSmoothingLevelChanged = (value) => {
+        const level = Number(value)
+
+        if (level===(pendingLevel??smoothing.level))
+            return
+
+        setData( prev => {
+            const updated = {...prev, smoothingLevel: level}
+            checkPrevRides(updated)
+
+            return updated
+        })
+        setPendingLevel(level)
+    }
+
     const onLoopOverwriteChanged = (value) => {
         setData( prev => ({...prev,loopOverwrite: value}))
     }
@@ -300,6 +398,37 @@ export const RouteDetails = ( {route, markers,segment, startPos,endPos,realityFa
     
     const distance = routeDescr?.distance ? (routeDescr.distance/1000).toFixed(1) : undefined
     const elevation = routeDescr?.elevation ? (routeDescr.elevation).toFixed(0) : undefined
+
+    const selectedSmoothingLevel = pendingLevel??smoothing.level??0
+    const smoothingOptions = buildSmoothingOptions(smoothingMaxLevel)
+    const smoothingComputing = pendingLevel!==null
+    const smoothingOn = smoothingAvailable && selectedSmoothingLevel>0
+    const smoothedProfile = smoothingOn && smoothing.smoothedPoints?.length>0 ? smoothing.smoothedPoints : undefined
+    const routeElevation = Number(totalElevation?.value??elevation)
+    const smoothedElevationValue = smoothingOn ? smoothing.smoothedElevation?.value : undefined
+    const showSmoothedElevation = Number.isFinite(smoothedElevationValue) && Number.isFinite(routeElevation)
+    const elevationUnit = smoothing.smoothedElevation?.unit??totalElevation?.unit??'m'
+
+    const profileRouteData = smoothedProfile ? {...routeData, points: smoothedProfile} : routeData
+    const profileVersion = smoothedProfile ? `smoothed-${smoothing.level}` : 'route'
+
+    const gradient = smoothingOn ? smoothing.smoothedGradient : undefined
+    const smoothingBarelyVisible = gradient?.hasVisibleEffect === false
+
+    const buildSmoothingDetail = () => {
+        if (!smoothingOn) return ' '
+        if (smoothingBarelyVisible) return 'This level changes very little on this route — try a higher one.'
+
+        const routeSteepest = Number.isFinite(gradient?.routeSteepest) ? Math.round(gradient.routeSteepest) : undefined
+        const smoothedSteepest = Number.isFinite(gradient?.smoothedSteepest) ? Math.round(gradient.smoothedSteepest) : undefined
+        const gradientPart = (routeSteepest!==undefined && smoothedSteepest!==undefined)
+            ? `Steepest gradient ${routeSteepest}% → ${smoothedSteepest}%. ` : ''
+
+        if (!showSmoothedElevation) return gradientPart || ' '
+
+        return `${gradientPart}This ride records ${smoothedElevationValue} ${elevationUnit} elevation gain instead of ${routeElevation} ${elevationUnit}.`
+    }
+
     const {previewUrl,videoUrl,videoFormat,isLocal,requiresDownload,isDownloaded, hasVideo}   = routeDescr||{}
     const localVideoFile = hasVideo && ( isLocal  && !videoUrl?.startsWith('http'))
 
@@ -356,16 +485,19 @@ export const RouteDetails = ( {route, markers,segment, startPos,endPos,realityFa
             {hasVideo && videoUrl && !videoMissing && videoFormat!=='avi' ? <VideoProbe url={videoUrl} routeId={routeDescr?.id} extension={videoFormat}/> : null}
             <ContentArea>
 
-                <Row>                
+                <PreviewRow>
                 <Preview position='left'>
                     {!isOnline ? <div style={{zIndex:1000}}>{offlineWarning}</div>:null}
-                    {points && isOnline && routeDescr?.hasGpx ? <FreeMap  zoomControl={true} points={points} startPos={0} draggable={canChangeStartpos} marker={startMarker} onPositionChanged={onStartPosChanged}/>  
+                    {points && isOnline && routeDescr?.hasGpx ? <FreeMap  zoomControl={true} points={points} startPos={0} draggable={canChangeStartpos} marker={startMarker} onPositionChanged={onStartPosChanged}/>
                     : null}
-                    {points && !routeDescr?.hasGpx ?                     
-                        <ElevationContainer height='50%'>
-                            <ElevationGraph zoneCalc={{speed:20,weight:85,ftp:226,realityFactor:data.realityFactor}}  position={data.startPos}
-                                            routeData={routeData} xScale={xScale} yScale={yScale} line={ {color:'white'}} showYAxis={false} showXAxis={true} backgroundColor='white' pctReality={data.realityFactor} 
-                            />
+                    {points && !routeDescr?.hasGpx ?
+                        <ElevationContainer height='50%' dimmed={smoothingComputing}>
+                            <GraphSlot>
+                                <ElevationGraph zoneCalc={{speed:20,weight:85,ftp:226,realityFactor:data.realityFactor}}  position={data.startPos}
+                                                routeData={profileRouteData} dataVersion={profileVersion}
+                                                xScale={xScale} yScale={yScale} line={PROFILE_LINE} showYAxis={false} showXAxis={true} backgroundColor='white' pctReality={data.realityFactor}
+                                />
+                            </GraphSlot>
                         </ElevationContainer>
                     : null}
 
@@ -375,7 +507,7 @@ export const RouteDetails = ( {route, markers,segment, startPos,endPos,realityFa
                         : null}
 
                         {!previewUrl&&videoUrl&&!videoChecking&&!videoMissing ? <VideoPreview url={videoUrl} background='none' autoPlay={false}/>
-                        : null}               
+                        : null}
 
                         {videoChecking ? <Center><Loader/></Center> : null}     
 
@@ -407,21 +539,35 @@ export const RouteDetails = ( {route, markers,segment, startPos,endPos,realityFa
                             </Overlay>
                                 : null }
 
-                        {points && routeDescr?.hasGpx ?                     
-                            <ElevationContainer height='30%'>
-                                <ElevationGraph zoneCalc={{speed:20,weight:85,ftp:226,realityFactor:data?.realityFactor}} position={data.startPos}
-                                                routeData={routeData} xScale={xScale} yScale={yScale}  line={ {color:'white'}} showYAxis={false} showXAxis={true} backgroundColor='white' pctReality={data?.realityFactor} 
-                                />
+                        {points && routeDescr?.hasGpx ?
+                            // fixed permanently by route type, not by the smoothing level: a video
+                            // route keeps its still and its strip; a GPX route gets the panel's
+                            // otherwise-empty space, in every state, Off included (never both 30%
+                            // and 100% for the same route - that was the resize this replaces)
+                            <ElevationContainer height={hasVideo ? '30%' : '100%'} dimmed={smoothingComputing}>
+                                <GraphSlot>
+                                    <ElevationGraph zoneCalc={{speed:20,weight:85,ftp:226,realityFactor:data?.realityFactor}} position={data.startPos}
+                                                    routeData={profileRouteData} dataVersion={profileVersion}
+                                                    xScale={xScale} yScale={yScale}  line={PROFILE_LINE} showYAxis={false} showXAxis={true} backgroundColor='white' pctReality={data?.realityFactor}
+                                    />
+                                </GraphSlot>
                             </ElevationContainer>
                         : null}
 
 
                 </Preview>
-                </Row>
+                </PreviewRow>
                 <Row>
                     <Column width='50%'>
                         <Text {...common} label='Distance' text={totalDistance?.value??distance} unit={totalDistance?.unit??'km'} />
-                        <Text {...common} label='Elevation' text={totalElevation?.value??elevation} unit={totalElevation?.unit??'m'} />
+                        <Text {...common} noPadding label='Elevation' text={totalElevation?.value??elevation} unit={totalElevation?.unit??'m'} />
+                        {/* the row's height is reserved even at Off (an empty line, not a collapsed
+                            one) so switching a level in or out never reflows anything below it -
+                            omitting the label keeps document.getElementById('Smoothed') null, as
+                            it was before, while the row itself still occupies its line */}
+                        <Text {...common} size='1.2vh' color={ROUTE_LINE_COLOR} style={{opacity: smoothingComputing? 0.6:1}}
+                              label={showSmoothedElevation ? 'Smoothed' : undefined}
+                              text={showSmoothedElevation ? `${smoothedElevationValue} ${elevationUnit} (${formatDelta(smoothedElevationValue,routeElevation)} ${elevationUnit})` : ' '} />
                     </Column>
                     <Column width='50%'>
                         {videoFormat ? <Text {...common} label='Video Format' text={videoFormat.toUpperCase()}  /> : null}
@@ -439,8 +585,24 @@ export const RouteDetails = ( {route, markers,segment, startPos,endPos,realityFa
                     <EditNumber label='Start at' unit={data.startPos?.unit??totalDistance?.unit??'km'} min={0} max={totalDistance?.value??routeDescr.distance/1000} digits={1} value={data.startPos?.value} maxLength={5} disabled={videoFormat==='avi'} 
                         onValueChange={onStartPosChanged} {...common} /> : null}
                 {showSettings ?
-                    <EditNumber  unit='%' label='Reality Factor' min={0} max={100} digits={0} value={data.realityFactor} maxLength={5} 
+                    <EditNumber  unit='%' label='Reality Factor' min={0} max={100} digits={0} value={data.realityFactor} maxLength={5}
                         onValueChange={onRealityFactorChanged} {...common} />
+                : null}
+
+                {showSettings && smoothingAvailable ?
+                    <>
+                        <SegmentedControl label='Terrain Smoothing' options={smoothingOptions} value={selectedSmoothingLevel}
+                            onValueChange={onSmoothingLevelChanged} {...common} />
+                        {/* both lines are always rendered, sized to the tallest (two-line) state,
+                            so the block occupies the same height whether it is Off, On, or On but
+                            barely doing anything on this route - nothing below it reflows */}
+                        <SmoothingCopy dimmed={smoothingComputing}>
+                            {smoothingOn ?
+                                <SmoothingNote>Riding a smoothed profile. Your saved route is unchanged.</SmoothingNote>
+                            :   <SmoothingNote>Softens sharp gradient changes for steadier trainer resistance.</SmoothingNote>}
+                            <SmoothingDetail>{buildSmoothingDetail()}</SmoothingDetail>
+                        </SmoothingCopy>
+                    </>
                 : null}
 
                 {showLoopOverwrite ?

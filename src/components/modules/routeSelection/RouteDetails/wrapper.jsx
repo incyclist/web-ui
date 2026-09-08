@@ -121,12 +121,17 @@ export const RouteDetailsDialog = (props) => {
             routeId = route.description.id
 
 
-        const {startPos,endPos,segment,realityFactor} = data??{}
+        const {startPos,endPos,segment,realityFactor,smoothingLevel} = data??{}
+        // a prediction, not yet a fact: no ride copy exists before Start, so this mirrors what
+        // buildRideRoute() would apply - unsmoothed unless the route is actually eligible.
+        // See design/features/route-smoothing/architecture.md §9.5.
+        const smoothingAvailable = propsRef.current?.smoothingAvailable
+        const effectiveSmoothingLevel = smoothingAvailable ? (smoothingLevel ?? 0) : 0
 
-        const prev = await activities.getPastActivitiesWithDetails({routeHash,routeId,startPos,endPos, realityFactor })
+        const prev = await activities.getPastActivitiesWithDetails({routeHash,routeId,startPos,endPos, realityFactor, smoothingLevel: effectiveSmoothingLevel })
 
         if (prev.length>0)
-            logger.logEvent({message: 'previous rides', route:route.title, cnt:prev?.length,settings:{startPos,endPos,segment,realityFactor}})
+            logger.logEvent({message: 'previous rides', route:route.title, cnt:prev?.length,settings:{startPos,endPos,segment,realityFactor,smoothingLevel:effectiveSmoothingLevel}})
         
         
         return { prevRides: prev?.length>0 ? prev : null, showPrev: getShowPrev(prev) }
@@ -316,6 +321,17 @@ export const RouteDetailsDialog = (props) => {
         userSettings.set('preferences.showPrevRides',value)
     }
 
+    // a query, not a write - the level is only stored when the ride is actually started
+    const onSmoothingPreview = useCallback( (level) => {
+        try {
+            return card.getSmoothingPreview(level)
+        }
+        catch(err) {
+            logger.logEvent({message:'error',fn:'onSmoothingPreview', error:err.message,stack:err.stack})
+            return {}
+        }
+    },[card, logger])
+
     const onVideoSelected = async (video) => {
         try {
             const error = await card.onVideoSelected(video)
@@ -352,13 +368,15 @@ export const RouteDetailsDialog = (props) => {
     const markers = card.getMarkers()
     const dialogProps = propsRef?.current || {}
     const {showLoopOverwrite,showNextOverwrite} = dialogProps
-    const {hasWorkout,totalDistance,totalElevation,xScale,yScale, updateStartPos, updateMarkers} = propsRef.current||{}
+    const {hasWorkout,totalDistance,totalElevation,xScale,yScale, updateStartPos, updateMarkers,
+           smoothingAvailable, smoothingMaxLevel, smoothedElevation, smoothedPoints, smoothedGradient} = propsRef.current||{}
     const showWorkout = !hasWorkout
     const showPrev = getShowPrev()
     const videoDir = card.getVideoDir()
 
     const args = {route,totalDistance,totalElevation,xScale,yScale,markers,showLoopOverwrite,showNextOverwrite, ...settings,...convertState,...downloadState, requestVideoDir, convertOngoing:valid(convert), downloadOngoing:valid(download),  convertSupported, ...videoState, isOnline, showWorkout,
                   showPrev,prevRides,loading,videoDir,onChangeVideoDir,
+                  smoothingAvailable, smoothingMaxLevel, smoothedElevation, smoothedPoints, smoothedGradient,
                  onVideoSelected,videoSelectedError}
 
     if(!refInitialized.current || !route)
@@ -369,6 +387,7 @@ export const RouteDetailsDialog = (props) => {
     onDownload={onDownloadHandler} onCancelDownload={onCancelDownloadHandler} 
     onConvert={onConvertHandler} onCancelConvert={onCancelConvertHandler}
     onPrevRidesClicked={onPrevRidesClicked}
+    onSmoothingPreview={onSmoothingPreview}
     onSelectVideoDir={onSelectVideoDirHandler}
     updateMarkers={updateMarkers}
     updateStartPos={updateStartPos}

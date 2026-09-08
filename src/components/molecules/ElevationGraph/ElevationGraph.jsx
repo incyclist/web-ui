@@ -24,7 +24,7 @@ const Container = styled.div`
 export const ElevationGraph = props => <Autosize><Graph {...props} /></Autosize>
 
 
-class Graph extends React.Component {
+export class Graph extends React.Component {
 
     constructor(props) {
 
@@ -38,10 +38,58 @@ class Graph extends React.Component {
             error: false
         }
         this.data = new ElevationGraphData(this.props)
+        this.comparison = null
+        this.syncComparison(this.props)
         this.logger = new EventLogger('ElevationGraph')
         this.onResizeHandler = this.onResize.bind(this)
         this.ref = createRef(null)
-        
+
+    }
+
+    /**
+     * Builds the props for the optional second (comparison) series, which shares everything with
+     * the main series except the points it is drawn from.
+     */
+    comparisonProps(props) {
+        const {comparisonPoints,routeData} = props??{}
+
+        if (!comparisonPoints?.length || !routeData)
+            return null
+
+        return {...props, routeData: {...routeData, points:comparisonPoints, decoded:undefined}}
+    }
+
+    syncComparison(props) {
+        const comparisonProps = this.comparisonProps(props)
+
+        if (!comparisonProps) {
+            this.comparison = null
+            return null
+        }
+
+        if (!this.comparison)
+            this.comparison = new ElevationGraphData(comparisonProps)
+        else
+            this.comparison.updateProps(comparisonProps)
+
+        return comparisonProps
+    }
+
+    updateComparison(changes, newProps, newState) {
+        const comparisonProps = this.syncComparison(newProps)
+        if (!comparisonProps)
+            return
+
+        // a comparison series that was just created has neither dimensions nor route yet, so it has
+        // to run a full update regardless of what changed for the main series - without the size it
+        // would fall back to the 10-point default and draw a visibly coarser line
+        const isNew = !this.comparison.routeData
+
+        this.comparison.processChanges({
+            hasSizeChanged: changes.hasSizeChanged || isNew,
+            hasRouteChanged: changes.hasRouteChanged || isNew,
+            requiresDataUpdate: changes.requiresDataUpdate || isNew
+        }, comparisonProps, newState)
     }
 
     
@@ -102,6 +150,7 @@ class Graph extends React.Component {
             if (newProps.width!==this.props.width || newProps.height!==this.props.height || newProps.left!==this.props.left ) {
 
                 this.data.processChanges({hasSizeChanged:true,requiresDataUpdate:true},newProps,newState)
+                this.updateComparison({hasSizeChanged:true,requiresDataUpdate:true},newProps,newState)
                 if ( (newProps.width && !this.props.width) || (newProps.width!==this.props.width))
                     this.setState( {width: newProps.width} )
                 return true
@@ -115,10 +164,15 @@ class Graph extends React.Component {
                 requiresNewRender  = true;            
 
             this.data.processChanges(res,newProps,newState)
+            this.updateComparison(res,newProps,newState)
 
-            // settings have changed 
+            if (newProps.comparisonPoints!==this.props.comparisonPoints)
+                requiresNewRender = true
+
+            // settings have changed
             if (  Math.abs(newProps.pctReality-this.props.pctReality)>0.01 || newProps.range!==this.props.range  ) {
                 this.data.onSettingsChange()
+                this.comparison?.onSettingsChange()
                 requiresNewRender = true
             }
 
@@ -150,9 +204,31 @@ class Graph extends React.Component {
         return this.data.get()
     }
 
-    getDisplayMaxValues(withMarkers) {
-        return this.data.getDisplayMaxValues(withMarkers)
+    getComparisonData() {
+        try {
+            return this.comparison?.get()??[]
+        }
+        catch {
+            return []
+        }
+    }
 
+    getDisplayMaxValues(withMarkers) {
+        const [xDomain,yDomain] = this.data.getDisplayMaxValues(withMarkers)
+
+        // the comparison series has to fit into the same plot, or its peaks would be clipped
+        if (!this.getComparisonData().length)
+            return [xDomain,yDomain]
+
+        const [xComparison,yComparison] = this.comparison.getDisplayMaxValues(withMarkers)
+
+        if (![...xComparison,...yComparison].every(Number.isFinite))
+            return [xDomain,yDomain]
+
+        return [
+            [Math.min(xDomain[0],xComparison[0]), Math.max(xDomain[1],xComparison[1])],
+            [Math.min(yDomain[0],yComparison[0]), Math.max(yDomain[1],yComparison[1])]
+        ]
     }
 
     createMarker(position, avatar) {
@@ -254,9 +330,10 @@ class Graph extends React.Component {
         if (this.state.error)
             return null;
         
-        const {showXAxis,showYAxis,line, xScale={ value:1/1000, unit:'km'}, yScale={ value:1, unit:'m'}, showXUnit=false, showYUnit=true } = this.props
+        const {showXAxis,showYAxis,line, comparisonLine, xScale={ value:1/1000, unit:'km'}, yScale={ value:1, unit:'m'}, showXUnit=false, showYUnit=true } = this.props
         const {width,height} = this.state
         const data = this.getData();
+        const comparisonData = this.getComparisonData();
 
         const axisStyle = { text:{stroke:'white', fontWeight:600}}
         const xTicks = 5;
@@ -303,7 +380,11 @@ class Graph extends React.Component {
                 {this.hasSize()&&data?.length>0 ?  
             
                         <XYPlot height={height} width={width} margin={margin} yDomain={yDomain} xDomain={xDomain} >
-                            <VerticalBarSeries colorType='literal' data={data} /> 
+                            <VerticalBarSeries colorType='literal' data={data} />
+                            {comparisonData?.length>0 ?
+                                <LineSeries colorType='literal' color={comparisonLine?.color || '#9fa4a8'}
+                                            strokeStyle={comparisonLine?.strokeStyle || 'dashed'} data={comparisonData} />
+                            : null}
                             {line?<LineSeries colorType='literal' color={line.color || 'white'}    data={data} /> : null}
                             {showXAxis ? <XAxis attr='x' attrAxis='y' tickTotal={xTicks} tickFormat={ xTickFormat } style={axisStyle}/> : null}
                             {showYAxis ? <YAxis orientation='left' attr='y'  tickTotal={yTicks} tickFormat={ yTickFormat }style={axisStyle} /> : null}
