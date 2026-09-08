@@ -60,9 +60,9 @@ const buildCard = (overrides = {}) => {
             ...(overrides.props ?? {}),
         })),
         getSmoothingPreview: vi.fn(() => ({ smoothedPoints, smoothedElevation: { value: 1180, unit: 'm' } })),
-        // real behaviour mocked here, not re-tested: RouteCardSmoothing.unit.test.ts covers the
-        // actual prediction rule (architecture.md §9.6.3). This suite only needs to verify the
-        // wrapper calls it and passes the result through unchanged.
+        // real behaviour mocked here, not re-tested: `services` covers the actual prediction rule
+        // for this. This suite only needs to verify the wrapper calls it and passes the result
+        // through unchanged.
         getPrevRidesFilter: vi.fn((data) => ({
             routeId: 'route-1',
             startPos: data?.startPos,
@@ -104,9 +104,8 @@ describe('RouteDetailsDialog - Terrain Smoothing plumbing', () => {
         expect(rendered.props.smoothedGradient).toEqual(gradient)
     })
 
-    // architecture.md §9.6.3: the criteria (including the smoothing-level prediction) are built
-    // by the card, not re-derived here - the wrapper's only job is to call it and pass the result
-    // through. The prediction rule itself is covered by RouteCardSmoothing.unit.test.ts.
+    // the criteria (including the smoothing-level prediction) are built by the card, not
+    // re-derived here - the wrapper's only job is to call it and pass the result through.
     test('onRefresh asks the card for the criteria and passes them through unchanged', async () => {
         const card = buildCard({ props: { smoothingAvailable: true } })
         await renderWrapper(card)
