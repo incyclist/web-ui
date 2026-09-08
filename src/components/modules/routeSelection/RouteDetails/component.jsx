@@ -584,25 +584,36 @@ export const RouteDetails = ( {route, markers,segment, startPos,endPos,realityFa
                 {showSettings ?
                     <EditNumber label='Start at' unit={data.startPos?.unit??totalDistance?.unit??'km'} min={0} max={totalDistance?.value??routeDescr.distance/1000} digits={1} value={data.startPos?.value} maxLength={5} disabled={videoFormat==='avi'} 
                         onValueChange={onStartPosChanged} {...common} /> : null}
-                {showSettings ?
+                {showSettings && !smoothingAvailable ?
                     <EditNumber  unit='%' label='Reality Factor' min={0} max={100} digits={0} value={data.realityFactor} maxLength={5}
                         onValueChange={onRealityFactorChanged} {...common} />
                 : null}
 
+                {/* Reality Factor and Terrain Smoothing share a row when both are on offer - two
+                    ride-difficulty controls belong together, and it buys back the vertical space
+                    the smoothing copy below needs, keeping the checkboxes after it clear of the
+                    fold instead of pushed past it. */}
                 {showSettings && smoothingAvailable ?
-                    <>
-                        <SegmentedControl label='Terrain Smoothing' options={smoothingOptions} value={selectedSmoothingLevel}
-                            onValueChange={onSmoothingLevelChanged} {...common} />
-                        {/* both lines are always rendered, sized to the tallest (two-line) state,
-                            so the block occupies the same height whether it is Off, On, or On but
-                            barely doing anything on this route - nothing below it reflows */}
-                        <SmoothingCopy dimmed={smoothingComputing}>
-                            {smoothingOn ?
-                                <SmoothingNote>Riding a smoothed profile. Your saved route is unchanged.</SmoothingNote>
-                            :   <SmoothingNote>Softens sharp gradient changes for steadier trainer resistance.</SmoothingNote>}
-                            <SmoothingDetail>{buildSmoothingDetail()}</SmoothingDetail>
-                        </SmoothingCopy>
-                    </>
+                    <Row>
+                        <Column width='50%'>
+                            <EditNumber unit='%' label='Reality Factor' min={0} max={100} digits={0} value={data.realityFactor} maxLength={5}
+                                onValueChange={onRealityFactorChanged} {...common} />
+                        </Column>
+                        <Column width='50%'>
+                            <SegmentedControl label='Terrain Smoothing' options={smoothingOptions} value={selectedSmoothingLevel}
+                                onValueChange={onSmoothingLevelChanged} {...common} />
+                            {/* both lines are always rendered, sized to the tallest (two-line)
+                                state, so the block occupies the same height whether it is Off, On,
+                                or On but barely doing anything on this route - nothing below it
+                                reflows */}
+                            <SmoothingCopy dimmed={smoothingComputing}>
+                                {smoothingOn ?
+                                    <SmoothingNote>Riding a smoothed profile. Your saved route is unchanged.</SmoothingNote>
+                                :   <SmoothingNote>Softens sharp gradient changes for steadier trainer resistance.</SmoothingNote>}
+                                <SmoothingDetail>{buildSmoothingDetail()}</SmoothingDetail>
+                            </SmoothingCopy>
+                        </Column>
+                    </Row>
                 : null}
 
                 {showLoopOverwrite ?
