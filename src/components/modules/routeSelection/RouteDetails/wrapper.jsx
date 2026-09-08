@@ -121,12 +121,17 @@ export const RouteDetailsDialog = (props) => {
             routeId = route.description.id
 
 
-        const {startPos,endPos,segment,realityFactor} = data??{}
+        const {startPos,endPos,segment,realityFactor,smoothingLevel} = data??{}
+        // a prediction, not yet a fact: no ride copy exists before Start, so this mirrors what
+        // buildRideRoute() would apply - unsmoothed unless the route is actually eligible.
+        // See design/features/route-smoothing/architecture.md §9.5.
+        const smoothingAvailable = propsRef.current?.smoothingAvailable
+        const effectiveSmoothingLevel = smoothingAvailable ? (smoothingLevel ?? 0) : 0
 
-        const prev = await activities.getPastActivitiesWithDetails({routeHash,routeId,startPos,endPos, realityFactor })
+        const prev = await activities.getPastActivitiesWithDetails({routeHash,routeId,startPos,endPos, realityFactor, smoothingLevel: effectiveSmoothingLevel })
 
         if (prev.length>0)
-            logger.logEvent({message: 'previous rides', route:route.title, cnt:prev?.length,settings:{startPos,endPos,segment,realityFactor}})
+            logger.logEvent({message: 'previous rides', route:route.title, cnt:prev?.length,settings:{startPos,endPos,segment,realityFactor,smoothingLevel:effectiveSmoothingLevel}})
         
         
         return { prevRides: prev?.length>0 ? prev : null, showPrev: getShowPrev(prev) }

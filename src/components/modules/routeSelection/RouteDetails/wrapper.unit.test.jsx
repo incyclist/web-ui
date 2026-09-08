@@ -94,6 +94,35 @@ describe('RouteDetailsDialog - Terrain Smoothing plumbing', () => {
         expect(rendered.props.smoothedGradient).toEqual(gradient)
     })
 
+    // architecture.md §9.5/§9.7 defect 2: the pre-ride prev-rides count is a prediction of the
+    // level buildRideRoute() would actually apply, not the raw previewed value - it must collapse
+    // to 0 when the route isn't actually eligible for smoothing at all.
+    test('onRefresh predicts the effective smoothing level for an eligible route', async () => {
+        const card = buildCard({ props: { smoothingAvailable: true } })
+        await renderWrapper(card)
+
+        await act(async () => {
+            await rendered.props.onRefresh({ startPos: 0, endPos: undefined, realityFactor: 100, smoothingLevel: 3 })
+        })
+
+        expect(mockActivities.getPastActivitiesWithDetails).toHaveBeenCalledWith(
+            expect.objectContaining({ smoothingLevel: 3 })
+        )
+    })
+
+    test('onRefresh predicts level 0 when the route is not smoothing-eligible, regardless of the previewed value', async () => {
+        const card = buildCard({ props: { smoothingAvailable: false } })
+        await renderWrapper(card)
+
+        await act(async () => {
+            await rendered.props.onRefresh({ startPos: 0, endPos: undefined, realityFactor: 100, smoothingLevel: 4 })
+        })
+
+        expect(mockActivities.getPastActivitiesWithDetails).toHaveBeenCalledWith(
+            expect.objectContaining({ smoothingLevel: 0 })
+        )
+    })
+
     test('onSmoothingPreview queries the card and writes nothing to the settings', async () => {
         const card = buildCard()
         await renderWrapper(card)

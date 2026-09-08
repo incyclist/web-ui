@@ -4,7 +4,7 @@ import {FileDirectoryIcon } from '@primer/octicons-react'
 
 import {Button,ButtonBar, Divider, EditNumber, SingleSelect,Column, Overlay, Row,
         Text, Loader, EditText,ErrorBoundary, CheckBox, Image, Center, ErrorText, SegmentedControl } from '../../../atoms'
-import {  Dialog, Dropzone, FreeMap,ElevationGraph, GradientBands, VideoProbe } from '../../../molecules'
+import {  Dialog, Dropzone, FreeMap,ElevationGraph, VideoProbe } from '../../../molecules'
 import {VideoPreview } from '../../video'
 import { useUnitConverter } from 'incyclist-services'
 import { EventLogger } from 'gd-eventlog'
@@ -47,22 +47,11 @@ const ElevationContainer = styled(Column)`
     opacity: ${props => props.dimmed ? 0.6 : 1};
 `
 
-// leaves room for the gradient bands below it inside the fixed-height ElevationContainer
 const GraphSlot = styled.div`
     flex: 1 1 auto;
     min-height: 0;
     width: 100%;
     position: relative;
-`
-
-// GradientBands renders through Autosize, which defaults an unset height to CSS `height:100%`.
-// With no explicit height of its own, this wrapper's height stays content-based (`auto`), which
-// makes that 100% resolve to `auto` too (percentage heights against a non-definite ancestor height
-// compute to auto per spec) - so GradientBands sizes to its real ~2-row content instead of
-// claiming the whole panel as its flex-basis and starving GraphSlot next to it down to nothing.
-const BandsSlot = styled.div`
-    flex: 0 0 auto;
-    width: 100%;
 `
 
 // aligns the copy with the chips rather than with the label column (10vw label + 0.4vw margin)
@@ -354,7 +343,12 @@ export const RouteDetails = ( {route, markers,segment, startPos,endPos,realityFa
         if (level===(pendingLevel??smoothing.level))
             return
 
-        setData( prev => ({...prev, smoothingLevel: level}))
+        setData( prev => {
+            const updated = {...prev, smoothingLevel: level}
+            checkPrevRides(updated)
+
+            return updated
+        })
         setPendingLevel(level)
     }
 
@@ -417,13 +411,6 @@ export const RouteDetails = ( {route, markers,segment, startPos,endPos,realityFa
 
     const profileRouteData = smoothedProfile ? {...routeData, points: smoothedProfile} : routeData
     const profileVersion = smoothedProfile ? `smoothed-${smoothing.level}` : 'route'
-
-    // the bands container mounts whenever the control could be offered at all - Off included - so
-    // its height is reserved and nothing here resizes when the level changes. But at Off there is
-    // nothing to compare against, so neither band draws content there - only its reserved rows do.
-    const showGradientBands = smoothingAvailable
-    const bandRouteData = smoothingOn ? routeData : null
-    const smoothedBandRouteData = smoothedProfile ? profileRouteData : null
 
     const gradient = smoothingOn ? smoothing.smoothedGradient : undefined
     const smoothingBarelyVisible = gradient?.hasVisibleEffect === false
@@ -511,12 +498,6 @@ export const RouteDetails = ( {route, markers,segment, startPos,endPos,realityFa
                                                 xScale={xScale} yScale={yScale} line={PROFILE_LINE} showYAxis={false} showXAxis={true} backgroundColor='white' pctReality={data.realityFactor}
                                 />
                             </GraphSlot>
-                            {showGradientBands ?
-                                <BandsSlot>
-                                    <GradientBands routeData={bandRouteData} smoothedRouteData={smoothedBandRouteData}
-                                                   pctReality={data.realityFactor} bandHeight='8px' dimmed={smoothingComputing} active={smoothingOn}/>
-                                </BandsSlot>
-                            : null}
                         </ElevationContainer>
                     : null}
 
@@ -570,12 +551,6 @@ export const RouteDetails = ( {route, markers,segment, startPos,endPos,realityFa
                                                     xScale={xScale} yScale={yScale}  line={PROFILE_LINE} showYAxis={false} showXAxis={true} backgroundColor='white' pctReality={data?.realityFactor}
                                     />
                                 </GraphSlot>
-                                {showGradientBands ?
-                                    <BandsSlot>
-                                        <GradientBands routeData={bandRouteData} smoothedRouteData={smoothedBandRouteData}
-                                                       pctReality={data?.realityFactor} bandHeight='8px' dimmed={smoothingComputing} active={smoothingOn}/>
-                                    </BandsSlot>
-                                : null}
                             </ElevationContainer>
                         : null}
 

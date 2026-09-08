@@ -16,10 +16,6 @@ vi.mock('../../../molecules', async (importOriginal) => {
             data-points={props.routeData?.points?.length ?? 0}
             data-line={props.line?.color}
             data-version={props.dataVersion} />,
-        GradientBands: (props) => <div data-testid="gradient-bands"
-            data-route-points={props.routeData?.points?.length ?? 0}
-            data-smoothed-points={props.smoothedRouteData?.points?.length ?? 0}
-            data-active={String(!!props.active)} />,
     }
 })
 
@@ -242,38 +238,6 @@ describe('RouteDetails - Terrain Smoothing', () => {
         })
     })
 
-    describe('the gradient bands', () => {
-
-        // the bands container mounts (reserving its height) whenever the route is eligible, Off
-        // included - but at Off there is nothing to compare against, so it is fully inactive
-        // (invisible, not merely empty): no label, no band, only the reserved height survives
-        test('both bands are inactive while smoothing is off, even though the container is mounted', () => {
-            renderDialog({ onSmoothingPreview })
-
-            const bands = screen.getByTestId('gradient-bands')
-            expect(bands).toHaveAttribute('data-active', 'false')
-            expect(bands).toHaveAttribute('data-route-points', '0')
-            expect(bands).toHaveAttribute('data-smoothed-points', '0')
-        })
-
-        test('both bands fill in and become active once a level is active', () => {
-            renderDialog({ onSmoothingPreview })
-
-            fireEvent.click(screen.getByRole('radio', { name: '3' }))
-
-            const bands = screen.getByTestId('gradient-bands')
-            expect(bands).toHaveAttribute('data-active', 'true')
-            expect(bands).toHaveAttribute('data-route-points', String(routePoints.length))
-            expect(bands).toHaveAttribute('data-smoothed-points', String(smoothedPoints.length))
-        })
-
-        test('are absent entirely when the route is not eligible', () => {
-            renderDialog({ smoothingAvailable: false })
-
-            expect(screen.queryByTestId('gradient-bands')).toBeNull()
-        })
-    })
-
     describe('a route that was left with a level selected', () => {
 
         test('renders the smoothed profile, figure and copy immediately, without querying the preview', () => {
@@ -288,16 +252,14 @@ describe('RouteDetails - Terrain Smoothing', () => {
             expect(screen.getByText(ON_COPY)).toBeInTheDocument()
             expect(figure('Smoothed')).toHaveTextContent('1180 m (−60 m)')
             expect(screen.getByTestId('elevation-graph')).toHaveAttribute('data-points', String(smoothedPoints.length))
-            expect(screen.getByTestId('gradient-bands')).toHaveAttribute('data-smoothed-points', String(smoothedPoints.length))
             expect(onSmoothingPreview).not.toHaveBeenCalled()
         })
 
-        test('keeps the row and the bands hidden when the route is no longer eligible, even with a stored level', () => {
+        test('keeps the row hidden when the route is no longer eligible, even with a stored level', () => {
             renderDialog({ smoothingAvailable: false, smoothingLevel: 2, smoothedPoints })
 
             expect(screen.queryByRole('radiogroup', { name: 'Terrain Smoothing' })).toBeNull()
             expect(figure('Smoothed')).toBeNull()
-            expect(screen.queryByTestId('gradient-bands')).toBeNull()
         })
     })
 
