@@ -111,31 +111,21 @@ export const RouteDetailsDialog = (props) => {
         return prev?.length>0 && userSettings.get('preferences.showPrevRides',true)
     },[prevRides, userSettings])
 
+    // The criteria (which route, which position, which smoothing level actually applies) are
+    // built by the card, not here - it is the one place that can correctly predict the smoothing
+    // eligibility rule without reimplementing it. See RouteCard.getPrevRidesFilter().
     const refreshPastActivities = useCallback(async (data) => {
         if (!route || !refMounted.current)
             return;
 
-        let routeId
-        const routeHash = route.description.routeHash
-        if (!routeHash)
-            routeId = route.description.id
-
-
-        const {startPos,endPos,segment,realityFactor,smoothingLevel} = data??{}
-        // a prediction, not yet a fact: no ride copy exists before Start, so this mirrors what
-        // buildRideRoute() would apply - unsmoothed unless the route is actually eligible.
-        // See design/features/route-smoothing/architecture.md §9.5.
-        const smoothingAvailable = propsRef.current?.smoothingAvailable
-        const effectiveSmoothingLevel = smoothingAvailable ? (smoothingLevel ?? 0) : 0
-
-        const prev = await activities.getPastActivitiesWithDetails({routeHash,routeId,startPos,endPos, realityFactor, smoothingLevel: effectiveSmoothingLevel })
+        const filter = card.getPrevRidesFilter(data ?? {})
+        const prev = await activities.getPastActivitiesWithDetails(filter)
 
         if (prev.length>0)
-            logger.logEvent({message: 'previous rides', route:route.title, cnt:prev?.length,settings:{startPos,endPos,segment,realityFactor,smoothingLevel:effectiveSmoothingLevel}})
-        
-        
+            logger.logEvent({message: 'previous rides', route:route.title, cnt:prev?.length,settings:{...filter, segment:data?.segment}})
+
         return { prevRides: prev?.length>0 ? prev : null, showPrev: getShowPrev(prev) }
-    },[activities, getShowPrev, logger, route])
+    },[activities, getShowPrev, logger, route, card])
 
     const getVideoSettings = useCallback( (props) => {
         if (!refMounted.current)
