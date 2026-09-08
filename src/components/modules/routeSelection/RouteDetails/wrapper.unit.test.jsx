@@ -60,6 +60,16 @@ const buildCard = (overrides = {}) => {
             ...(overrides.props ?? {}),
         })),
         getSmoothingPreview: vi.fn(() => ({ smoothedPoints, smoothedElevation: { value: 1180, unit: 'm' } })),
+        // real behaviour mocked here, not re-tested: `services` covers the actual prediction rule
+        // for this. This suite only needs to verify the wrapper calls it and passes the result
+        // through unchanged.
+        getPrevRidesFilter: vi.fn((data) => ({
+            routeId: 'route-1',
+            startPos: data?.startPos,
+            endPos: data?.endPos,
+            realityFactor: data?.realityFactor,
+            smoothingLevel: overrides.props?.smoothingAvailable === false ? 0 : (data?.smoothingLevel ?? 0),
+        })),
         changeSettings: vi.fn(),
         start: vi.fn(),
         addWorkout: vi.fn(),
@@ -94,32 +104,20 @@ describe('RouteDetailsDialog - Terrain Smoothing plumbing', () => {
         expect(rendered.props.smoothedGradient).toEqual(gradient)
     })
 
-    // architecture.md §9.5/§9.7 defect 2: the pre-ride prev-rides count is a prediction of the
-    // level buildRideRoute() would actually apply, not the raw previewed value - it must collapse
-    // to 0 when the route isn't actually eligible for smoothing at all.
-    test('onRefresh predicts the effective smoothing level for an eligible route', async () => {
+    // the criteria (including the smoothing-level prediction) are built by the card, not
+    // re-derived here - the wrapper's only job is to call it and pass the result through.
+    test('onRefresh asks the card for the criteria and passes them through unchanged', async () => {
         const card = buildCard({ props: { smoothingAvailable: true } })
         await renderWrapper(card)
 
+        const settings = { startPos: 0, endPos: undefined, realityFactor: 100, smoothingLevel: 3 }
         await act(async () => {
-            await rendered.props.onRefresh({ startPos: 0, endPos: undefined, realityFactor: 100, smoothingLevel: 3 })
+            await rendered.props.onRefresh(settings)
         })
 
+        expect(card.getPrevRidesFilter).toHaveBeenCalledWith(settings)
         expect(mockActivities.getPastActivitiesWithDetails).toHaveBeenCalledWith(
-            expect.objectContaining({ smoothingLevel: 3 })
-        )
-    })
-
-    test('onRefresh predicts level 0 when the route is not smoothing-eligible, regardless of the previewed value', async () => {
-        const card = buildCard({ props: { smoothingAvailable: false } })
-        await renderWrapper(card)
-
-        await act(async () => {
-            await rendered.props.onRefresh({ startPos: 0, endPos: undefined, realityFactor: 100, smoothingLevel: 4 })
-        })
-
-        expect(mockActivities.getPastActivitiesWithDetails).toHaveBeenCalledWith(
-            expect.objectContaining({ smoothingLevel: 0 })
+            card.getPrevRidesFilter.mock.results[0].value
         )
     })
 
