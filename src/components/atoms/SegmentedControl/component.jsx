@@ -55,7 +55,7 @@ export const SegmentedControl = (props) => {
         if (disabled || option.value===value)
             return
 
-        logger.logEvent({message:'option selected', control:label, value:option.value, eventSource:'user'})
+        logger.logEvent({message:'option selected', field:label, value:option.value, eventSource:'user'})
 
         if (onValueChange)
             onValueChange(option.value)
