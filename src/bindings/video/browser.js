@@ -21,7 +21,10 @@ export class BrowserBinding {
 
     async convertOnline(url, props={}) {
         throw new Error('not supported')
-    }    
+    }
 
+    async readHeadTail(url, chunkSize) {
+        throw new Error('not supported')
+    }
 
 }

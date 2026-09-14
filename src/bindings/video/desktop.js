@@ -38,4 +38,12 @@ export class DesktopBinding {
 
     }
 
+    async readHeadTail(url,chunkSize) {
+        if (hasFeature('video.readHeadTail')) {
+            return await api.video.readHeadTail(withLegacyLocalUrlWorkaround(url),chunkSize)
+        }
+
+        throw new Error('not supported')
+    }
+
 }

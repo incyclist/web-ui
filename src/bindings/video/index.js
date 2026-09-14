@@ -40,4 +40,8 @@ export class VideoProcessing {
         return this.binding.convertOnline(url,props)
     }
 
+    async readHeadTail(url, chunkSize) {
+        return this.binding.readHeadTail(url,chunkSize)
+    }
+
 }

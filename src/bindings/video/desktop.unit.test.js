@@ -6,7 +6,8 @@ const { hasFeatureMock, apiMock, workaroundMock } = vi.hoisted(() => ({
         video: {
             screenshot: vi.fn(),
             convert: vi.fn(),
-            convertOffline: vi.fn()
+            convertOffline: vi.fn(),
+            readHeadTail: vi.fn()
         }
     },
     workaroundMock: vi.fn((url) => `fixed(${url})`)
@@ -64,5 +65,20 @@ describe('DesktopBinding', () => {
     test('throws when desktop does not support the underlying feature', async () => {
         hasFeatureMock.mockReturnValue(false)
         await expect(binding.convertOnline('video:///home/dirk/route.avi')).rejects.toThrow('not supported')
+    })
+
+    test('readHeadTail() runs the url through the legacy-url workaround before calling api.video.readHeadTail', async () => {
+        apiMock.video.readHeadTail.mockResolvedValue({ head: 'head-bytes', tail: 'tail-bytes' })
+
+        const result = await binding.readHeadTail('video:///home/dirk/route.mp4', 1024)
+
+        expect(workaroundMock).toHaveBeenCalledWith('video:///home/dirk/route.mp4')
+        expect(apiMock.video.readHeadTail).toHaveBeenCalledWith('fixed(video:///home/dirk/route.mp4)', 1024)
+        expect(result).toEqual({ head: 'head-bytes', tail: 'tail-bytes' })
+    })
+
+    test('readHeadTail() throws when desktop does not support the underlying feature', async () => {
+        hasFeatureMock.mockReturnValue(false)
+        await expect(binding.readHeadTail('video:///home/dirk/route.mp4', 1024)).rejects.toThrow('not supported')
     })
 })
