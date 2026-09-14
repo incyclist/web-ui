@@ -63,14 +63,15 @@ describe('VideoProbe', () => {
     })
 
     test('applies the legacy local-url workaround to the resolved playback url on old desktop', () => {
-        // file:///local/route.mp4 -> resolvePlaybackUrl swaps to video:///local/route.mp4
-        // (desktop, non-avi) -> old desktop's getFileInfo() bug would strip that url's own
-        // leading slash, so the workaround inserts a compensating one before it reaches the
-        // custom video: protocol handler
+        // file:///local/route.mp4 -> resolvePlaybackUrl leaves it as file:///local/route.mp4
+        // (mp4 no longer resolves to the custom video: protocol at all - FIXES_BACKLOG #83/#85)
+        // -> old desktop's getFileInfo() bug would still strip that url's own leading slash even
+        // for file: (the workaround applies uniformly to both schemes), so the workaround still
+        // inserts a compensating one
         probeMp4Codec.mockReturnValue(new Promise(() => {}))
         const { container } = render(<VideoProbe url="file:///local/route.mp4" routeId="r9" />)
 
-        expect(container.querySelector('video').src).toBe('video:////local/route.mp4')
+        expect(container.querySelector('video').src).toBe('file:////local/route.mp4')
     })
 
     test('leaves the resolved playback url unchanged on desktop with the fix', () => {
@@ -78,7 +79,7 @@ describe('VideoProbe', () => {
         probeMp4Codec.mockReturnValue(new Promise(() => {}))
         const { container } = render(<VideoProbe url="file:///local/route.mp4" routeId="r10" />)
 
-        expect(container.querySelector('video').src).toBe('video:///local/route.mp4')
+        expect(container.querySelector('video').src).toBe('file:///local/route.mp4')
     })
 
     test('remote urls are unaffected by the playback-url rewrite', () => {
