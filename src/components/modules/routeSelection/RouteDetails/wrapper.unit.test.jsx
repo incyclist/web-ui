@@ -167,3 +167,45 @@ describe('RouteDetailsDialog - Terrain Smoothing plumbing', () => {
         expect(card.addWorkout).toHaveBeenCalledTimes(1)
     })
 })
+
+// canStart is a snapshot taken from card.openSettings()/card.canStart() - it is only refreshed on
+// specific triggers (mount, online-status change, video selection). The download observer's
+// 'done' event was missing from that list, so the Start / Start-With-Workout buttons stayed
+// disabled after a required video finished downloading even though the download UI itself
+// (spinner, "Downloaded" label) updated correctly.
+describe('RouteDetailsDialog - canStart refresh on download completion', () => {
+
+    test('canStart flips from false to true when the download observer fires done, without remounting', async () => {
+        const handlers = {}
+        const downloadObserver = {
+            on: vi.fn((event, cb) => { handlers[event] = cb }),
+        }
+
+        const card = buildCard({ props: { canStart: false } })
+        card.canStart = vi.fn(() => false)
+        card.download = vi.fn(() => downloadObserver)
+
+        await renderWrapper(card)
+
+        expect(rendered.props.canStart).toBe(false)
+
+        // start the download (mirrors pressing the Download button)
+        await act(async () => {
+            rendered.props.onDownload()
+        })
+
+        // the video has now landed on disk - the card reports canStart:true from here on
+        card.openSettings.mockReturnValue({
+            settings: { startPos: { value: 0, unit: 'km' }, realityFactor: 100, smoothingLevel: 0 },
+            showLoopOverwrite: false, showNextOverwrite: false, hasWorkout: false, canStart: true,
+            totalDistance: { value: 2, unit: 'km' }, totalElevation: { value: 1240, unit: 'm' },
+            smoothingAvailable: true, smoothingMaxLevel: 5,
+        })
+
+        await act(async () => {
+            handlers.done()
+        })
+
+        expect(rendered.props.canStart).toBe(true)
+    })
+})
