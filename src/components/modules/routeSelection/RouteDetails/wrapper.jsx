@@ -41,6 +41,34 @@ export const RouteDetailsDialog = (props) => {
 
     const logger = new EventLogger('RouteDetails')
 
+    const getVideoSettings = useCallback( (props) => {
+        if (!refMounted.current)
+            return
+
+        const {canStart, videoChecking, videoMissing} = props
+
+        if ( videoChecking) {
+
+            if (videoMissing) {
+                videoMissing.then( isMissing => {
+                    if (!route) { // user cancelled
+                        setVideoState(  {canStart:false, videoChecking:false, videoMissing:undefined});
+                        return
+                    }
+
+                    else if (isMissing)
+                        logger.logEvent({message:'video missing',videoUrl:card.getRouteDescription()?.videoUrl})
+
+                    const isOnline = onlineStatusMonitor.onlineStatus
+                    setVideoState( { videoChecking:false, videoMissing:isMissing, canStart:card.canStart({isOnline})&&!isMissing } )
+                })
+                return { canStart, videoChecking:true, videoMissing:false}
+            }
+            return { canStart, videoChecking:false, videoMissing:false}
+        }
+
+        setVideoState( { canStart, videoChecking, videoMissing:false} )
+    },[card, logger, onlineStatusMonitor.onlineStatus, route])
 
     const initDownloadHandlers = useCallback((observer) => {
         if (!refMounted.current)
@@ -64,9 +92,13 @@ export const RouteDetailsDialog = (props) => {
             setDownloadState( null)
             setDownload( null)
             setRoute(card.getData())
+            // The video has just landed on disk - canStart (and videoMissing) were snapshotted
+            // from the pre-download state and need to be re-derived now, the same way the
+            // online-status and video-selection triggers already refresh them.
+            getVideoSettings(card.openSettings())
         })
         observer.on('error',async (error)=>{
-            const duration = Date.now()-downloadStart            
+            const duration = Date.now()-downloadStart
             if (duration<500)
                 await sleep(500-duration)
 
@@ -79,7 +111,7 @@ export const RouteDetailsDialog = (props) => {
         observer.on('videoDir.ok',()=>{
             setRequestVideoDir(false)
         })
-    },[card, downloadStart, requestVideoDir])
+    },[card, downloadStart, requestVideoDir, getVideoSettings])
 
     const initConvertHandlers = useCallback((observer) => {
         if (!refMounted.current)
@@ -126,35 +158,6 @@ export const RouteDetailsDialog = (props) => {
 
         return { prevRides: prev?.length>0 ? prev : null, showPrev: getShowPrev(prev) }
     },[activities, getShowPrev, logger, route, card])
-
-    const getVideoSettings = useCallback( (props) => {
-        if (!refMounted.current)
-            return
-
-        const {canStart, videoChecking, videoMissing} = props
-
-        if ( videoChecking) {
-
-            if (videoMissing) {
-                videoMissing.then( isMissing => {  
-                    if (!route) { // user cancelled 
-                        setVideoState(  {canStart:false, videoChecking:false, videoMissing:undefined});
-                        return 
-                    }
-
-                    else if (isMissing)
-                        logger.logEvent({message:'video missing',videoUrl:card.getRouteDescription()?.videoUrl})
-                    
-                    const isOnline = onlineStatusMonitor.onlineStatus
-                    setVideoState( { videoChecking:false, videoMissing:isMissing, canStart:card.canStart({isOnline})&&!isMissing } )                            
-                })
-                return { canStart, videoChecking:true, videoMissing:false}
-            }
-            return { canStart, videoChecking:false, videoMissing:false}
-        }
-
-        setVideoState( { canStart, videoChecking, videoMissing:false} )
-    },[card, logger, onlineStatusMonitor.onlineStatus, route])
 
 
 
