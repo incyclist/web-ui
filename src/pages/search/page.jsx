@@ -189,9 +189,9 @@ export const SearchPage =  () => {
         service.setDisplayType(type) // save in global state/preferences
     }
 
-    const filterOptions = service.getFilterOptions()
-    const {data} = state    
+    const {data} = state
     const {routes,cards,filters,units} = data||{};
+    const filterOptions = service.getFilterOptions(filters)
     
     const searchProps = {routes,cards, filters,units,...filterOptions,loading,hotkeysDisabled,displayType,onDisplayTypeSelected}
     if (pageState==='closed' )
