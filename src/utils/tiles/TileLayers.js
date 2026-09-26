@@ -21,9 +21,10 @@ const Esri_WorldImagery = {
 };
 
 const Carto_Voyager = {
-    url: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
+    url: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png?key=cb1_3yw0_1_503b690484cbe7b33234ed2e',
     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
 };
+
 const DEFAULT_ATTRIBUTION = '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> | ';
 
 /* source: https://github.com/leaflet-extras/leaflet-providers  and http://leaflet-extras.github.io/leaflet-providers/preview/index.html */
@@ -37,12 +38,19 @@ const AvailableLayers = [
 ]
 
 export default class TileLayers {
+    keys = {}
+
     static get(name) {
         let layer =  AvailableLayers.find((el)=>el.name===name);
+
+        if (layer.requiresKey){
+            layer = this.addKey(layer)
+        }
         if ( layer!==undefined)  {
             layer.attribution = DEFAULT_ATTRIBUTION + layer.attribution;
             return layer.config;
         }
     }
+
 }
 
