@@ -1,0 +1,293 @@
+import React from 'react'
+import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest'
+import { render, screen, fireEvent, act } from '@testing-library/react'
+
+vi.mock('../../components/molecules/MainPage', () => ({
+    default: ({children}) => <div data-testid='main-page'>{children}</div>
+}))
+
+vi.mock('../../components/molecules/NavigationBar', () => ({
+    NavigationBar: ({selected, hotkeysDisabled}) => <div data-testid='nav' data-selected={selected} data-hotkeys-disabled={String(!!hotkeysDisabled)} />
+}))
+
+vi.mock('../../components/modules/Search/RoutesTable', () => ({
+    RoutesTable: ({routes}) => <div data-testid='routes-table' className='routes' data-count={routes?.length} />
+}))
+
+vi.mock('../../components/modules/Search/RoutesGrid', () => ({
+    RoutesGrid: ({cards}) => <div data-testid='routes-grid' data-count={cards?.length} />
+}))
+
+import { RouteListScreen } from './screen'
+
+const routes = [{id:'r1', title:'Alpe'}, {id:'r2', title:'Ventoux'}]
+const cards = [{id:'r1'}, {id:'r2'}]
+
+const baseProps = {
+    routes, cards, filters:{}, totalCount:2, countText:'2 routes', loading:false,
+    displayType:'list', sortOrder:'suggested', filtersExpanded:false, listKey:0,
+}
+
+let contentWidth
+const setContentWidth = (w) => { contentWidth = w }
+
+describe('RouteListScreen', () => {
+
+    let clientWidthDescriptor
+
+    beforeEach(() => {
+        contentWidth = 0
+        clientWidthDescriptor = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'clientWidth')
+        Object.defineProperty(HTMLElement.prototype, 'clientWidth', {
+            configurable: true,
+            get() { return this.classList?.contains('route-list-page') ? contentWidth : 0 }
+        })
+    })
+
+    afterEach(() => {
+        if (clientWidthDescriptor)
+            Object.defineProperty(HTMLElement.prototype, 'clientWidth', clientWidthDescriptor)
+        vi.clearAllMocks()
+    })
+
+    describe('header', () => {
+
+        test('title and the two labelled actions, highlighting the Routes nav icon', () => {
+            render(<RouteListScreen {...baseProps} />)
+
+            expect(screen.getByText('Routes')).toBeInTheDocument()
+            expect(screen.getByText('Free Ride')).toBeInTheDocument()
+            expect(screen.getByText('Import Routes')).toBeInTheDocument()
+            expect(screen.getByTestId('nav').dataset.selected).toBe('routes')
+        })
+
+        test('Free Ride carries its tooltip', () => {
+            render(<RouteListScreen {...baseProps} />)
+            const button = screen.getByText('Free Ride').closest('button')
+            expect(button.getAttribute('title')).toBe('Pick any spot on the map and ride the real roads from there')
+        })
+
+        test('header actions call their handlers', () => {
+            const onFreeRide = vi.fn()
+            const onImportRoutes = vi.fn()
+            render(<RouteListScreen {...baseProps} onFreeRide={onFreeRide} onImportRoutes={onImportRoutes} />)
+
+            fireEvent.click(screen.getByText('Free Ride'))
+            fireEvent.click(screen.getByText('Import Routes'))
+            expect(onFreeRide).toHaveBeenCalledTimes(1)
+            expect(onImportRoutes).toHaveBeenCalledTimes(1)
+        })
+
+        test.each([
+            [1080+80, 'row',     undefined],
+            [1000+80, 'row',     undefined],
+            [999+80,  'stacked', '3'],
+            [700+80,  'stacked', '3'],
+            [699+80,  'stacked', '1'],
+        ])('content area %ipx wide: header %s', (width, layout, columns) => {
+            setContentWidth(width)
+            const { container } = render(<RouteListScreen {...baseProps} filtersExpanded />)
+
+            expect(container.querySelector('.route-list-header').dataset.layout).toBe(layout)
+            // labels are never dropped
+            expect(screen.getByText('Free Ride')).toBeInTheDocument()
+            expect(screen.getByText('Import Routes')).toBeInTheDocument()
+            if (columns)
+                expect(container.querySelector('.route-filter-panel').dataset.columns).toBe(columns)
+        })
+
+        test('header layout follows window resizes', () => {
+            setContentWidth(1400)
+            const { container } = render(<RouteListScreen {...baseProps} />)
+            expect(container.querySelector('.route-list-header').dataset.layout).toBe('row')
+
+            setContentWidth(900)
+            act(() => { window.dispatchEvent(new Event('resize')) })
+            expect(container.querySelector('.route-list-header').dataset.layout).toBe('stacked')
+        })
+    })
+
+    describe('filters', () => {
+
+        test('filter panel is only rendered when expanded, chips always', () => {
+            const filters = {contentType:'Video', country:'France'}
+            const { container, rerender } = render(<RouteListScreen {...baseProps} filters={filters} />)
+
+            expect(container.querySelector('.route-filter-panel')).toBeNull()
+            expect(container.querySelectorAll('.filter-chip')).toHaveLength(2)
+            expect(container.querySelector('.filters-count')).toHaveTextContent('2')
+
+            rerender(<RouteListScreen {...baseProps} filters={filters} filtersExpanded />)
+            expect(container.querySelector('.route-filter-panel')).not.toBeNull()
+            expect(container.querySelectorAll('.filter-chip')).toHaveLength(2)
+        })
+
+        test('Route Content and Route Type are chip rows in the panel', () => {
+            render(<RouteListScreen {...baseProps} filtersExpanded contentTypes={['Video','GPX']} routeTypes={['Loop','Point to Point']} />)
+
+            expect(screen.getByRole('radiogroup', {name:'Route Content'})).toBeInTheDocument()
+            expect(screen.getByRole('radiogroup', {name:'Route Type'})).toBeInTheDocument()
+            expect(screen.getByRole('radio', {name:'Point to Point'})).toBeInTheDocument()
+        })
+
+        test('selecting a chip row option changes the filter', () => {
+            const onChangeFilter = vi.fn()
+            render(<RouteListScreen {...baseProps} filters={{title:'Alpe'}} filtersExpanded contentTypes={['Video','GPX']} onChangeFilter={onChangeFilter} />)
+
+            fireEvent.click(screen.getByRole('radio', {name:'Video'}))
+            expect(onChangeFilter).toHaveBeenCalledWith({title:'Alpe', contentType:'Video'})
+        })
+
+        test('the search box keeps the other filters', () => {
+            vi.useFakeTimers()
+            try {
+                const onChangeFilter = vi.fn()
+                render(<RouteListScreen {...baseProps} filters={{country:'France'}} onChangeFilter={onChangeFilter} />)
+
+                fireEvent.change(screen.getByPlaceholderText('Search routes by name'), {target:{value:'Alpe'}})
+                act(() => { vi.advanceTimersByTime(500) })
+                expect(onChangeFilter).toHaveBeenCalledWith({country:'France', title:'Alpe'})
+            }
+            finally {
+                vi.useRealTimers()
+            }
+        })
+
+        test('shows the result count', () => {
+            render(<RouteListScreen {...baseProps} countText='38 of 1 247 routes' />)
+            expect(screen.getByText('38 of 1 247 routes')).toBeInTheDocument()
+        })
+    })
+
+    describe('list area', () => {
+
+        test('renders the table in list view', () => {
+            render(<RouteListScreen {...baseProps} displayType='list' />)
+            expect(screen.getByTestId('routes-table').dataset.count).toBe('2')
+            expect(screen.queryByTestId('routes-grid')).toBeNull()
+        })
+
+        test('renders the grid in tile view', () => {
+            render(<RouteListScreen {...baseProps} displayType='tiles' />)
+            expect(screen.getByTestId('routes-grid').dataset.count).toBe('2')
+            expect(screen.queryByTestId('routes-table')).toBeNull()
+        })
+
+        test('loading shows the loader only', () => {
+            render(<RouteListScreen {...baseProps} loading />)
+            expect(screen.queryByTestId('routes-table')).toBeNull()
+            expect(screen.queryByText('No routes yet')).toBeNull()
+        })
+
+        test('an empty library offers Import Routes and Free Ride', () => {
+            const onImportRoutes = vi.fn()
+            const onFreeRide = vi.fn()
+            const { container } = render(<RouteListScreen {...baseProps} routes={[]} cards={[]} totalCount={0}
+                onImportRoutes={onImportRoutes} onFreeRide={onFreeRide} />)
+
+            const empty = container.querySelector('.empty-library')
+            expect(empty).toHaveTextContent('No routes yet')
+            expect(empty).toHaveTextContent('Import your own GPX routes or a folder of video routes — or start a Free Ride and pick any road on the map.')
+            expect(screen.queryByText('No Routes found')).toBeNull()
+
+            const buttons = empty.querySelectorAll('button')
+            expect(buttons[0]).toHaveTextContent('Import Routes')
+            expect(buttons[1]).toHaveTextContent('Free Ride')
+            fireEvent.click(buttons[0])
+            fireEvent.click(buttons[1])
+            expect(onImportRoutes).toHaveBeenCalledTimes(1)
+            expect(onFreeRide).toHaveBeenCalledTimes(1)
+        })
+
+        test('no match: names the cheapest relaxation and offers Clear all filters', () => {
+            const onClearAllFilters = vi.fn()
+            const hint = 'Try removing a filter — 3 routes match “Ventoux” on its own.'
+            const { container } = render(<RouteListScreen {...baseProps} routes={[]} cards={[]} totalCount={1247}
+                filters={{title:'Ventoux', country:'France'}} noMatchHint={hint} onClearAllFilters={onClearAllFilters} />)
+
+            const noMatch = container.querySelector('.no-match')
+            expect(noMatch).toHaveTextContent('No routes match')
+            expect(noMatch).toHaveTextContent(hint)
+            expect(screen.queryByText('No routes yet')).toBeNull()
+
+            fireEvent.click(screen.getByText('Clear all filters'))
+            expect(onClearAllFilters).toHaveBeenCalledTimes(1)
+        })
+
+        test('in-flight imports are pinned above the list', () => {
+            const makeCard = (name) => ({
+                getId: () => name,
+                getDisplayProperties: () => ({name, error:null, observer:null}),
+            })
+            const { container } = render(<RouteListScreen {...baseProps} activeImports={[makeCard('a.gpx'), makeCard('b.gpx')]} />)
+
+            const pinned = container.querySelectorAll('.pinned-imports .active-import')
+            expect(pinned).toHaveLength(2)
+            expect(pinned[0]).toHaveTextContent('a.gpx')
+
+            // pinned area comes before the list area
+            const pinnedArea = container.querySelector('.pinned-imports')
+            const listArea = container.querySelector('.route-list-scroll')
+            expect(pinnedArea.compareDocumentPosition(listArea) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+        })
+    })
+
+    describe('keyboard', () => {
+
+        const keyUp = (key, props={}) => act(() => {
+            window.dispatchEvent(new KeyboardEvent('keyup', {key, ...props}))
+        })
+
+        test('Up/Down/PageUp/PageDown scroll the list', () => {
+            render(<RouteListScreen {...baseProps} />)
+            const table = screen.getByTestId('routes-table')
+            table.scrollBy = vi.fn()
+
+            keyUp('ArrowDown')
+            keyUp('PageDown')
+            keyUp('ArrowUp')
+            keyUp('PageUp')
+
+            const tops = table.scrollBy.mock.calls.map( c=>c[0].top)
+            expect(tops).toHaveLength(4)
+            expect(tops[0]).toBeGreaterThan(0)
+            expect(tops[1]).toBeGreaterThan(0)
+            expect(tops[2]).toBeLessThan(0)
+            expect(tops[3]).toBeLessThan(0)
+        })
+
+        test('arrow keys do not scroll while typing in the search box', () => {
+            render(<RouteListScreen {...baseProps} />)
+            const table = screen.getByTestId('routes-table')
+            table.scrollBy = vi.fn()
+
+            screen.getByPlaceholderText('Search routes by name').focus()
+            keyUp('ArrowDown')
+            expect(table.scrollBy).not.toHaveBeenCalled()
+        })
+
+        test('Ctrl+F and / focus the search box', () => {
+            render(<RouteListScreen {...baseProps} />)
+            const input = screen.getByPlaceholderText('Search routes by name')
+
+            keyUp('f', {ctrlKey:true})
+            expect(document.activeElement).toBe(input)
+
+            input.blur()
+            keyUp('/')
+            expect(document.activeElement).toBe(input)
+        })
+
+        test('navigation bar hotkeys are disabled while a field has focus', () => {
+            render(<RouteListScreen {...baseProps} />)
+            expect(screen.getByTestId('nav').dataset.hotkeysDisabled).toBe('false')
+
+            const input = screen.getByPlaceholderText('Search routes by name')
+            act(() => { input.focus() })
+            expect(screen.getByTestId('nav').dataset.hotkeysDisabled).toBe('true')
+
+            act(() => { input.blur() })
+            expect(screen.getByTestId('nav').dataset.hotkeysDisabled).toBe('false')
+        })
+    })
+})
