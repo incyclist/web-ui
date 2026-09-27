@@ -3,6 +3,7 @@ import { FlipCard, Row } from '../../../atoms'
 import { copyPropsExcluding } from '../../../../utils/props'
 import styled from 'styled-components'
 import { useUnmountEffect } from '../../../../hooks'
+import { CardSkeleton } from './skeleton'
 
 const OutsideFold = styled(Row)`
     opacity: 0.1;
@@ -92,6 +93,10 @@ export const Card = (props) => {
     const stateProps = state||{}
     const hidden = !stateProps.visible
 
+    // lists with a fold window (e.g. RoutesGrid) pass outsideFold - it is read from props, as it changes while scrolling
+    if (props.outsideFold) {
+        return <CardSkeleton onClick={props.onClick} />
+    }
 
     if (hidden) {
         return <OutsideFold width={widthStr} height={heightStr} >X</OutsideFold>
