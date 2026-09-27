@@ -21,6 +21,8 @@ export const Container = styled(View)`
     display: flex;
     flex-flow: row wrap;
     align-content: flex-start;
+    gap: 1.5vh 1vw;
+    padding: 1.5vh 1vw;
 
     &::-webkit-scrollbar-button {
         display: none;
