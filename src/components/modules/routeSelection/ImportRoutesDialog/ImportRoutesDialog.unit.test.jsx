@@ -1,7 +1,7 @@
 import { describe, test, expect, vi, beforeEach } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { render, screen, fireEvent, act } from '@testing-library/react'
 
-const { mockImportRoutes, dialogProps } = vi.hoisted(() => ({
+const { mockImportRoutes, mockSelectDirectory, dialogProps } = vi.hoisted(() => ({
     mockImportRoutes: {
         displayProps: { phase: 'landing', routes: [], hasICloudDownloadFailures: false },
         scan: vi.fn(),
@@ -9,11 +9,18 @@ const { mockImportRoutes, dialogProps } = vi.hoisted(() => ({
         importSelected: vi.fn(),
         cancel: vi.fn(),
     },
+    mockSelectDirectory: vi.fn(),
     dialogProps: [],
 }))
 
 vi.mock('../../../../hooks/routes/useImportRoutes', () => ({
     useImportRoutes: () => mockImportRoutes,
+}))
+
+// Only the folder-capture test drives Landing's real "Import a whole folder" tile, which talks
+// to the native picker binding - stubbed the same way LandingView's own suite does.
+vi.mock('../../../../bindings/native-ui', () => ({
+    useAppUI: () => ({ selectDirectory: mockSelectDirectory }),
 }))
 
 // The Dialog molecule owns the fixed-size chrome this test needs to verify; stubbed here
@@ -60,16 +67,60 @@ describe('ImportRoutesDialog', () => {
         expect(dialogProps[0].height).toBe(IMPORT_DIALOG_HEIGHT)
     })
 
-    test('a phase with no view yet (session 5.3) does not go blank, and keeps the same geometry', () => {
-        mockImportRoutes.displayProps = { phase: 'scanning', routes: [], scanProgress: { scannedFolders: 3, failedFolders: 0 } }
+    test('a phase with no view at all does not go blank, and keeps the same geometry', () => {
+        // 'error' is declared on ImportDisplayProps but never actually assigned by the service -
+        // the one phase value genuinely unmapped now that session 5.3 filled in the rest.
+        mockImportRoutes.displayProps = { phase: 'error', routes: [], error: 'unexpected' }
 
         render(<ImportRoutesDialog onClose={vi.fn()} />)
 
         expect(screen.getByTestId('dialog')).toBeTruthy()
         expect(dialogProps[0].width).toBe(IMPORT_DIALOG_WIDTH)
         expect(dialogProps[0].height).toBe(IMPORT_DIALOG_HEIGHT)
+    })
+
+    test('renders the real Scanning view once scanning, with its own title and non-dismissable while it runs', () => {
+        mockImportRoutes.displayProps = { phase: 'scanning', routes: [], scanProgress: { scannedFolders: 3, failedFolders: 0 } }
+
+        render(<ImportRoutesDialog onClose={vi.fn()} />)
+
+        expect(screen.getByText('3 folders checked')).toBeTruthy()
+        expect(screen.getByTestId('dialog').title).toBe('Import Routes')
         // not dismissable while a scan is in flight
         expect(dialogProps[0].onESC).toBeUndefined()
+    })
+
+    test('titles the dialog per phase, exactly per the copy deck', () => {
+        mockImportRoutes.displayProps = { phase: 'selecting', routes: [], scanProgress: { scannedFolders: 1, failedFolders: 0 } }
+        const { rerender } = render(<ImportRoutesDialog onClose={vi.fn()} />)
+        expect(screen.getByTestId('dialog').title).toBe('Select Routes')
+
+        mockImportRoutes.displayProps = { phase: 'ingesting', routes: [], ingestProgress: { current: 1, total: 2, currentName: 'A' } }
+        rerender(<ImportRoutesDialog onClose={vi.fn()} />)
+        expect(screen.getByTestId('dialog').title).toBe('Importing')
+
+        mockImportRoutes.displayProps = { phase: 'complete', routes: [], completionSummary: { imported: 1, skipped: 0, errors: 0, failedRoutes: [] } }
+        rerender(<ImportRoutesDialog onClose={vi.fn()} />)
+        expect(screen.getByTestId('dialog').title).toBe('Import Finished')
+    })
+
+    test('captures the chosen folder from Landing and passes it down to Scanning', async () => {
+        mockSelectDirectory.mockResolvedValue({ selected: 'D:\\Videos', displayName: 'D:\\Videos' })
+        const { rerender } = render(<ImportRoutesDialog onClose={vi.fn()} />)
+
+        // Landing calls onSelectFolder with the picker result - the shell must remember it
+        // (useImportRoutes()'s display props never carry it, only counts) so Scanning can name
+        // the folder in its copy.
+        await act(async () => {
+            fireEvent.click(screen.getByText('Import a whole folder'))
+        })
+
+        expect(mockImportRoutes.scan).toHaveBeenCalledWith({ uri: 'D:\\Videos', displayName: 'D:\\Videos' })
+
+        mockImportRoutes.displayProps = { phase: 'scanning', routes: [], scanProgress: { scannedFolders: 0, failedFolders: 0 } }
+        rerender(<ImportRoutesDialog onClose={vi.fn()} />)
+
+        expect(screen.getByText('Looking for routes in D:\\Videos…')).toBeTruthy()
     })
 
     test('a successful single-route import auto-closes the dialog', () => {
