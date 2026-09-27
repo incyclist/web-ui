@@ -31,7 +31,7 @@ vi.mock('../../../molecules', async (importOriginal) => {
     return {
         ...actual,
         Dialog: (props) => {
-            dialogProps.push({ width: props.width, height: props.height, onESC: props.onESC })
+            dialogProps.push({ width: props.width, height: props.height, onESC: props.onESC, onOutsideClicked: props.onOutsideClicked })
             return <div data-testid="dialog" title={props.title}>{props.children}</div>
         },
     }
@@ -164,5 +164,23 @@ describe('ImportRoutesDialog', () => {
         render(<ImportRoutesDialog onClose={onClose} />)
 
         expect(dialogProps[0].onESC).toBe(onClose)
+    })
+
+    test('a visible close button is shown on Landing and closes the dialog when clicked', () => {
+        const onClose = vi.fn()
+        render(<ImportRoutesDialog onClose={onClose} />)
+
+        expect(dialogProps[0].onOutsideClicked).toBe(onClose)
+        fireEvent.click(screen.getByText('Close'))
+        expect(onClose).toHaveBeenCalled()
+    })
+
+    test('the close button (and clicking outside) is hidden during a non-dismissable phase', () => {
+        mockImportRoutes.displayProps = { phase: 'scanning', routes: [], scanProgress: { scannedFolders:1, failedFolders:0 } }
+        const onClose = vi.fn()
+        render(<ImportRoutesDialog onClose={onClose} />)
+
+        expect(screen.queryByText('Close')).toBeNull()
+        expect(dialogProps[0].onOutsideClicked).toBeUndefined()
     })
 })

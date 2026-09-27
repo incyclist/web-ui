@@ -1,5 +1,8 @@
 import React, { useCallback, useEffect, useState } from 'react';
+import styled from 'styled-components';
+import { XIcon } from '@primer/octicons-react';
 import { Dialog } from '../../../molecules';
+import { Icon } from '../../../atoms';
 import { useImportRoutes } from '../../../../hooks/routes/useImportRoutes';
 import { LandingView } from './views/LandingView';
 import { ResultView } from './views/ResultView';
@@ -17,6 +20,25 @@ export const IMPORT_DIALOG_WIDTH = 'min(980px, 70vw)';
 export const IMPORT_DIALOG_HEIGHT = 'min(660px, 75vh)';
 
 const TITLE = 'Import Routes';
+
+// Dialog (the shared molecule) renders no close chrome of its own - every other dialog in the
+// app supplies its own explicit Cancel/OK. Landing and the phases in between it had none at
+// all, with only the (undiscoverable) Esc key to back out. Positioned inside this dialog's own
+// content rather than in the shared molecule, so no other dialog in the app is affected.
+const CloseButton = styled(Icon)`
+    position: absolute;
+    top: 1vh;
+    right: 1vw;
+    z-index: 1;
+`;
+
+// Dialog establishes no positioning context of its own for children, so CloseButton needs its
+// own to anchor to the dialog's content box rather than the whole window.
+const ContentWrapper = styled.div`
+    position: relative;
+    width: 100%;
+    height: 100%;
+`;
 
 // While one of these is running, nothing has been confirmed by the user yet that Esc/close
 // should be allowed to interrupt without asking - the corresponding view is the one that
@@ -114,24 +136,32 @@ export const ImportRoutesDialog = ({ onClose }) => {
             width={IMPORT_DIALOG_WIDTH}
             height={IMPORT_DIALOG_HEIGHT}
             onESC={dismissable ? onClose : undefined}
+            onOutsideClicked={dismissable ? onClose : undefined}
         >
-            <View
-                displayProps={displayProps}
-                folderInfo={folderInfo}
-                onAddRoute={importSingle}
-                onSelectFolder={onSelectFolder}
-                error={error}
-                failure={failure}
-                onPickAnotherFile={onPickAnotherFile}
-                onClose={onClose}
-                cancel={cancel}
-                importSelected={importSelected}
-                selectedIds={selectedIds}
-                isSelected={isSelected}
-                toggleSelected={toggleSelected}
-                selectAll={selectAll}
-                deselectAll={deselectAll}
-            />
+            <ContentWrapper>
+                {dismissable ?
+                    <CloseButton size={20} padding={0} onClick={onClose} label='Close'>
+                        <XIcon/>
+                    </CloseButton>
+                    : null}
+                <View
+                    displayProps={displayProps}
+                    folderInfo={folderInfo}
+                    onAddRoute={importSingle}
+                    onSelectFolder={onSelectFolder}
+                    error={error}
+                    failure={failure}
+                    onPickAnotherFile={onPickAnotherFile}
+                    onClose={onClose}
+                    cancel={cancel}
+                    importSelected={importSelected}
+                    selectedIds={selectedIds}
+                    isSelected={isSelected}
+                    toggleSelected={toggleSelected}
+                    selectAll={selectAll}
+                    deselectAll={deselectAll}
+                />
+            </ContentWrapper>
         </Dialog>
     );
 };
