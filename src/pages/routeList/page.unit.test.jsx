@@ -306,5 +306,16 @@ describe('RouteListPage', () => {
             act(() => { last().onDeleteImport(importCard) })
             expect(importCard.delete).toHaveBeenCalled()
         })
+
+        test('files dropped on the page-level overlay import through the same service call the old carousel used, no dialog', () => {
+            mockService.import = vi.fn()
+            renderPage()
+
+            const dropInfo = [{type:'url', name:'route.gpx', dir:'/tmp', ext:'gpx'}]
+            act(() => { last().onImportFiles(dropInfo) })
+
+            expect(mockService.import).toHaveBeenCalledWith(dropInfo)
+            expect(mockOpenDialog).not.toHaveBeenCalled()
+        })
     })
 })

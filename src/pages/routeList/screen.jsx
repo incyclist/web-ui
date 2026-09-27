@@ -7,13 +7,15 @@ import { Column, Row } from "../../components/atoms/layout/View"
 import { BikeIcon } from "../../components/atoms/Icons/BikeIcon"
 import { NavigationBar } from "../../components/molecules/NavigationBar"
 import { DisplayTypeSelection } from "../../components/molecules/Lists/DisplayTypeSelection"
+import { Dropzone } from "../../components/molecules"
 import { RoutesTable } from "../../components/modules/Search/RoutesTable"
 import { RoutesGrid } from "../../components/modules/Search/RoutesGrid"
 import { RouteListToolbar } from "../../components/modules/Search/Toolbar"
 import { RouteFilterPanel } from "../../components/modules/Search/FilterPanel"
 import { ActiveImportRow } from "../../components/modules/Search/ActiveImportRow"
+import { DEFAULT_FILTERS } from "../../components/modules/routeSelection/UploadCard/summary"
 import { useKey } from "../../hooks/ui/useKey"
-import { CONTENT_PADDING, FREE_RIDE_TOOLTIP, SORT_OPTIONS, getFilterChips, getHeaderLayout } from "./utils"
+import { CONTENT_PADDING, DROP_OVERLAY_TITLE, FREE_RIDE_TOOLTIP, SORT_OPTIONS, getDropOverlayHint, getFilterChips, getHeaderLayout } from "./utils"
 
 const UP = 'ArrowUp'
 const DOWN = 'ArrowDown'
@@ -38,6 +40,35 @@ const ContentArea = styled(Column)`
     padding-right: ${CONTENT_PADDING/2}px;
     overflow-y: hidden;
     box-sizing: border-box;
+    position: relative;
+`
+
+// page-level drop overlay (ux.md §5.7) - the existing Dropzone molecule, relocated to cover the
+// whole content area instead of one carousel card. Only rendered while a file is being dragged
+// over the page, so its own click-to-pick behaviour never competes with clicking a route row.
+const DropOverlay = styled(Dropzone)`
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 20;
+    background-color: rgba(0,0,0,0.6);
+    border-width: 3px;
+    border-color: #dd9933;
+    border-radius: 8px;
+    color: white;
+`
+
+const DropOverlayTitle = styled.div`
+    font-size: 2.4vh;
+    font-weight: bold;
+`
+
+const DropOverlayHint = styled.div`
+    font-size: 1.6vh;
+    margin-top: 0.6vh;
+    opacity: 0.85;
 `
 
 // Title row (the bare PageTitle atom, centered) and the actions row below it, always stacked -
@@ -152,13 +183,56 @@ export const RouteListScreen = ({
         onChangeFilter, onRemoveFilter, onClearPanelFilters, onClearAllFilters,
         onToggleFilters, onSortOrderChanged, onDisplayTypeSelected,
         onSelect, onDelete, onRetryImport, onDeleteImport,
-        onFreeRide, onImportRoutes, closePage
+        onFreeRide, onImportRoutes, onImportFiles, closePage
     }) => {
 
     const contentRef = useRef(null)
     const listRef = useRef(null)
     const searchRef = useRef(null)
     const [fieldFocused,setFieldFocused] = useState(false)
+
+    // --- page-level drop overlay (ux.md §5.7) ---
+    // a plain counter, exactly like the one the Dropzone molecule itself keeps, so a drag
+    // crossing into/out of a nested row (RouteItem, a button, ...) doesn't flicker the overlay -
+    // only the transition to/from zero shows or hides it. Capture-phase handlers see every
+    // enter/leave that bubbles through this subtree regardless of what a nested Dropzone's own
+    // (bubble-phase) handlers do further down, so the overlay's lifecycle never depends on them.
+    const dragDepth = useRef(0)
+    const [dragActive,setDragActive] = useState(false)
+    const [dragFileCount,setDragFileCount] = useState(0)
+
+    const onContentDragEnterCapture = (e) => {
+        e.preventDefault()
+        dragDepth.current += 1
+        if (dragDepth.current===1) {
+            const count = e.dataTransfer?.items?.length ?? e.dataTransfer?.files?.length ?? 0
+            setDragFileCount(count)
+            setDragActive(true)
+        }
+    }
+
+    const onContentDragOverCapture = (e) => {
+        e.preventDefault()
+    }
+
+    const onContentDragLeaveCapture = () => {
+        dragDepth.current = Math.max(0,dragDepth.current-1)
+        if (dragDepth.current===0)
+            setDragActive(false)
+    }
+
+    const onContentDropCapture = () => {
+        dragDepth.current = 0
+        setDragActive(false)
+    }
+
+    // dropping never opens ImportRoutesDialog - it imports immediately through the same
+    // RouteListService.import() the old carousel's UploadCard called, reporting progress as
+    // pinned ActiveImport rows (HLD §4.3/§4.7)
+    const onOverlayDrop = (dropInfo) => {
+        if (typeof onImportFiles === 'function')
+            onImportFiles(dropInfo)
+    }
 
     const contentWidth = useContentWidth(contentRef)
     const {singleColumnFilters} = getHeaderLayout(contentWidth)
@@ -259,7 +333,9 @@ export const RouteListScreen = ({
             <View >
                 <NavigationBar closePage={closePage} selected='routes' hotkeysDisabled={fieldFocused}/>
 
-                <ContentArea ref={contentRef} className='route-list-page' onFocusCapture={onFocusCapture} onBlurCapture={onBlurCapture}>
+                <ContentArea ref={contentRef} className='route-list-page' onFocusCapture={onFocusCapture} onBlurCapture={onBlurCapture}
+                    onDragEnterCapture={onContentDragEnterCapture} onDragOverCapture={onContentDragOverCapture}
+                    onDragLeaveCapture={onContentDragLeaveCapture} onDropCapture={onContentDropCapture}>
                     <Header className='route-list-header'>
                         <PageTitle>Routes</PageTitle>
                         <Actions className='route-list-actions'>
@@ -300,6 +376,17 @@ export const RouteListScreen = ({
                     <ListArea ref={listRef} className='route-list-scroll'>
                         {renderList()}
                     </ListArea>
+
+                    {dragActive ?
+                        <DropOverlay className='route-drop-overlay' width='100%' height='100%'
+                            multiple filters={DEFAULT_FILTERS} onDrop={onOverlayDrop}
+                            text={
+                                <>
+                                    <DropOverlayTitle>{DROP_OVERLAY_TITLE}</DropOverlayTitle>
+                                    <DropOverlayHint>{getDropOverlayHint(dragFileCount)}</DropOverlayHint>
+                                </>
+                            } />
+                        : null}
                 </ContentArea>
             </View>
         </MainPage>

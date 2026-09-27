@@ -18,6 +18,21 @@ export const SORT_OPTIONS = [
 
 export const FREE_RIDE_TOOLTIP = 'Pick any spot on the map and ride the real roads from there'
 
+// copy deck (ux.md §9, "Drag overlay") for the page-level drop overlay - §5.7
+export const DROP_OVERLAY_TITLE = 'Drop to import'
+
+/**
+ * Second line of the page-level drop overlay: `<n> files · .gpx, .epm and .xml are supported`.
+ * Falls back to the plain support sentence when the browser hasn't told us a count yet.
+ */
+export const getDropOverlayHint = (fileCount) => {
+    const n = Math.round(Number(fileCount)||0)
+    if (!(n>0))
+        return '.gpx, .epm and .xml are supported'
+    const noun = n===1 ? 'file' : 'files'
+    return `${n} ${noun} · .gpx, .epm and .xml are supported`
+}
+
 /**
  * Determines how the filter panel degrades on narrow windows. The page header's title and
  * actions rows are fixed (title alone, centered; actions left-aligned below it, at every

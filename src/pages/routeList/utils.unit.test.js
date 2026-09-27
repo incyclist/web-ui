@@ -1,7 +1,7 @@
 import { describe, test, expect } from 'vitest'
 import {
     getHeaderLayout, getFilterChips, countActiveFilters, hasActiveFilters, removeFilter, clearPanelFilters,
-    formatCount, getRouteCountText, getNoMatchHint, SORT_OPTIONS
+    formatCount, getRouteCountText, getNoMatchHint, getDropOverlayHint, SORT_OPTIONS
 } from './utils'
 
 describe('getHeaderLayout', () => {
@@ -111,4 +111,17 @@ describe('no match hint', () => {
 test('sort options, Suggested first', () => {
     expect(SORT_OPTIONS.map(o=>o.label)).toEqual(['Suggested','Name (A–Z)','Distance','Elevation'])
     expect(SORT_OPTIONS.map(o=>o.value)).toEqual(['suggested','name','distance','elevation'])
+})
+
+describe('drop overlay hint (ux.md §9)', () => {
+
+    test('singular and plural file counts', () => {
+        expect(getDropOverlayHint(1)).toBe('1 file · .gpx, .epm and .xml are supported')
+        expect(getDropOverlayHint(2)).toBe('2 files · .gpx, .epm and .xml are supported')
+    })
+
+    test('falls back to the plain support sentence when no count is known yet', () => {
+        expect(getDropOverlayHint(0)).toBe('.gpx, .epm and .xml are supported')
+        expect(getDropOverlayHint(undefined)).toBe('.gpx, .epm and .xml are supported')
+    })
 })

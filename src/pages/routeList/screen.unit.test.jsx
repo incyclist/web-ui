@@ -18,7 +18,23 @@ vi.mock('../../components/modules/Search/RoutesGrid', () => ({
     RoutesGrid: ({cards}) => <div data-testid='routes-grid' data-count={cards?.length} />
 }))
 
+// Dropzone talks to the native file dialog and native drag/drop internals, neither of which
+// works under jsdom - stubbed to capture the props the screen passed it and let a test call
+// onDrop directly, per this repo's convention for heavy/native molecules (see LandingView's test).
+const { rendered } = vi.hoisted(() => ({ rendered: { dropzoneProps: null } }))
+vi.mock('../../components/molecules', async (importOriginal) => {
+    const actual = await importOriginal()
+    return {
+        ...actual,
+        Dropzone: (props) => {
+            rendered.dropzoneProps = props
+            return <div data-testid='drop-overlay' className={props.className}>{props.text}</div>
+        }
+    }
+})
+
 import { RouteListScreen } from './screen'
+import { DEFAULT_FILTERS } from '../../components/modules/routeSelection/UploadCard/summary'
 
 const routes = [{id:'r1', title:'Alpe'}, {id:'r2', title:'Ventoux'}]
 const cards = [{id:'r1'}, {id:'r2'}]
@@ -37,6 +53,7 @@ describe('RouteListScreen', () => {
 
     beforeEach(() => {
         contentWidth = 0
+        rendered.dropzoneProps = null
         clientWidthDescriptor = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'clientWidth')
         Object.defineProperty(HTMLElement.prototype, 'clientWidth', {
             configurable: true,
@@ -289,6 +306,100 @@ describe('RouteListScreen', () => {
 
             act(() => { input.blur() })
             expect(screen.getByTestId('nav').dataset.hotkeysDisabled).toBe('false')
+        })
+    })
+
+    describe('page-level drop overlay', () => {
+
+        test('appears on drag-enter over the content area, with the exact copy-deck text', () => {
+            const { container } = render(<RouteListScreen {...baseProps} />)
+            const contentArea = container.querySelector('.route-list-page')
+
+            expect(container.querySelector('.route-drop-overlay')).toBeNull()
+
+            fireEvent.dragEnter(contentArea, {dataTransfer:{items:{length:2}}})
+
+            const overlay = container.querySelector('.route-drop-overlay')
+            expect(overlay).not.toBeNull()
+            expect(overlay).toHaveTextContent('Drop to import')
+            expect(overlay).toHaveTextContent('2 files · .gpx, .epm and .xml are supported')
+        })
+
+        test('disappears on drag-leave', () => {
+            const { container } = render(<RouteListScreen {...baseProps} />)
+            const contentArea = container.querySelector('.route-list-page')
+
+            fireEvent.dragEnter(contentArea, {dataTransfer:{items:{length:1}}})
+            expect(container.querySelector('.route-drop-overlay')).not.toBeNull()
+
+            fireEvent.dragLeave(contentArea)
+            expect(container.querySelector('.route-drop-overlay')).toBeNull()
+        })
+
+        test('disappears on drop', () => {
+            const { container } = render(<RouteListScreen {...baseProps} />)
+            const contentArea = container.querySelector('.route-list-page')
+
+            fireEvent.dragEnter(contentArea, {dataTransfer:{items:{length:1}}})
+            expect(container.querySelector('.route-drop-overlay')).not.toBeNull()
+
+            fireEvent.drop(contentArea)
+            expect(container.querySelector('.route-drop-overlay')).toBeNull()
+        })
+
+        test('a drag crossing into and back out of a nested row does not flicker the overlay', () => {
+            const { container } = render(<RouteListScreen {...baseProps} />)
+            const contentArea = container.querySelector('.route-list-page')
+            const nestedRow = screen.getByTestId('routes-table')
+
+            fireEvent.dragEnter(contentArea, {dataTransfer:{items:{length:1}}})
+            expect(container.querySelector('.route-drop-overlay')).not.toBeNull()
+
+            // pointer moves onto a child element inside the content area
+            fireEvent.dragEnter(nestedRow, {dataTransfer:{items:{length:1}}})
+            expect(container.querySelector('.route-drop-overlay')).not.toBeNull()
+
+            // ... and back out of it, while still over the content area as a whole -
+            // this is exactly the nested-target boundary crossing that must not hide the overlay
+            fireEvent.dragLeave(nestedRow)
+            expect(container.querySelector('.route-drop-overlay')).not.toBeNull()
+
+            // only leaving the content area itself hides it
+            fireEvent.dragLeave(contentArea)
+            expect(container.querySelector('.route-drop-overlay')).toBeNull()
+        })
+
+        test('dragging over the navigation bar does not open the overlay', () => {
+            const { container } = render(<RouteListScreen {...baseProps} />)
+            const nav = screen.getByTestId('nav')
+
+            fireEvent.dragEnter(nav, {dataTransfer:{items:{length:1}}})
+            expect(container.querySelector('.route-drop-overlay')).toBeNull()
+        })
+
+        test('reuses the exact combined route filters (no RLV) and allows multiple files', () => {
+            const { container } = render(<RouteListScreen {...baseProps} />)
+            const contentArea = container.querySelector('.route-list-page')
+
+            fireEvent.dragEnter(contentArea, {dataTransfer:{items:{length:1}}})
+
+            expect(rendered.dropzoneProps.multiple).toBe(true)
+            expect(rendered.dropzoneProps.filters).toBe(DEFAULT_FILTERS)
+        })
+
+        test('dropping calls the existing import path and never opens the Import Routes dialog', () => {
+            const onImportFiles = vi.fn()
+            const onImportRoutes = vi.fn()
+            const { container } = render(<RouteListScreen {...baseProps} onImportFiles={onImportFiles} onImportRoutes={onImportRoutes} />)
+            const contentArea = container.querySelector('.route-list-page')
+
+            fireEvent.dragEnter(contentArea, {dataTransfer:{items:{length:1}}})
+
+            const dropInfo = [{type:'url', name:'route.gpx', dir:'/tmp', ext:'gpx'}]
+            act(() => { rendered.dropzoneProps.onDrop(dropInfo) })
+
+            expect(onImportFiles).toHaveBeenCalledWith(dropInfo)
+            expect(onImportRoutes).not.toHaveBeenCalled()
         })
     })
 })
