@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 
 
 import { ElevationPreview } from '../../elevation/ElevationPreview';
@@ -12,6 +13,7 @@ import Flag from 'react-world-flags';
 import { useAppState, useRouteList, useAppsService } from 'incyclist-services';
 import { useHoverObserver } from '../../../../hooks/ui/useHover';
 import { DeleteIcon } from '../../../molecules/Activity/ActivityListItem/atoms';
+import { MessageBox } from '../../../molecules';
 import { routeDetailsQueue } from '../../../../utils/routeDetailsLoader';
 
 const Map = ({points}) => {
@@ -36,15 +38,35 @@ export const RouteItem = ( props) => {
     const appState = useAppState()
     const containerRef = useRef()
     const [hoverObserverRef,setHoverObserver] = useHoverObserver(containerRef)
+    const [confirmDelete,setConfirmDelete] = useState(false)
 
     const newSearchUI = appState.hasFeature('NEW_SEARCH_UI')
 
 
-    const onDeleteHandler = (event) => {        
-        const {onDelete} = props
+    // a downloaded copy of a catalog route only clears the local copy - the route stays in the
+    // catalog and is recoverable, so it is deleted without a prompt. A local/imported route is not
+    // re-downloadable, so it gets a confirmation first (ux.md §3.8).
+    const onDeleteHandler = (event) => {
+        const {onDelete, isDownloaded} = props
         event.stopPropagation();
+        if (typeof (onDelete)!=='function')
+            return
+
+        if (isDownloaded)
+            onDelete()
+        else
+            setConfirmDelete(true)
+    }
+
+    const onDeleteConfirmed = () => {
+        setConfirmDelete(false)
+        const {onDelete} = props
         if (typeof (onDelete)==='function')
             onDelete()
+    }
+
+    const onDeleteCancelled = () => {
+        setConfirmDelete(false)
     }
 
     
@@ -116,7 +138,7 @@ export const RouteItem = ( props) => {
     const height = dimensions.height*0.07; // 7vh
     const width = height *2;
 
-    const { id, title,country,distance,totalDistance,elevation,totalElevation,previewUrl,ready, hasVideo,isLoop,isDemo,isNew,source,cntActive, shape } = props
+    const { id, title,country,distance,totalDistance,elevation,totalElevation,previewUrl,ready, hasVideo,isLoop,isDemo,isNew,source,cntActive, shape, canDelete } = props
     // the shape store's decimated points are preferred over a full details load - see routeDetailsLoader.js
     const points = shape ?? loadedPoints ?? props.points
 
@@ -230,7 +252,7 @@ export const RouteItem = ( props) => {
                 </DataContainer>
 
                 <DetailsContainer>
-                    {newSearchUI?
+                    {newSearchUI && canDelete?
                     <DataContainer width='3vw' justify='end'    align='center' >
                             <Dynamic observer={hoverObserverRef.current} event='hovered' prop='visible'>
                                 <DeleteIcon onClick={onDeleteHandler} logContext={{id,title}} />
@@ -250,9 +272,23 @@ export const RouteItem = ( props) => {
                     </DataContainer>
 
                 </DetailsContainer>
-            
-            
+
+
         </Container>
+
+        {confirmDelete && createPortal(
+            <MessageBox
+                title={`Remove “${title}” from your library?`}
+                text='The file on your computer is not deleted.'
+                yes='Remove'
+                no='Cancel'
+                defaultButton='Cancel'
+                center
+                onYes={onDeleteConfirmed}
+                onNo={onDeleteCancelled}
+            />,
+            document.body
+        )}
         </AppThemeProvider>
     )
 }
