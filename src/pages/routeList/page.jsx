@@ -6,6 +6,7 @@ import { usePageLogger, useUnmountEffect } from "../../hooks";
 import { DialogLauncher } from "../../components/molecules";
 import { RouteDetailsDialog } from "../../components/modules/routeSelection/RouteDetails";
 import { FreeRideSettingsDialog } from "../../components/modules/routeSelection/FreeRideSettings";
+import { ImportRoutesDialog } from "../../components/modules/routeSelection/ImportRoutesDialog";
 import { ErrorBoundary } from "../../components/atoms/ErrorBoundary";
 import { clearPanelFilters, countActiveFilters, getNoMatchHint, getRouteCountText, hasActiveFilters, removeFilter } from "./utils";
 
@@ -54,8 +55,11 @@ export const RouteListPage =  () => {
     const [displayType,setDisplayType] = useState( ()=>service.getDisplayType() )
     const [sortOrder,setSortOrder] = useState( ()=>service.getSortOrder() )
     const [filtersExpanded,setFiltersExpanded] = useState( ()=>service.getFiltersExpanded() )
-    // consumed by the Import Routes dialog, once it is available
-    const [importDialogOpen,setImportDialogOpen] = useState(false)   // eslint-disable-line no-unused-vars
+    // whether ImportRoutesDialog is mounted - a plain conditional render (not DialogLauncher,
+    // which is shaped for the onStart/onCancel ride-launch dialogs; this dialog's own API is a
+    // single onClose, session 5.2). Mounting/unmounting it is also what resets its phase back to
+    // Landing on every open - useImportRoutes()'s unmount cleanup calls scanner.done() (session 5.1)
+    const [importDialogOpen,setImportDialogOpen] = useState(false)
     // changed whenever the result set is re-queried by the user, so the list restarts at the top
     const [listKey,setListKey] = useState(0)
 
@@ -277,6 +281,10 @@ export const RouteListPage =  () => {
         setImportDialogOpen(true)
     }
 
+    const onCloseImportDialog = useCallback(() => {
+        setImportDialogOpen(false)
+    },[])
+
     // files dropped anywhere on the page's content area - no dialog, same call the old
     // carousel's UploadCard used (HLD §4.3/§4.7); progress reports as pinned ActiveImport rows
     const onImportFiles = (files) => {
@@ -332,5 +340,6 @@ export const RouteListPage =  () => {
             closePage={closePage}
         />
         <DialogLauncher ref={ref}/>
+        {importDialogOpen ? <ImportRoutesDialog onClose={onCloseImportDialog}/> : null}
     </ErrorBoundary>)
 }

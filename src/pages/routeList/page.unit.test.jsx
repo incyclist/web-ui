@@ -3,7 +3,7 @@ import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render, act } from '@testing-library/react'
 import { MemoryRouter } from 'react-router'
 
-const { FakeObserver, mockService, mockOpenDialog, screenProps } = vi.hoisted(() => {
+const { FakeObserver, mockService, mockOpenDialog, screenProps, importRoutesDialogProps } = vi.hoisted(() => {
     class FakeObserver {
         constructor() { this.listeners = {} }
         on(event, cb) { (this.listeners[event] ??= []).push(cb); return this }
@@ -11,7 +11,7 @@ const { FakeObserver, mockService, mockOpenDialog, screenProps } = vi.hoisted(()
         emit(event, ...args) { (this.listeners[event] ?? []).slice().forEach(cb => cb(...args)) }
         count(event) { return (this.listeners[event] ?? []).length }
     }
-    return { FakeObserver, mockService: {}, mockOpenDialog: vi.fn(), screenProps: [] }
+    return { FakeObserver, mockService: {}, mockOpenDialog: vi.fn(), screenProps: [], importRoutesDialogProps: [] }
 })
 
 vi.mock('incyclist-services', async (importOriginal) => {
@@ -41,6 +41,12 @@ vi.mock('../../components/molecules', async () => {
 vi.mock('../../components/modules/routeSelection/RouteDetails', () => ({ RouteDetailsDialog: () => null }))
 vi.mock('../../components/modules/routeSelection/FreeRideSettings', () => ({ FreeRideSettingsDialog: () => null }))
 
+// ImportRoutesDialog is not opened through DialogLauncher (its own props/tests cover its
+// content) - here only whether it is mounted, and with what onClose, is this page's concern
+vi.mock('../../components/modules/routeSelection/ImportRoutesDialog', () => ({
+    ImportRoutesDialog: (props) => { importRoutesDialogProps.push(props); return <div data-testid='import-routes-dialog' /> }
+}))
+
 import { RouteListPage } from './page'
 import { RouteDetailsDialog } from '../../components/modules/routeSelection/RouteDetails'
 import { FreeRideSettingsDialog } from '../../components/modules/routeSelection/FreeRideSettings'
@@ -68,6 +74,7 @@ describe('RouteListPage', () => {
 
     beforeEach(() => {
         screenProps.length = 0
+        importRoutesDialogProps.length = 0
         observer = new FakeObserver()
         allRoutes = makeRoutes(5)
         routes = allRoutes
@@ -275,10 +282,30 @@ describe('RouteListPage', () => {
             expect(typeof props.onStart).toBe('function')
         })
 
-        test('Import Routes does not open any dialog yet', () => {
-            renderPage()
+        test('Import Routes mounts the dialog, not through DialogLauncher', () => {
+            const { container } = renderPage()
+            expect(container.querySelector('[data-testid="import-routes-dialog"]')).toBeNull()
+
             act(() => { last().onImportRoutes() })
+
             expect(mockOpenDialog).not.toHaveBeenCalled()
+            expect(container.querySelector('[data-testid="import-routes-dialog"]')).not.toBeNull()
+        })
+
+        test('closing the dialog unmounts it, and reopening mounts a fresh instance', () => {
+            const { container } = renderPage()
+
+            act(() => { last().onImportRoutes() })
+            expect(container.querySelector('[data-testid="import-routes-dialog"]')).not.toBeNull()
+            const propsAtFirstOpen = importRoutesDialogProps.length
+
+            act(() => { importRoutesDialogProps[importRoutesDialogProps.length-1].onClose() })
+            expect(container.querySelector('[data-testid="import-routes-dialog"]')).toBeNull()
+
+            act(() => { last().onImportRoutes() })
+            expect(container.querySelector('[data-testid="import-routes-dialog"]')).not.toBeNull()
+            // a genuinely new mount (not the same instance carrying stale phase state across opens)
+            expect(importRoutesDialogProps.length).toBeGreaterThan(propsAtFirstOpen)
         })
 
         test('selecting a route opens its details', () => {
