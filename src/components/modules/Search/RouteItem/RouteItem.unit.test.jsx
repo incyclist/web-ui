@@ -26,6 +26,7 @@ vi.mock('../../elevation/ElevationPreview', () => ({
 vi.mock('react-world-flags', () => ({ default: () => null }))
 
 import { RouteItem } from './index'
+import { routeDetailsQueue, ROUTE_DETAILS_CONCURRENCY } from '../../../../utils/routeDetailsLoader'
 
 const points = [{ lat: 1, lng: 2, routeDistance: 0, elevation: 10 }, { lat: 1.1, lng: 2.1, routeDistance: 100, elevation: 12 }]
 const route = { id: 'route-1', title: 'Col de la Madone', ready: true, hasVideo: false, loaded: false }
@@ -40,6 +41,7 @@ describe('RouteItem', () => {
 
     beforeEach(() => {
         vi.clearAllMocks()
+        routeDetailsQueue.reset()
     })
 
     test('outside the fold it renders a skeleton and loads nothing', () => {
@@ -103,5 +105,53 @@ describe('RouteItem', () => {
 
         expect(mockRouteList.getRouteDetails).not.toHaveBeenCalled()
         expect(screen.getByTestId('map').dataset.points).toBe('2')
+    })
+
+    test('a shape in the display props is used without loading details', () => {
+        render(<RouteItem {...route} shape={points} outsideFold={false} />)
+
+        expect(mockRouteList.getRouteDetails).not.toHaveBeenCalled()
+        expect(screen.getByTestId('map').dataset.points).toBe('2')
+        expect(screen.getByTestId('elevation').dataset.points).toBe('2')
+    })
+
+    describe('bounding the backfill fetch concurrency', () => {
+
+        const neverResolves = () => new Promise(() => { })
+
+        test('no more than the concurrency cap is in flight at once', () => {
+            mockRouteList.getRouteDetails.mockImplementation(neverResolves)
+
+            Array.from({ length: ROUTE_DETAILS_CONCURRENCY + 3 }).forEach((_, i) => {
+                render(<RouteItem {...route} id={`route-${i}`} outsideFold={false} />)
+            })
+
+            expect(mockRouteList.getRouteDetails).toHaveBeenCalledTimes(ROUTE_DETAILS_CONCURRENCY)
+        })
+
+        test('a row leaving the fold before its turn is dequeued outright, not just ignored', async () => {
+            const pending = []
+            mockRouteList.getRouteDetails.mockImplementation((id) => new Promise((resolve) => { pending.push({ id, resolve }) }))
+
+            // fill every concurrency slot with rows that stay in the fold
+            Array.from({ length: ROUTE_DETAILS_CONCURRENCY }).forEach((_, i) => {
+                render(<RouteItem {...route} id={`active-${i}`} outsideFold={false} />)
+            })
+
+            // one more row, still waiting for a free slot
+            const { rerender } = render(<RouteItem {...route} id='queued-route' outsideFold={false} />)
+
+            expect(mockRouteList.getRouteDetails).toHaveBeenCalledTimes(ROUTE_DETAILS_CONCURRENCY)
+            expect(mockRouteList.getRouteDetails).not.toHaveBeenCalledWith('queued-route')
+
+            // it leaves the fold before ever being started
+            rerender(<RouteItem {...route} id='queued-route' outsideFold={true} />)
+
+            // free up a slot - if 'queued-route' were merely ignored rather than dequeued, this would start it
+            await act(async () => { pending[0].resolve({ points }) })
+
+            expect(mockRouteList.getRouteDetails).not.toHaveBeenCalledWith('queued-route')
+            expect(mockRouteList.getRouteDetails).toHaveBeenCalledTimes(ROUTE_DETAILS_CONCURRENCY)
+        })
     })
 })

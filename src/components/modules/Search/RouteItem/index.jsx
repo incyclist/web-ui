@@ -6,12 +6,13 @@ import { Column,Dynamic,Loader, Pill, Row, Text, Image, UserIcon } from '../../.
 import {FreeMap} from '../../../molecules/Maps';
 import {Container,ImageContainer,ElevationContainer,Title, DataContainer, ImageLabel, DetailsContainer, PillContainer} from './atoms'
 import { RouteItemSkeleton } from './skeleton';
-import {useWindowDimensions } from '../../../../hooks';
+import {useWindowDimensions, useUnmountEffect } from '../../../../hooks';
 import {AppThemeProvider } from '../../../../theme';
 import Flag from 'react-world-flags';
 import { useAppState, useRouteList, useAppsService } from 'incyclist-services';
 import { useHoverObserver } from '../../../../hooks/ui/useHover';
 import { DeleteIcon } from '../../../molecules/Activity/ActivityListItem/atoms';
+import { routeDetailsQueue } from '../../../../utils/routeDetailsLoader';
 
 const Map = ({points}) => {
 
@@ -27,6 +28,8 @@ export const RouteItem = ( props) => {
     const initialized = useRef(false)
     // incremented whenever the row leaves the fold, so that a details request still in flight is ignored
     const loadGeneration = useRef(0)
+    // cancels the row's queued/in-flight getRouteDetails() request, if any
+    const cancelLoadRef = useRef(null)
     const [loadedPoints,setLoadedPoints] = useState(undefined)
     const service = useRouteList()
     const apps = useAppsService()
@@ -55,7 +58,7 @@ export const RouteItem = ( props) => {
     const loadDetails = useCallback( (id) =>{
         const generation = loadGeneration.current
         try {
-            service.getRouteDetails(id).then( details=> {
+            cancelLoadRef.current = routeDetailsQueue.request(service, id, (details) => {
                 // row has left the fold in the meantime
                 if (generation!==loadGeneration.current)
                     return
@@ -64,22 +67,24 @@ export const RouteItem = ( props) => {
                     setLoadedPoints(details.points)
                 }
             })
-            .catch( ()=>{ /* ignore - row is rendered without map/elevation */ })
         }
-        catch { /* ignore */ }
+        catch { /* ignore - row is rendered without map/elevation */ }
     },[service])
 
 
     // The fold transition is two-way: when the row leaves the fold, its map and loaded details are
-    // released; when it re-enters, they are initialized again
+    // released; when it re-enters, they are initialized again. A request still queued (not yet its
+    // turn) is dequeued outright rather than merely ignored, so it never consumes a concurrency slot.
     useEffect( ()=> {
-        const {outsideFold, loaded, points, id} = props
+        const {outsideFold, loaded, points, shape, id} = props
 
         if (outsideFold) {
             if (initialized.current) {
                 initialized.current = false
                 loadGeneration.current++
                 setLoadedPoints(undefined)
+                cancelLoadRef.current?.()
+                cancelLoadRef.current = null
             }
             return
         }
@@ -91,12 +96,19 @@ export const RouteItem = ( props) => {
             setHoverObserver(containerRef)
         }
 
-        if ( (!loaded || !points) && id!==undefined) {
+        const hasShape = Array.isArray(shape) && shape.length>0
+        if (!hasShape && (!loaded || !points) && id!==undefined) {
             loadDetails(id)
         }
 
         initialized.current = true
     },[loadDetails, newSearchUI, props, setHoverObserver])
+
+    // safety net for the (today theoretical) case of a full unmount while still inside the fold
+    useUnmountEffect( ()=>{
+        cancelLoadRef.current?.()
+        cancelLoadRef.current = null
+    }, [])
 
 
 
@@ -104,8 +116,9 @@ export const RouteItem = ( props) => {
     const height = dimensions.height*0.07; // 7vh
     const width = height *2;
 
-    const { id, title,country,distance,totalDistance,elevation,totalElevation,previewUrl,ready, hasVideo,isLoop,isDemo,isNew,source,cntActive } = props
-    const points = loadedPoints ?? props.points
+    const { id, title,country,distance,totalDistance,elevation,totalElevation,previewUrl,ready, hasVideo,isLoop,isDemo,isNew,source,cntActive, shape } = props
+    // the shape store's decimated points are preferred over a full details load - see routeDetailsLoader.js
+    const points = shape ?? loadedPoints ?? props.points
 
     const renderImage = hasVideo && ready && previewUrl!==undefined
     const renderMap   = !hasVideo
