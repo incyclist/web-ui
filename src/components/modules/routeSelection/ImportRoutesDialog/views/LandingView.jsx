@@ -1,0 +1,141 @@
+import React, { useCallback } from 'react';
+import styled from 'styled-components';
+import { Dropzone } from '../../../../molecules';
+import { useAppUI } from '../../../../../bindings/native-ui';
+import { DEFAULT_FILTERS } from '../../UploadCard/summary';
+
+// UploadCard's combined "Routes" filter (gpx, epm, xml), extended with .rlv - the
+// per-format entries underneath it are reused unchanged, so there is exactly one place
+// that knows which formats a route control file can be.
+export const ADD_ROUTE_FILTERS = DEFAULT_FILTERS.map((filter, index) =>
+    index === 0 ? { ...filter, extensions: [...filter.extensions, 'rlv'] } : filter
+);
+
+const TilesArea = styled.div`
+    display: flex;
+    flex-direction: row;
+    align-items: stretch;
+    justify-content: center;
+    gap: 2vw;
+    width: 100%;
+    height: calc(100% - 5vh);
+    padding: 3vh 2vw 0 2vw;
+    box-sizing: border-box;
+`;
+
+const TileTitle = styled.div`
+    font-size: 2.2vh;
+    font-weight: bold;
+    color: white;
+`;
+
+const TileSubline = styled.div`
+    font-size: 1.5vh;
+    color: white;
+    opacity: 0.8;
+`;
+
+const TileContent = styled.div`
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1vh;
+    padding: 2vh;
+    text-align: center;
+`;
+
+const FolderTile = styled.div`
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1vh;
+    padding: 2vh;
+    text-align: center;
+    border: 2px dashed #dcdcdc;
+    border-radius: 10px;
+    cursor: pointer;
+
+    &:hover {
+        border-color: white;
+    }
+`;
+
+const HintText = styled.div`
+    width: 100%;
+    height: 5vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    font-size: 1.3vh;
+    color: white;
+    opacity: 0.7;
+`;
+
+const onKeyActivate = (handler) => (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        handler();
+    }
+};
+
+/**
+ * The Import Routes dialog's landing screen - two tiles ("Add a route" / "Import a whole
+ * folder"), per the product decision that desktop does not ask the user to classify their
+ * own file: the parser already tells single route files apart from a folder scan.
+ *
+ * Presentational only - `onAddRoute`/`onSelectFolder` are `useImportRoutes()`'s
+ * `importSingle`/`scan`, wired in by the dialog shell.
+ */
+export const LandingView = ({ onAddRoute, onSelectFolder }) => {
+    const ui = useAppUI();
+
+    const handleAddRouteDrop = useCallback((dropInfo) => {
+        const fileInfo = Array.isArray(dropInfo) ? dropInfo[0] : dropInfo;
+        if (fileInfo && onAddRoute)
+            onAddRoute(fileInfo);
+    }, [onAddRoute]);
+
+    const handleSelectFolder = useCallback(async () => {
+        const result = await ui?.selectDirectory();
+        if (!result || result.canceled)
+            return;
+        if (onSelectFolder)
+            onSelectFolder({ uri: result.selected, displayName: result.displayName });
+    }, [ui, onSelectFolder]);
+
+    return (
+        <>
+            <TilesArea>
+                <Dropzone
+                    id="add-route-tile"
+                    width="100%"
+                    height="100%"
+                    multiple={false}
+                    filters={ADD_ROUTE_FILTERS}
+                    onDrop={handleAddRouteDrop}
+                    text={
+                        <TileContent>
+                            <TileTitle>Add a route</TileTitle>
+                            <TileSubline>One route from a file on your computer — GPX, EPM, RLV or XML</TileSubline>
+                        </TileContent>
+                    }
+                />
+                <FolderTile
+                    id="import-folder-tile"
+                    role="button"
+                    tabIndex={0}
+                    onClick={handleSelectFolder}
+                    onKeyDown={onKeyActivate(handleSelectFolder)}
+                >
+                    <TileTitle>Import a whole folder</TileTitle>
+                    <TileSubline>Find every video route in a folder and its sub-folders — a library on a disk or NAS</TileSubline>
+                </FolderTile>
+            </TilesArea>
+            <HintText>…or drop route files anywhere on the Routes page</HintText>
+        </>
+    );
+};

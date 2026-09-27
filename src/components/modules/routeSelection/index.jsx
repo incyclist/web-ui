@@ -1,6 +1,7 @@
 export * from './ActiveImportCard'
 export * from './FreeRideCard'
 export * from './FreeRideSettings'
+export * from './ImportRoutesDialog'
 export * from './RouteDetails'
 export * from './UploadCard'
 export * from './VideoCard'

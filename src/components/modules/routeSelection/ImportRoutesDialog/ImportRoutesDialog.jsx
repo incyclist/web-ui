@@ -1,0 +1,80 @@
+import React, { useCallback, useEffect } from 'react';
+import { Dialog } from '../../../molecules';
+import { useImportRoutes } from '../../../../hooks/routes/useImportRoutes';
+import { LandingView } from './views/LandingView';
+import { ResultView } from './views/ResultView';
+import { NotYetImplementedView } from './views/NotYetImplementedView';
+
+// Fixed across every phase this dialog can be in. The Dialog molecule's default sizing is
+// percentage-based (80% x 80%), which puts a checkbox list across ~2000px on a wide
+// desktop screen, and resizing the dialog as the flow progresses would make it jump under
+// the pointer - one box, only the content inside it changes.
+export const IMPORT_DIALOG_WIDTH = 'min(980px, 70vw)';
+export const IMPORT_DIALOG_HEIGHT = 'min(660px, 75vh)';
+
+const TITLE = 'Import Routes';
+
+// While one of these is running, nothing has been confirmed by the user yet that Esc/close
+// should be allowed to interrupt without asking - the corresponding view is the one that
+// owns its own Cancel/Stop affordance instead. Every other phase (including this session's
+// Landing and Result) closes normally on Esc.
+const NON_DISMISSABLE_PHASES = new Set(['scanning', 'parsing', 'ingesting']);
+
+// Seam for session 5.3: Landing and Result (this session) are the only phases with a real
+// view today. Add a `<phase>: <View>` entry here as each of the remaining phases
+// (scanning, parsing, selecting, ingesting, complete) gets built - nothing else in this
+// file, or in Landing/Result, needs to change for that to slot in.
+const PHASE_VIEWS = {
+    landing: LandingView,
+    result: ResultView,
+};
+
+/**
+ * The desktop Import Routes dialog. Owns the fixed dialog chrome and the phase-to-view
+ * switch; the phases themselves are wired to `useImportRoutes()` (session 5.1) and handed
+ * down as props so each view stays a plain, testable presentational component.
+ *
+ * Mounting this component opens the dialog; unmounting it closes it (`useImportRoutes()`
+ * already tears the scanner down on unmount). `onClose` is called for every other way the
+ * dialog wants to close itself - a successful single-route import, Esc, or an explicit
+ * button - and it is the caller's job to stop rendering this component in response.
+ */
+export const ImportRoutesDialog = ({ onClose }) => {
+    const { displayProps, scan, importSingle, cancel } = useImportRoutes();
+    const { phase, resultSuccess, error } = displayProps;
+
+    useEffect(() => {
+        // A successful single-route import closes the dialog on its own - the route
+        // appearing in the list behind it is the confirmation, no explicit "Done" click.
+        // This is a deliberate divergence from mobile's success screen.
+        if (phase === 'result' && resultSuccess)
+            onClose?.();
+    }, [phase, resultSuccess, onClose]);
+
+    // "Pick another file", on a failed single-route import, returns to Landing. Nothing has
+    // been written yet at this point, so cancel()'s reset-to-landing is exactly right here.
+    const onPickAnotherFile = useCallback(() => {
+        cancel();
+    }, [cancel]);
+
+    const View = PHASE_VIEWS[phase] ?? NotYetImplementedView;
+    const dismissable = !NON_DISMISSABLE_PHASES.has(phase);
+
+    return (
+        <Dialog
+            id="ImportRoutes"
+            title={TITLE}
+            width={IMPORT_DIALOG_WIDTH}
+            height={IMPORT_DIALOG_HEIGHT}
+            onESC={dismissable ? onClose : undefined}
+        >
+            <View
+                onAddRoute={importSingle}
+                onSelectFolder={scan}
+                error={error}
+                onPickAnotherFile={onPickAnotherFile}
+                onClose={onClose}
+            />
+        </Dialog>
+    );
+};
