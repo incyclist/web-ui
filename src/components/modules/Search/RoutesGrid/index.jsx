@@ -17,6 +17,7 @@ export const CardItem = styled(Autosize)`
 `
 
 export const Container = styled(View)`
+    box-sizing: border-box;
     overflow-x: hidden;
     display: flex;
     flex-flow: row wrap;
