@@ -45,6 +45,14 @@ const TileContent = styled.div`
     text-align: center;
 `;
 
+// Dropzone renders its own width/height as a plain CSS size, not a flex-item share of its
+// row - without this wrapper it takes 100% of the whole row's width (its "width" prop) and
+// squeezes FolderTile down to whatever's left, rather than the two tiles sharing space equally.
+const RouteTileWrapper = styled.div`
+    flex: 1;
+    display: flex;
+`;
+
 const FolderTile = styled.div`
     flex: 1;
     display: flex;
@@ -114,20 +122,22 @@ export const LandingView = ({ onAddRoute, onSelectFolder }) => {
     return (
         <>
             <TilesArea>
-                <Dropzone
-                    id="add-route-tile"
-                    width="100%"
-                    height="100%"
-                    multiple={true}
-                    filters={ADD_ROUTE_FILTERS}
-                    onDrop={handleAddRouteDrop}
-                    text={
-                        <TileContent>
-                            <TileTitle>Add a route</TileTitle>
-                            <TileSubline>One route from a file on your computer — GPX, EPM, RLV or XML</TileSubline>
-                        </TileContent>
-                    }
-                />
+                <RouteTileWrapper>
+                    <Dropzone
+                        id="add-route-tile"
+                        width="100%"
+                        height="100%"
+                        multiple={true}
+                        filters={ADD_ROUTE_FILTERS}
+                        onDrop={handleAddRouteDrop}
+                        text={
+                            <TileContent>
+                                <TileTitle>Add a route</TileTitle>
+                                <TileSubline>One route from a file on your computer — GPX, EPM, RLV or XML</TileSubline>
+                            </TileContent>
+                        }
+                    />
+                </RouteTileWrapper>
                 <FolderTile
                     id="import-folder-tile"
                     role="button"
