@@ -175,8 +175,8 @@ export const useFoldWindow = ({items, getKey, initialScrollTop, onScrollTop, ove
         updateFold(true)
     },[updateFold])
 
-    // mount: restore scroll position and calculate the initial fold before the first paint.
-    // Rows receive their initial fold state via props (one re-render of the list), all later changes via events
+    // mount: restore scroll position before the first paint, so there is no visible jump from 0.
+    // Kept separate from the fold computation below - it is cheap and must be synchronous.
     useLayoutEffect( ()=>{
         const div = ref.current
         if (!div || initializedRef.current)
@@ -186,6 +186,18 @@ export const useFoldWindow = ({items, getKey, initialScrollTop, onScrollTop, ove
             div.scrollTop = initialScrollTop
             topRef.current = div.scrollTop
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    },[])
+
+    // mount: calculate the initial fold once the (restored) skeleton state has painted.
+    // Rows receive their initial fold state via props (one re-render of the list), all later changes via events.
+    // Deliberately a passive effect, not a layout effect: the rows inside the fold are expensive to mount
+    // (e.g. a Leaflet map per row), and computing the fold before paint would make that mount cost block the
+    // first paint instead of the cheap skeleton state being visible immediately.
+    useEffect( ()=>{
+        const div = ref.current
+        if (!div || initializedRef.current)
+            return
 
         columnsRef.current = measureColumns(div)
         updateFold(false)

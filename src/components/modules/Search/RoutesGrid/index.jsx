@@ -18,8 +18,10 @@ export const CardItem = styled(Autosize)`
 
 export const Container = styled(View)`
     overflow-x: hidden;
-    display: block;
-    
+    display: flex;
+    flex-flow: row wrap;
+    align-content: flex-start;
+
     &::-webkit-scrollbar-button {
         display: none;
     }
