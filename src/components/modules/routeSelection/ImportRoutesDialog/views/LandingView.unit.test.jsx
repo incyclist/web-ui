@@ -8,7 +8,7 @@ const { mockSelectDirectory, rendered } = vi.hoisted(() => ({
 
 // Dropzone talks to the native file dialog and drag/drop events - neither works under
 // jsdom. Stubbed to a simple button that captures the props LandingView passed it (so the
-// filters/single-select contract can be asserted) and lets a test fire onDrop directly,
+// filters/multi-select contract can be asserted) and lets a test fire onDrop directly,
 // per this repo's convention for heavy/native molecules (see RouteDetails' component test).
 vi.mock('../../../../molecules', async (importOriginal) => {
     const actual = await importOriginal()
@@ -44,10 +44,10 @@ describe('LandingView', () => {
         expect(screen.getByText('…or drop route files anywhere on the Routes page')).toBeTruthy()
     })
 
-    test('the file tile keeps the combined "Routes" filter with .rlv added, single-select', () => {
+    test('the file tile keeps the combined "Routes" filter with .rlv added, multi-select', () => {
         render(<LandingView onAddRoute={vi.fn()} onSelectFolder={vi.fn()} />)
 
-        expect(rendered.dropzoneProps.multiple).toBe(false)
+        expect(rendered.dropzoneProps.multiple).toBe(true)
         expect(rendered.dropzoneProps.filters).toEqual(ADD_ROUTE_FILTERS)
         expect(ADD_ROUTE_FILTERS[0]).toEqual({ name: 'Routes', extensions: ['gpx', 'epm', 'xml', 'rlv'] })
         // per-format entries underneath are reused unchanged
@@ -67,7 +67,28 @@ describe('LandingView', () => {
             rendered.dropzoneProps.onDrop([{ type: 'url', name: 'route.gpx', dir: '/tmp', ext: 'gpx', delimiter: '/' }])
         })
 
-        expect(onAddRoute).toHaveBeenCalledWith({ type: 'url', name: 'route.gpx', dir: '/tmp', ext: 'gpx', delimiter: '/' })
+        expect(onAddRoute).toHaveBeenCalledTimes(1)
+        expect(onAddRoute).toHaveBeenCalledWith([{ type: 'url', name: 'route.gpx', dir: '/tmp', ext: 'gpx', delimiter: '/' }])
+    })
+
+    test('picking several files (e.g. a batch of GPX routes) hands every one of them on, in one call', () => {
+        const onAddRoute = vi.fn()
+        render(<LandingView onAddRoute={onAddRoute} onSelectFolder={vi.fn()} />)
+
+        const picked = ['a.gpx', 'b.gpx', 'c.gpx'].map(name => ({ type: 'url', name, dir: '/tmp', ext: 'gpx', delimiter: '/' }))
+        act(() => { rendered.dropzoneProps.onDrop(picked) })
+
+        expect(onAddRoute).toHaveBeenCalledTimes(1)
+        expect(onAddRoute).toHaveBeenCalledWith(picked)
+    })
+
+    test('a cancelled picker (no files) does not call onAddRoute', () => {
+        const onAddRoute = vi.fn()
+        render(<LandingView onAddRoute={onAddRoute} onSelectFolder={vi.fn()} />)
+
+        act(() => { rendered.dropzoneProps.onDrop([]) })
+
+        expect(onAddRoute).not.toHaveBeenCalled()
     })
 
     test('choosing a folder calls onSelectFolder with the scanner-shaped folder info', async () => {

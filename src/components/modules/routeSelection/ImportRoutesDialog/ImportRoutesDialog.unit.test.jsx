@@ -67,6 +67,24 @@ describe('ImportRoutesDialog', () => {
         expect(dialogProps[0].height).toBe(IMPORT_DIALOG_HEIGHT)
     })
 
+    test('a failed single-route import shows the sentence for the failure\'s code', () => {
+        mockImportRoutes.displayProps = { phase: 'result', routes: [], error: 'AVI video not supported',
+            failure: { code: 'AVI_NOT_SUPPORTED', reason: 'AVI video not supported' } }
+
+        render(<ImportRoutesDialog onClose={vi.fn()} />)
+
+        expect(screen.getByText('Its video is an AVI file — Incyclist needs MP4')).toBeTruthy()
+    })
+
+    test('several picked files report their summary without a folder line', () => {
+        mockImportRoutes.displayProps = { phase: 'complete', routes: [], completionSummary: { imported: 3, skipped: 0, errors: 0, failedRoutes: [] } }
+
+        render(<ImportRoutesDialog onClose={vi.fn()} />)
+
+        expect(screen.getByText('3 routes added')).toBeTruthy()
+        expect(screen.queryByText(/The videos stay where they are/)).toBeNull()
+    })
+
     test('a phase with no view at all does not go blank, and keeps the same geometry', () => {
         // 'error' is declared on ImportDisplayProps but never actually assigned by the service -
         // the one phase value genuinely unmapped now that session 5.3 filled in the rest.

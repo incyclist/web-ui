@@ -336,13 +336,27 @@ describe('RouteListPage', () => {
 
         test('files dropped on the page-level overlay import through the same service call the old carousel used, no dialog', () => {
             mockService.import = vi.fn()
-            renderPage()
+            const { container } = renderPage()
 
             const dropInfo = [{type:'url', name:'route.gpx', dir:'/tmp', ext:'gpx'}]
             act(() => { last().onImportFiles(dropInfo) })
 
             expect(mockService.import).toHaveBeenCalledWith(dropInfo)
             expect(mockOpenDialog).not.toHaveBeenCalled()
+            expect(container.querySelector('[data-testid="import-routes-dialog"]')).toBeNull()
+        })
+
+        test('a multi-file drop (e.g. a batch of GPX routes) is one import call, still no dialog', () => {
+            mockService.import = vi.fn()
+            const { container } = renderPage()
+
+            const dropInfo = ['a.gpx','b.gpx','c.gpx'].map( name => ({type:'url', name, dir:'/tmp', ext:'gpx'}))
+            act(() => { last().onImportFiles(dropInfo) })
+
+            expect(mockService.import).toHaveBeenCalledTimes(1)
+            expect(mockService.import).toHaveBeenCalledWith(dropInfo)
+            expect(importRoutesDialogProps).toHaveLength(0)
+            expect(container.querySelector('[data-testid="import-routes-dialog"]')).toBeNull()
         })
     })
 })

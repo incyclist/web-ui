@@ -77,7 +77,7 @@ export const ImportRoutesDialog = ({ onClose }) => {
         displayProps, scan, importSingle, importSelected, cancel,
         selectedIds, isSelected, toggleSelected, selectAll, deselectAll,
     } = useImportRoutes();
-    const { phase, resultSuccess, error } = displayProps;
+    const { phase, resultSuccess, error, failure } = displayProps;
 
     // The picker result for the folder the user chose - `useImportRoutes()`'s display props don't
     // carry it (the scanner only ever reports counts back), and the Scanning/Parse-Select/Complete
@@ -121,6 +121,7 @@ export const ImportRoutesDialog = ({ onClose }) => {
                 onAddRoute={importSingle}
                 onSelectFolder={onSelectFolder}
                 error={error}
+                failure={failure}
                 onPickAnotherFile={onPickAnotherFile}
                 onClose={onClose}
                 cancel={cancel}

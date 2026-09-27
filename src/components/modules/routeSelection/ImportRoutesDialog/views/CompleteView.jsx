@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
 import { Button, ButtonBar, Text } from '../../../../atoms';
+import { getImportErrorText } from '../../importErrorText';
 
 const Body = styled.div`
     display: flex;
@@ -42,7 +43,7 @@ export const CompleteView = ({ displayProps, folderInfo, onClose }) => {
                 {showDetails && (
                     <FailedList>
                         {failedRoutes.map(failed => (
-                            <Text key={failed.name} text={`${failed.name}: ${failed.reason}`} />
+                            <Text key={failed.name} text={`${failed.name}: ${getImportErrorText(failed)}`} />
                         ))}
                     </FailedList>
                 )}

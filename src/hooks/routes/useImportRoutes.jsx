@@ -7,8 +7,8 @@ import { useUnmountEffect } from '../flow/useUnmountEffect'
  * `RouteLibraryScannerService` (not a page service - web-ui calls domain services directly).
  *
  * It owns:
- * - the observer subscriptions for the scan / parse / ingest phases and for a single-route
- *   import, refreshing `displayProps` from `getDisplayProps()` on every event
+ * - the observer subscriptions for the scan / parse / ingest phases and for picked route
+ *   files (one or several), refreshing `displayProps` from `getDisplayProps()` on every event
  * - `selectedIds`, local UI state tracking which `RouteDisplayItem.id` the user has checked
  *   in the selection table, plus the toggle functions to change it
  *
@@ -122,14 +122,37 @@ export const useImportRoutes = () => {
         onUpdate()
     }, [onUpdate])
 
-    const importSingle = useCallback((fileInfo) => {
-        const observer = scanner.importSingle(fileInfo)
+    // Several files picked at once - reported like a folder import's last step (ingesting ->
+    // complete), so it shares that step's observer bookkeeping.
+    const importFiles = useCallback((files) => {
+        const observer = scanner.importFiles(files)
+        refIngestObserver.current = observer
+        observer.on('ingest-progress', onUpdate)
+        observer.on('ingest-error', onUpdate)
+        observer.on('ingest-complete', onIngestComplete)
+        observer.on('error', onUpdate)
+        onUpdate()
+    }, [scanner, onUpdate, onIngestComplete])
+
+    // Takes one file or the array the "Add a route" picker hands over. Whatever the count,
+    // every file goes through the scanner's single-route import path; only the reporting
+    // differs - one file keeps the single-route result screen, several get a summary.
+    const importSingle = useCallback((selection) => {
+        const files = (Array.isArray(selection) ? selection : [selection]).filter(Boolean)
+        if (files.length === 0)
+            return
+        if (files.length > 1) {
+            importFiles(files)
+            return
+        }
+
+        const observer = scanner.importSingle(files[0])
         refSingleObserver.current = observer
         observer.on('parsing', onUpdate)
         observer.on('success', onSingleResult)
         observer.on('error', onSingleResult)
         onUpdate()
-    }, [scanner, onUpdate, onSingleResult])
+    }, [scanner, onUpdate, onSingleResult, importFiles])
 
     const cleanUpObservers = useCallback(() => {
         const scanObserver = refScanObserver.current

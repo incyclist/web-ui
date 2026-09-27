@@ -4,6 +4,7 @@ import Loader from 'react-spinners/ClipLoader'
 import { TrashIcon } from '@primer/octicons-react'
 import { Button, Icon, Text } from '../../../atoms'
 import { AppThemeProvider } from '../../../../theme'
+import { getImportErrorText } from '../../routeSelection/importErrorText'
 
 const Container = styled.div`
     display: flex;
@@ -68,6 +69,8 @@ export const ActiveImportRow = ({card, onRetry, onDelete}) => {
     },[card])
 
     const {name,error} = props
+    // the same sentence the import dialog shows for the same failure
+    const errorText = error ? getImportErrorText(error) : undefined
 
     return (
         <AppThemeProvider>
@@ -76,7 +79,7 @@ export const ActiveImportRow = ({card, onRetry, onDelete}) => {
                 {error ?
                     <>
                         <Text color='red' bold={true}>Error</Text>
-                        <ErrorMessage title={error.message}>{error.message}</ErrorMessage>
+                        <ErrorMessage title={errorText}>{errorText}</ErrorMessage>
                         <Button text='Retry' size='small' logContext={{name}} onClick={()=>onRetry?.(card)} />
                         <Icon height={20} margin={0} padding={0} onClick={()=>onDelete?.(card)}><TrashIcon size={20}/></Icon>
                     </>

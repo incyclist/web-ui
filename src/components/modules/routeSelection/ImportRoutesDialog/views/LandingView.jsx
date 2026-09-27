@@ -87,6 +87,10 @@ const onKeyActivate = (handler) => (e) => {
  * folder"), per the product decision that desktop does not ask the user to classify their
  * own file: the parser already tells single route files apart from a folder scan.
  *
+ * "Add a route" allows picking several files at once (which is also how many GPX routes are
+ * added in one go - a folder import only looks for video routes); every picked file is handed
+ * on, as an array.
+ *
  * Presentational only - `onAddRoute`/`onSelectFolder` are `useImportRoutes()`'s
  * `importSingle`/`scan`, wired in by the dialog shell.
  */
@@ -94,9 +98,9 @@ export const LandingView = ({ onAddRoute, onSelectFolder }) => {
     const ui = useAppUI();
 
     const handleAddRouteDrop = useCallback((dropInfo) => {
-        const fileInfo = Array.isArray(dropInfo) ? dropInfo[0] : dropInfo;
-        if (fileInfo && onAddRoute)
-            onAddRoute(fileInfo);
+        const files = (Array.isArray(dropInfo) ? dropInfo : [dropInfo]).filter(Boolean);
+        if (files.length > 0 && onAddRoute)
+            onAddRoute(files);
     }, [onAddRoute]);
 
     const handleSelectFolder = useCallback(async () => {
@@ -114,7 +118,7 @@ export const LandingView = ({ onAddRoute, onSelectFolder }) => {
                     id="add-route-tile"
                     width="100%"
                     height="100%"
-                    multiple={false}
+                    multiple={true}
                     filters={ADD_ROUTE_FILTERS}
                     onDrop={handleAddRouteDrop}
                     text={
