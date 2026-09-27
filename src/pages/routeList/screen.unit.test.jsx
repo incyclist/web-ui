@@ -79,16 +79,17 @@ describe('RouteListScreen', () => {
         })
 
         test.each([
-            [1080+80, 'row',     undefined],
-            [1000+80, 'row',     undefined],
-            [999+80,  'stacked', '3'],
-            [700+80,  'stacked', '3'],
-            [699+80,  'stacked', '1'],
-        ])('content area %ipx wide: header %s', (width, layout, columns) => {
+            [1080+80, undefined],
+            [1000+80, undefined],
+            [999+80,  '3'],
+            [700+80,  '3'],
+            [699+80,  '1'],
+        ])('content area %ipx wide: title/actions layout is unaffected, filter columns %s', (width, columns) => {
             setContentWidth(width)
             const { container } = render(<RouteListScreen {...baseProps} filtersExpanded />)
 
-            expect(container.querySelector('.route-list-header').dataset.layout).toBe(layout)
+            // the title row never shares space with anything else, at any width - ux.md §3.1/§3.10
+            expect(screen.getByText('Routes')).toBeInTheDocument()
             // labels are never dropped
             expect(screen.getByText('Free Ride')).toBeInTheDocument()
             expect(screen.getByText('Import Routes')).toBeInTheDocument()
@@ -96,14 +97,14 @@ describe('RouteListScreen', () => {
                 expect(container.querySelector('.route-filter-panel').dataset.columns).toBe(columns)
         })
 
-        test('header layout follows window resizes', () => {
+        test('filter panel column count follows window resizes', () => {
             setContentWidth(1400)
-            const { container } = render(<RouteListScreen {...baseProps} />)
-            expect(container.querySelector('.route-list-header').dataset.layout).toBe('row')
+            const { container } = render(<RouteListScreen {...baseProps} filtersExpanded />)
+            expect(container.querySelector('.route-filter-panel').dataset.columns).toBe('3')
 
-            setContentWidth(900)
+            setContentWidth(620)
             act(() => { window.dispatchEvent(new Event('resize')) })
-            expect(container.querySelector('.route-list-header').dataset.layout).toBe('stacked')
+            expect(container.querySelector('.route-filter-panel').dataset.columns).toBe('1')
         })
     })
 

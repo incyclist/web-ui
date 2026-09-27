@@ -6,8 +6,6 @@
 // horizontal padding of the page's content area (left + right)
 export const CONTENT_PADDING = 80
 
-// content width at or above which title and header actions share one row
-export const HEADER_ONE_ROW_MIN_WIDTH = 1000
 // content width below which the filter panel collapses to one column
 export const FILTER_COLUMNS_MIN_WIDTH = 700
 
@@ -21,23 +19,20 @@ export const SORT_OPTIONS = [
 export const FREE_RIDE_TOOLTIP = 'Pick any spot on the map and ride the real roads from there'
 
 /**
- * Determines how the page header (and the filter panel) degrades on narrow windows.
- *
- * - `>= 1000px` content width: title and actions on one row
- * - `700-1000px`: actions move to their own full-width row under the title
- * - `< 700px`: as above, and the filter panel shows its columns stacked
+ * Determines how the filter panel degrades on narrow windows. The page header's title and
+ * actions rows are fixed (title alone, centered; actions left-aligned below it, at every
+ * width) - see ux.md §3.1/§3.10 for why that stopped being a function of content width.
  *
  * An unknown width (not measured yet) is treated as wide.
  *
  * @param {number} contentWidth width of the content area, excluding its padding
- * @returns {{actionsOnOwnRow:boolean, singleColumnFilters:boolean}}
+ * @returns {{singleColumnFilters:boolean}}
  */
 export const getHeaderLayout = (contentWidth) => {
     if (!contentWidth || contentWidth<0 || Number.isNaN(contentWidth))
-        return { actionsOnOwnRow:false, singleColumnFilters:false }
+        return { singleColumnFilters:false }
 
     return {
-        actionsOnOwnRow: contentWidth<HEADER_ONE_ROW_MIN_WIDTH,
         singleColumnFilters: contentWidth<FILTER_COLUMNS_MIN_WIDTH
     }
 }

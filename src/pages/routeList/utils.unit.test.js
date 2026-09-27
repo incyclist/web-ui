@@ -6,25 +6,20 @@ import {
 
 describe('getHeaderLayout', () => {
 
-    test('title and actions share one row at 1000px and above', () => {
-        expect(getHeaderLayout(1000)).toEqual({actionsOnOwnRow:false, singleColumnFilters:false})
-        expect(getHeaderLayout(1640)).toEqual({actionsOnOwnRow:false, singleColumnFilters:false})
+    test('the filter panel stays multi-column at 700px and above', () => {
+        expect(getHeaderLayout(700)).toEqual({singleColumnFilters:false})
+        expect(getHeaderLayout(1640)).toEqual({singleColumnFilters:false})
     })
 
-    test('actions drop to their own row between 700px and 1000px', () => {
-        expect(getHeaderLayout(999)).toEqual({actionsOnOwnRow:true, singleColumnFilters:false})
-        expect(getHeaderLayout(700)).toEqual({actionsOnOwnRow:true, singleColumnFilters:false})
-    })
-
-    test('below 700px the filter panel also collapses to one column', () => {
-        expect(getHeaderLayout(699)).toEqual({actionsOnOwnRow:true, singleColumnFilters:true})
-        expect(getHeaderLayout(120)).toEqual({actionsOnOwnRow:true, singleColumnFilters:true})
+    test('below 700px the filter panel collapses to one column', () => {
+        expect(getHeaderLayout(699)).toEqual({singleColumnFilters:true})
+        expect(getHeaderLayout(120)).toEqual({singleColumnFilters:true})
     })
 
     test('an unknown width is treated as wide', () => {
-        expect(getHeaderLayout(undefined)).toEqual({actionsOnOwnRow:false, singleColumnFilters:false})
-        expect(getHeaderLayout(0)).toEqual({actionsOnOwnRow:false, singleColumnFilters:false})
-        expect(getHeaderLayout(NaN)).toEqual({actionsOnOwnRow:false, singleColumnFilters:false})
+        expect(getHeaderLayout(undefined)).toEqual({singleColumnFilters:false})
+        expect(getHeaderLayout(0)).toEqual({singleColumnFilters:false})
+        expect(getHeaderLayout(NaN)).toEqual({singleColumnFilters:false})
     })
 })
 

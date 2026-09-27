@@ -40,22 +40,10 @@ const ContentArea = styled(Column)`
     box-sizing: border-box;
 `
 
-const Header = styled.div`
-    display: flex;
-    flex-direction: ${props => props.$stacked ? 'column' : 'row'};
-    align-items: ${props => props.$stacked ? 'stretch' : 'center'};
-    justify-content: space-between;
+// Title row (the bare PageTitle atom, centered) and the actions row below it, always stacked -
+// see ux.md §3.1/§3.10: the title never shares its row with anything else, on any page.
+const Header = styled(Column)`
     width: 100%;
-`
-
-// PageTitle centers itself across the full width - on this page the title sits left of the actions
-const TitleArea = styled.div`
-    flex: 1 1 auto;
-    min-width: 0;
-    & > div {
-        justify-content: flex-start;
-        text-align: left;
-    }
 `
 
 const Actions = styled.div`
@@ -63,9 +51,8 @@ const Actions = styled.div`
     flex-direction: row;
     flex-wrap: wrap;
     align-items: center;
-    justify-content: ${props => props.$stacked ? 'flex-start' : 'flex-end'};
-    flex: 0 0 auto;
-    width: ${props => props.$stacked ? '100%' : 'auto'};
+    justify-content: flex-start;
+    width: 100%;
 `
 
 const ButtonContent = styled.span`
@@ -174,7 +161,7 @@ export const RouteListScreen = ({
     const [fieldFocused,setFieldFocused] = useState(false)
 
     const contentWidth = useContentWidth(contentRef)
-    const {actionsOnOwnRow, singleColumnFilters} = getHeaderLayout(contentWidth)
+    const {singleColumnFilters} = getHeaderLayout(contentWidth)
 
     const chips = getFilterChips(filters)
 
@@ -273,9 +260,9 @@ export const RouteListScreen = ({
                 <NavigationBar closePage={closePage} selected='routes' hotkeysDisabled={fieldFocused}/>
 
                 <ContentArea ref={contentRef} className='route-list-page' onFocusCapture={onFocusCapture} onBlurCapture={onBlurCapture}>
-                    <Header className='route-list-header' $stacked={actionsOnOwnRow} data-layout={actionsOnOwnRow ? 'stacked' : 'row'}>
-                        <TitleArea><PageTitle>Routes</PageTitle></TitleArea>
-                        <Actions className='route-list-actions' $stacked={actionsOnOwnRow}>
+                    <Header className='route-list-header'>
+                        <PageTitle>Routes</PageTitle>
+                        <Actions className='route-list-actions'>
                             <FreeRideButton onClick={onFreeRide} />
                             <ImportRoutesButton onClick={onImportRoutes} />
                             <DisplayTypeSelection selected={displayType} onSelected={onDisplayTypeSelected} />
