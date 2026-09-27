@@ -221,7 +221,11 @@ export const RouteListScreen = ({
             setDragActive(false)
     }
 
-    const onContentDropCapture = () => {
+    const onContentDropCapture = (e) => {
+        // must not rely on the overlay Dropzone's own (bubble-phase) preventDefault(): a drop can
+        // reach the browser before the overlay ever mounts, and an unhandled drop's default action
+        // is to navigate the window to the dropped file instead of importing it.
+        e.preventDefault()
         dragDepth.current = 0
         setDragActive(false)
     }
