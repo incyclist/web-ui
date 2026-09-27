@@ -9,6 +9,11 @@ export const CONTENT_PADDING = 80
 // content width below which the filter panel collapses to one column
 export const FILTER_COLUMNS_MIN_WIDTH = 700
 
+// allowance added to the measured actions+title width before comparing it against the content
+// width - keeps the header from flipping to the stacked layout right at the pixel where the two
+// groups' rendered boxes would otherwise touch
+export const HEADER_LAYOUT_GAP = 24
+
 export const SORT_OPTIONS = [
     { value:'suggested', label:'Suggested' },
     { value:'name',      label:'Name (A–Z)' },
@@ -18,7 +23,7 @@ export const SORT_OPTIONS = [
 
 export const FREE_RIDE_TOOLTIP = 'Pick any spot on the map and ride the real roads from there'
 
-// copy deck (ux.md §9, "Drag overlay") for the page-level drop overlay - §5.7
+// copy deck for the page-level drop overlay shown while a file is dragged over the page
 export const DROP_OVERLAY_TITLE = 'Drop to import'
 
 /**
@@ -34,20 +39,35 @@ export const getDropOverlayHint = (fileCount) => {
 }
 
 /**
- * Determines how the filter panel degrades on narrow windows. The page header's title and
- * actions rows are fixed (title alone, centered; actions left-aligned below it, at every
- * width) - see ux.md §3.1/§3.10 for why that stopped being a function of content width.
+ * Determines how the header and the filter panel degrade on narrow windows.
  *
- * An unknown width (not measured yet) is treated as wide.
+ * The header normally renders as one row (Free Ride/Import Routes, the page title, an empty
+ * spacer) laid out as three equal-ish grid columns so the title sits at the true horizontal
+ * center of the row. That only works while the actions group and the title both fit next to each
+ * other - once their combined rendered width would exceed the available content width, the header
+ * falls back to a stacked layout (title alone on its own row, actions left-aligned below it).
  *
+ * This is deliberately based on the actual rendered widths rather than a fixed pixel breakpoint:
+ * the header's contents are all sized in viewport-relative units, so a fixed px threshold flips
+ * the layout inconsistently at different window heights.
+ *
+ * An unknown/unmeasured width (0, negative, NaN or undefined) is treated as wide, so the page
+ * renders its normal single-row layout before the first real measurement lands.
+ *
+ * @param {number} actionsWidth rendered width of the Free Ride/Import Routes actions group
+ * @param {number} titleWidth rendered width of the page title
  * @param {number} contentWidth width of the content area, excluding its padding
- * @returns {{singleColumnFilters:boolean}}
+ * @returns {{stackHeader:boolean, singleColumnFilters:boolean}}
  */
-export const getHeaderLayout = (contentWidth) => {
+export const getHeaderLayout = (actionsWidth, titleWidth, contentWidth) => {
     if (!contentWidth || contentWidth<0 || Number.isNaN(contentWidth))
-        return { singleColumnFilters:false }
+        return { stackHeader:false, singleColumnFilters:false }
+
+    const actions = Number(actionsWidth)||0
+    const title = Number(titleWidth)||0
 
     return {
+        stackHeader: (actions+title+HEADER_LAYOUT_GAP)>contentWidth,
         singleColumnFilters: contentWidth<FILTER_COLUMNS_MIN_WIDTH
     }
 }

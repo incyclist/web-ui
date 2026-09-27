@@ -47,23 +47,44 @@ const baseProps = {
 let contentWidth
 const setContentWidth = (w) => { contentWidth = w }
 
+// measured widths of the header's actions group and title, read through `scrollWidth` exactly
+// like the header component itself does - defaults to 0 (unmeasured), which never forces a stack
+let actionsWidth
+let titleWidth
+const setActionsWidth = (w) => { actionsWidth = w }
+const setTitleWidth = (w) => { titleWidth = w }
+
 describe('RouteListScreen', () => {
 
     let clientWidthDescriptor
+    let scrollWidthDescriptor
 
     beforeEach(() => {
         contentWidth = 0
+        actionsWidth = 0
+        titleWidth = 0
         rendered.dropzoneProps = null
         clientWidthDescriptor = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'clientWidth')
         Object.defineProperty(HTMLElement.prototype, 'clientWidth', {
             configurable: true,
             get() { return this.classList?.contains('route-list-page') ? contentWidth : 0 }
         })
+        scrollWidthDescriptor = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'scrollWidth')
+        Object.defineProperty(HTMLElement.prototype, 'scrollWidth', {
+            configurable: true,
+            get() {
+                if (this.classList?.contains('route-list-actions')) return actionsWidth
+                if (this.classList?.contains('route-list-title')) return titleWidth
+                return 0
+            }
+        })
     })
 
     afterEach(() => {
         if (clientWidthDescriptor)
             Object.defineProperty(HTMLElement.prototype, 'clientWidth', clientWidthDescriptor)
+        if (scrollWidthDescriptor)
+            Object.defineProperty(HTMLElement.prototype, 'scrollWidth', scrollWidthDescriptor)
         vi.clearAllMocks()
     })
 
@@ -95,19 +116,49 @@ describe('RouteListScreen', () => {
             expect(onImportRoutes).toHaveBeenCalledTimes(1)
         })
 
+        test('renders as a single-row, three-slot header by default (actions/title both fit)', () => {
+            const { container } = render(<RouteListScreen {...baseProps} />)
+
+            const header = container.querySelector('.route-list-header')
+            expect(header.dataset.headerLayout).toBe('grid')
+            // actions, title and the balancing spacer are all still part of the one header row
+            expect(header.querySelector('.route-list-actions')).not.toBeNull()
+            expect(header.querySelector('.route-list-title')).not.toBeNull()
+        })
+
+        test('the List/Tile toggle lives in the toolbar, not in the header actions', () => {
+            const { container } = render(<RouteListScreen {...baseProps} />)
+
+            const actions = container.querySelector('.route-list-actions')
+            const toolbar = container.querySelector('.route-list-toolbar')
+            expect(actions.querySelector('#list')).toBeNull()
+            expect(actions.querySelector('#tiles')).toBeNull()
+            expect(toolbar.querySelector('#list')).not.toBeNull()
+            expect(toolbar.querySelector('#tiles')).not.toBeNull()
+        })
+
+        test('the List/Tile toggle in the toolbar reports selection back to the screen', () => {
+            const onDisplayTypeSelected = vi.fn()
+            const { container } = render(<RouteListScreen {...baseProps} onDisplayTypeSelected={onDisplayTypeSelected} />)
+
+            fireEvent.click(container.querySelector('.route-list-toolbar #tiles'))
+            expect(onDisplayTypeSelected).toHaveBeenCalledWith('tiles')
+        })
+
         test.each([
             [1080+80, undefined],
             [1000+80, undefined],
             [999+80,  '3'],
             [700+80,  '3'],
             [699+80,  '1'],
-        ])('content area %ipx wide: title/actions layout is unaffected, filter columns %s', (width, columns) => {
+        ])('content area %ipx wide, actions/title unmeasured: filter columns %s, header stays single-row', (width, columns) => {
             setContentWidth(width)
             const { container } = render(<RouteListScreen {...baseProps} filtersExpanded />)
 
-            // the title row never shares space with anything else, at any width - ux.md §3.1/§3.10
+            // stackHeader is driven by the actions/title's own measured widths, not content width
+            // on its own - with both unmeasured (0) here, the header never stacks
+            expect(container.querySelector('.route-list-header').dataset.headerLayout).toBe('grid')
             expect(screen.getByText('Routes')).toBeInTheDocument()
-            // labels are never dropped
             expect(screen.getByText('Free Ride')).toBeInTheDocument()
             expect(screen.getByText('Import Routes')).toBeInTheDocument()
             if (columns)
@@ -122,6 +173,41 @@ describe('RouteListScreen', () => {
             setContentWidth(620)
             act(() => { window.dispatchEvent(new Event('resize')) })
             expect(container.querySelector('.route-filter-panel').dataset.columns).toBe('1')
+        })
+
+        test('actions and title fitting next to each other renders the single-row grid header', () => {
+            setContentWidth(900)
+            setActionsWidth(300)
+            setTitleWidth(200)
+            const { container } = render(<RouteListScreen {...baseProps} />)
+
+            expect(container.querySelector('.route-list-header').dataset.headerLayout).toBe('grid')
+        })
+
+        test('actions and title overflowing the content width falls back to the stacked header', () => {
+            setContentWidth(800)
+            setActionsWidth(500)
+            setTitleWidth(400)
+            const { container } = render(<RouteListScreen {...baseProps} />)
+
+            const header = container.querySelector('.route-list-header')
+            expect(header.dataset.headerLayout).toBe('stacked')
+            // still the exact same title/actions, just stacked - nothing is dropped
+            expect(screen.getByText('Routes')).toBeInTheDocument()
+            expect(screen.getByText('Free Ride')).toBeInTheDocument()
+            expect(screen.getByText('Import Routes')).toBeInTheDocument()
+        })
+
+        test('the header re-measures and can flip to stacked after a resize', () => {
+            setContentWidth(1200)
+            setActionsWidth(300)
+            setTitleWidth(200)
+            const { container } = render(<RouteListScreen {...baseProps} />)
+            expect(container.querySelector('.route-list-header').dataset.headerLayout).toBe('grid')
+
+            setContentWidth(400)
+            act(() => { window.dispatchEvent(new Event('resize')) })
+            expect(container.querySelector('.route-list-header').dataset.headerLayout).toBe('stacked')
         })
     })
 
@@ -385,6 +471,18 @@ describe('RouteListScreen', () => {
 
             expect(rendered.dropzoneProps.multiple).toBe(true)
             expect(rendered.dropzoneProps.filters).toBe(DEFAULT_FILTERS)
+        })
+
+        test('a drop is always prevented at the capture phase, even without the overlay mounted', () => {
+            // regression: an unprevented drop's default action is the browser navigating the
+            // window to the dropped file instead of importing it - this must not depend on the
+            // overlay Dropzone's own (bubble-phase, conditionally-mounted) preventDefault()
+            const { container } = render(<RouteListScreen {...baseProps} />)
+            const contentArea = container.querySelector('.route-list-page')
+
+            const notCancelled = fireEvent.drop(contentArea, {dataTransfer:{items:{length:1}}})
+
+            expect(notCancelled).toBe(false) // dispatchEvent() returns false once preventDefault() was called
         })
 
         test('dropping calls the existing import path and never opens the Import Routes dialog', () => {

@@ -15,14 +15,14 @@ const Body = styled.div`
 `;
 
 /**
- * The folder scan's progress screen (ux.md §5.3, phase `scanning`).
+ * The folder scan's progress screen (phase `scanning`).
  *
  * `folderInfo` is the picker result the dialog shell captured when the user chose a folder in
  * `LandingView` - `useImportRoutes()`'s display props don't carry it (the scanner only reports
  * counts), so it is threaded down as a prop instead.
  *
  * Surfaces session 1.3's incomplete-scan count as soon as it is non-zero, live, using the exact
- * copy-deck sentence (ux.md §9) rather than session 1.3's own internal wording - `<drive>` in
+ * copy-deck sentence rather than session 1.3's own internal wording - `<drive>` in
  * that sentence is the chosen folder's display name, the only path-like value available here.
  */
 export const ScanningView = ({ displayProps, folderInfo, cancel }) => {

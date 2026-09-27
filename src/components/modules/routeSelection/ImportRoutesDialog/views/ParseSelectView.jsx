@@ -43,7 +43,7 @@ const Spacer = styled.div`
 const getRouteKey = (route, idx) => route?.id ?? `route-${idx}`;
 
 /**
- * The folder scan's parse-select screen (ux.md §5.3) - phases `parsing` (the list streams in) and
+ * The folder scan's parse-select screen - phases `parsing` (the list streams in) and
  * `selecting` (parse complete, full list, checkboxes enabled). Both phases render the same table;
  * `parsing` additionally shows the "Reading routes…" progress header and disables Import.
  *

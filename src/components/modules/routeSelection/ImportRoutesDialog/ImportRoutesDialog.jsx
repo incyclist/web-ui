@@ -54,7 +54,7 @@ const NON_DISMISSABLE_PHASES = new Set(['scanning', 'parsing', 'ingesting']);
 // of a folder with nothing importable in it.
 const isBulkScanPhase = (displayProps) => displayProps?.scanProgress != null;
 
-// One title per phase, exactly as ux.md §9's copy deck lists them: "Import Routes" /
+// One title per phase, exactly as the copy deck lists them: "Import Routes" /
 // "Select Routes" / "Importing" / "Import Finished". Phases with no distinct title of their own
 // (landing, scanning, the single-route result) keep the dialog's default title.
 const getDialogTitle = (phase, displayProps) => {
@@ -72,8 +72,8 @@ const getDialogTitle = (phase, displayProps) => {
 // Seam for session 5.3: Landing and Result were the only phases with a real view before this
 // session. Add a `<phase>: <View>` entry here as each further phase gets built - nothing else in
 // this file, or in Landing/Result, needs to change for that to slot in. `parsing` and `selecting`
-// share `ParseSelectView` - ux.md §5.3 treats them as one screen (streaming vs. complete), and
-// `ParseSelectView` itself resolves the 'parsing' ambiguity noted above.
+// share `ParseSelectView`, which treats them as one screen (streaming vs. complete), and
+// itself resolves the 'parsing' ambiguity noted above.
 const PHASE_VIEWS = {
     landing: LandingView,
     result: ResultView,
@@ -103,7 +103,7 @@ export const ImportRoutesDialog = ({ onClose }) => {
 
     // The picker result for the folder the user chose - `useImportRoutes()`'s display props don't
     // carry it (the scanner only ever reports counts back), and the Scanning/Parse-Select/Complete
-    // views need it to name the folder in their copy (ux.md §9). Captured here, once, rather than
+    // views need it to name the folder in their copy. Captured here, once, rather than
     // threading it through the hook.
     const [folderInfo, setFolderInfo] = useState(null);
 

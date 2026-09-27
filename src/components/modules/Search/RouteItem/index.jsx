@@ -45,7 +45,7 @@ export const RouteItem = ( props) => {
 
     // a downloaded copy of a catalog route only clears the local copy - the route stays in the
     // catalog and is recoverable, so it is deleted without a prompt. A local/imported route is not
-    // re-downloadable, so it gets a confirmation first (ux.md §3.8).
+    // re-downloadable, so it gets a confirmation first.
     const onDeleteHandler = (event) => {
         const {onDelete, isDownloaded} = props
         event.stopPropagation();

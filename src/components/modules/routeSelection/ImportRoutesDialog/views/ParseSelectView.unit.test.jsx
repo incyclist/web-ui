@@ -92,7 +92,7 @@ describe('ParseSelectView', () => {
         const displayProps = { phase: 'selecting', routes, scanProgress: { scannedFolders: 3, failedFolders: 0 } }
         render(<ParseSelectView displayProps={displayProps} {...baseProps()} />)
 
-        // "Hide already imported" is on by default (ux.md §5.3) - r2 is filtered out of view
+        // "Hide already imported" is on by default - r2 is filtered out of view
         expect(screen.getByTestId('row-r1')).toBeInTheDocument()
         expect(screen.queryByTestId('row-r2')).not.toBeInTheDocument()
         expect(screen.getByTestId('row-r3')).toBeInTheDocument()

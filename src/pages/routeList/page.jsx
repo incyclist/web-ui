@@ -286,7 +286,7 @@ export const RouteListPage =  () => {
     },[])
 
     // files dropped anywhere on the page's content area - no dialog, same call the old
-    // carousel's UploadCard used (HLD §4.3/§4.7); progress reports as pinned ActiveImport rows
+    // carousel's UploadCard used; progress reports as pinned ActiveImport rows
     const onImportFiles = (files) => {
         service.import(files)
     }

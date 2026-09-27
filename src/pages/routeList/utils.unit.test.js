@@ -6,20 +6,45 @@ import {
 
 describe('getHeaderLayout', () => {
 
+    // actions/title widths chosen so their sum (plus the internal gap) never gets close to the
+    // FILTER_COLUMNS_MIN_WIDTH boundary - these two thresholds are unrelated and must not interact
+    const FITS = [300, 200]
+
     test('the filter panel stays multi-column at 700px and above', () => {
-        expect(getHeaderLayout(700)).toEqual({singleColumnFilters:false})
-        expect(getHeaderLayout(1640)).toEqual({singleColumnFilters:false})
+        expect(getHeaderLayout(...FITS, 700)).toEqual({stackHeader:false, singleColumnFilters:false})
+        expect(getHeaderLayout(...FITS, 1640)).toEqual({stackHeader:false, singleColumnFilters:false})
     })
 
     test('below 700px the filter panel collapses to one column', () => {
-        expect(getHeaderLayout(699)).toEqual({singleColumnFilters:true})
-        expect(getHeaderLayout(120)).toEqual({singleColumnFilters:true})
+        expect(getHeaderLayout(...FITS, 699)).toEqual({stackHeader:false, singleColumnFilters:true})
+        expect(getHeaderLayout(...FITS, 720)).toEqual({stackHeader:false, singleColumnFilters:false})
     })
 
-    test('an unknown width is treated as wide', () => {
-        expect(getHeaderLayout(undefined)).toEqual({singleColumnFilters:false})
-        expect(getHeaderLayout(0)).toEqual({singleColumnFilters:false})
-        expect(getHeaderLayout(NaN)).toEqual({singleColumnFilters:false})
+    test('an unknown content width is treated as wide, header unstacked', () => {
+        expect(getHeaderLayout(...FITS, undefined)).toEqual({stackHeader:false, singleColumnFilters:false})
+        expect(getHeaderLayout(...FITS, 0)).toEqual({stackHeader:false, singleColumnFilters:false})
+        expect(getHeaderLayout(...FITS, NaN)).toEqual({stackHeader:false, singleColumnFilters:false})
+    })
+
+    test('actions and title fit next to each other: single-row (grid) header', () => {
+        // 300 + 200 + gap(24) = 524, well under 900
+        expect(getHeaderLayout(300, 200, 900)).toEqual({stackHeader:false, singleColumnFilters:false})
+    })
+
+    test('actions and title together overflow the content width: stacked header', () => {
+        // 500 + 400 + gap(24) = 924, over 800
+        expect(getHeaderLayout(500, 400, 800)).toEqual({stackHeader:true, singleColumnFilters:false})
+    })
+
+    test('right at the boundary: fitting exactly does not stack, one pixel over does', () => {
+        // 500 + 400 + gap(24) = 924
+        expect(getHeaderLayout(500, 400, 924)).toEqual({stackHeader:false, singleColumnFilters:false})
+        expect(getHeaderLayout(500, 400, 923)).toEqual({stackHeader:true, singleColumnFilters:false})
+    })
+
+    test('unmeasured (falsy) actions/title widths never force a stack on their own', () => {
+        expect(getHeaderLayout(0, 0, 300)).toEqual({stackHeader:false, singleColumnFilters:true})
+        expect(getHeaderLayout(undefined, undefined, 300)).toEqual({stackHeader:false, singleColumnFilters:true})
     })
 })
 
@@ -113,7 +138,7 @@ test('sort options, Suggested first', () => {
     expect(SORT_OPTIONS.map(o=>o.value)).toEqual(['suggested','name','distance','elevation'])
 })
 
-describe('drop overlay hint (ux.md §9)', () => {
+describe('drop overlay hint', () => {
 
     test('singular and plural file counts', () => {
         expect(getDropOverlayHint(1)).toBe('1 file · .gpx, .epm and .xml are supported')

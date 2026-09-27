@@ -3,6 +3,7 @@ import styled from "styled-components"
 import { ChevronDownIcon, ChevronUpIcon, FilterIcon, XIcon } from "@primer/octicons-react"
 import { EventLogger } from "gd-eventlog"
 import { SearchBox } from "./SearchBox"
+import { DisplayTypeSelection } from "../../../molecules/Lists/DisplayTypeSelection"
 
 export { SearchBox, SEARCH_TIMEOUT } from "./SearchBox"
 
@@ -107,6 +108,13 @@ const SortLabel = styled.label`
     white-space: nowrap;
 `
 
+// Sort and the List/Tile toggle wrap together as a single unit when the toolbar itself wraps
+const SortAndDisplay = styled.div`
+    display: inline-flex;
+    align-items: center;
+    gap: 1ch;
+`
+
 const Select = styled.select`
     font-size: 1.6vh;
     font-family: inherit;
@@ -121,13 +129,15 @@ const log = (message, props) => {
 /**
  * Toolbar of the Routes page:
  *
- * `[search box] [Filters (n)] (chip x) (chip x) Clear all   <count>   Sort: [...]`
+ * `[search box] [Filters (n)] (chip x) (chip x) Clear all   <count>   Sort: [...]  [list|tiles]`
  *
  * The chips summarise the active filters and stay visible while the filter panel is collapsed.
+ * Sort and the List/Tile display-type toggle are the last two items, grouped so they wrap
+ * together as a unit if the toolbar itself wraps at narrow widths.
  */
 export const RouteListToolbar = forwardRef( ({
         title, chips=[], filtersExpanded=false, countText,
-        sortOrder, sortOptions=[],
+        sortOrder, sortOptions=[], displayType, onDisplayTypeSelected,
         onTitleChange, onToggleFilters, onRemoveFilter, onClearFilters, onSortOrderChange,
         onSearchFocus, onSearchBlur
     }, searchRef) => {
@@ -187,12 +197,16 @@ export const RouteListToolbar = forwardRef( ({
 
             {countText ? <Count className='route-count'>{countText}</Count> : null}
 
-            <SortLabel>
-                Sort:
-                <Select className='sort-order' value={sortOrder} onChange={onSortChanged}>
-                    {sortOptions.map( o => <option key={o.value} value={o.value}>{o.label}</option>)}
-                </Select>
-            </SortLabel>
+            <SortAndDisplay className='route-list-sort-display'>
+                <SortLabel>
+                    Sort:
+                    <Select className='sort-order' value={sortOrder} onChange={onSortChanged}>
+                        {sortOptions.map( o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                    </Select>
+                </SortLabel>
+
+                <DisplayTypeSelection selected={displayType} onSelected={onDisplayTypeSelected} />
+            </SortAndDisplay>
         </Container>
     )
 })

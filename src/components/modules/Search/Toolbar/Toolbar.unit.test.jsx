@@ -120,4 +120,17 @@ describe('RouteListToolbar', () => {
         fireEvent.change(select, {target:{value:'name'}})
         expect(onSortOrderChange).toHaveBeenCalledWith('name')
     })
+
+    test('the List/Tile display-type toggle is the last item, grouped with Sort', () => {
+        const onDisplayTypeSelected = vi.fn()
+        const { container } = render(<RouteListToolbar sortOptions={SORT_OPTIONS} displayType='list' onDisplayTypeSelected={onDisplayTypeSelected} />)
+
+        const group = container.querySelector('.route-list-sort-display')
+        expect(group).not.toBeNull()
+        expect(group.querySelector('.sort-order')).not.toBeNull()
+        expect(group.querySelector('#tiles')).not.toBeNull()
+
+        fireEvent.click(group.querySelector('#tiles'))
+        expect(onDisplayTypeSelected).toHaveBeenCalledWith('tiles')
+    })
 })

@@ -64,7 +64,7 @@ const formatDistance = (distance) => {
 
 /**
  * The data cells of one selection-table row - the part that changes when this route's own
- * `Observer` fires `'updated'` as its parse result streams in (ux.md §5.3). Kept separate from
+ * `Observer` fires `'updated'` as its parse result streams in. Kept separate from
  * `ImportRow` so the `Dynamic` wrapper around it only ever re-renders this row, never the table.
  */
 const ImportRowCells = ({ item, selected, onToggle }) => {
@@ -104,7 +104,7 @@ const ImportRowCells = ({ item, selected, onToggle }) => {
 };
 
 /**
- * One row of the folder-scan selection table (ux.md §5.3).
+ * One row of the folder-scan selection table.
  *
  * `outsideFold` is driven by the shared fold `Observer` from `useFoldWindow()`, exactly like
  * `RouteItem` in the main list - a skeleton of the same height when outside it, so scroll height

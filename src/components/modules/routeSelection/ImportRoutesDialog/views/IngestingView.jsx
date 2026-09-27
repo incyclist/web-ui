@@ -17,11 +17,11 @@ const Body = styled.div`
 `;
 
 /**
- * The ingest-progress screen (ux.md §5.3/§5.4, phase `ingesting`). No user interaction beyond
+ * The ingest-progress screen (phase `ingesting`). No user interaction beyond
  * Stop - the shell's `NON_DISMISSABLE_PHASES` already blocks Esc/outside-click for this phase, so
  * this view only owns the Stop button and the one confirmation it requires.
  *
- * "Stop" asks once before acting (ux.md §5.4) - unlike Cancel in the earlier phases, ingest has
+ * "Stop" asks once before acting - unlike Cancel in the earlier phases, ingest has
  * already started writing routes, so backing out needs a beat of confirmation rather than the
  * silent "nothing has happened yet" return the other phases get.
  */
