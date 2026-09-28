@@ -18,6 +18,23 @@ const Body = styled.div`
     box-sizing: border-box;
 `;
 
+// Fills the dialog's content box. The table takes whatever the header, toolbar and button bar leave
+// over, so the button bar stays inside the dialog whether or not the progress header is shown.
+const Screen = styled.div`
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+`;
+
+const TableArea = styled.div`
+    flex: 1 1 0;
+    min-height: 0;
+`;
+
+const FixedHeight = styled.div`
+    flex: 0 0 auto;
+`;
+
 const ProgressHeader = styled.div`
     display: flex;
     flex-direction: column;
@@ -114,58 +131,66 @@ export const ParseSelectView = ({
     const pct = total > 0 ? Math.round((parsed / total) * 100) : 0;
 
     return (
-        <>
+        <Screen>
             {isStreaming && (
-                <ProgressHeader>
-                    <Text text={`Reading routes… ${parsed} of ${total}`} />
-                    <ProgressBar completed={pct} height="1vh" width="60%" />
-                </ProgressHeader>
+                <FixedHeight>
+                    <ProgressHeader>
+                        <Text text={`Reading routes… ${parsed} of ${total}`} />
+                        <ProgressBar completed={pct} height="1vh" width="60%" />
+                    </ProgressHeader>
+                </FixedHeight>
             )}
 
-            <Toolbar>
-                <Button text="Select all" onClick={selectAll} />
-                <Button text="Deselect all" onClick={deselectAll} />
-                <CheckBox
-                    label={`Hide already imported (${alreadyImportedCount})`}
-                    checked={hideAlreadyImported}
-                    onValueChange={setHideAlreadyImported}
-                />
-                <CheckBox
-                    label={`Only show problems (${problemCount})`}
-                    checked={onlyProblems}
-                    onValueChange={setOnlyProblems}
-                />
-                <Spacer />
-                <Text text={`${selectedCount} selected`} />
-            </Toolbar>
+            <FixedHeight>
+                <Toolbar>
+                    <Button text="Select all" onClick={selectAll} />
+                    <Button text="Deselect all" onClick={deselectAll} />
+                    <CheckBox
+                        label={`Hide already imported (${alreadyImportedCount})`}
+                        checked={hideAlreadyImported}
+                        onValueChange={setHideAlreadyImported}
+                    />
+                    <CheckBox
+                        label={`Only show problems (${problemCount})`}
+                        checked={onlyProblems}
+                        onValueChange={setOnlyProblems}
+                    />
+                    <Spacer />
+                    <Text text={`${selectedCount} selected`} />
+                </Toolbar>
+            </FixedHeight>
 
-            <AppThemeProvider>
-                <TableContainer className="import-routes" width="100%" height="calc(100% - 20vh)" ref={ref}>
-                    {visibleRoutes.map((route, idx) => {
-                        const key = getRouteKey(route, idx);
-                        return (
-                            <Dynamic observer={observer} key={key} event={getFoldEvent(key)} prop="outsideFold">
-                                <ImportRow
-                                    route={route}
-                                    outsideFold={isOutsideFold(key)}
-                                    selected={isSelected(route.id)}
-                                    onToggle={() => toggleSelected(route.id)}
-                                />
-                            </Dynamic>
-                        );
-                    })}
-                </TableContainer>
-            </AppThemeProvider>
+            <TableArea>
+                <AppThemeProvider>
+                    <TableContainer className="import-routes" width="100%" height="100%" ref={ref}>
+                        {visibleRoutes.map((route, idx) => {
+                            const key = getRouteKey(route, idx);
+                            return (
+                                <Dynamic observer={observer} key={key} event={getFoldEvent(key)} prop="outsideFold">
+                                    <ImportRow
+                                        route={route}
+                                        outsideFold={isOutsideFold(key)}
+                                        selected={isSelected(route.id)}
+                                        onToggle={() => toggleSelected(route.id)}
+                                    />
+                                </Dynamic>
+                            );
+                        })}
+                    </TableContainer>
+                </AppThemeProvider>
+            </TableArea>
 
-            <ButtonBar justify="center">
-                <Button text="Cancel" onClick={cancel} />
-                <Button
-                    text={`Import ${selectedCount} routes`}
-                    primary
-                    disabled={isStreaming || selectedCount === 0}
-                    onClick={importSelected}
-                />
-            </ButtonBar>
-        </>
+            <FixedHeight>
+                <ButtonBar justify="center">
+                    <Button text="Cancel" onClick={cancel} />
+                    <Button
+                        text={`Import ${selectedCount} routes`}
+                        primary
+                        disabled={isStreaming || selectedCount === 0}
+                        onClick={importSelected}
+                    />
+                </ButtonBar>
+            </FixedHeight>
+        </Screen>
     );
 };

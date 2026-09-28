@@ -1,7 +1,7 @@
 import React, { useCallback } from 'react';
 import styled from 'styled-components';
-import { Dropzone } from '../../../../molecules';
-import { useAppUI } from '../../../../../bindings/native-ui';
+import { Dropzone, FolderTile } from '../../../../molecules';
+import { Button, ButtonBar } from '../../../../atoms';
 import { DEFAULT_FILTERS } from '../../UploadCard/summary';
 
 // UploadCard's combined "Routes" filter (gpx, epm, xml), extended with .rlv - the
@@ -18,7 +18,7 @@ const TilesArea = styled.div`
     justify-content: center;
     gap: 2vw;
     width: 100%;
-    height: calc(100% - 5vh);
+    height: calc(100% - 5vh - 7.7vh);
     padding: 3vh 2vw 0 2vw;
     box-sizing: border-box;
 `;
@@ -45,30 +45,13 @@ const TileContent = styled.div`
     text-align: center;
 `;
 
-// Dropzone renders its own width/height as a plain CSS size, not a flex-item share of its
-// row - without this wrapper it takes 100% of the whole row's width (its "width" prop) and
-// squeezes FolderTile down to whatever's left, rather than the two tiles sharing space equally.
-const RouteTileWrapper = styled.div`
+// Dropzone and FolderTile render their own width/height as a plain CSS size, not a flex-item
+// share of the row - without this wrapper the first takes 100% of the whole row's width (its
+// "width" prop) and squeezes the other down to whatever's left, rather than the two tiles sharing
+// space equally.
+const TileWrapper = styled.div`
     flex: 1;
     display: flex;
-`;
-
-const FolderTile = styled.div`
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 1vh;
-    padding: 2vh;
-    text-align: center;
-    border: 2px dashed #dcdcdc;
-    border-radius: 10px;
-    cursor: pointer;
-
-    &:hover {
-        border-color: white;
-    }
 `;
 
 const HintText = styled.div`
@@ -83,13 +66,6 @@ const HintText = styled.div`
     opacity: 0.7;
 `;
 
-const onKeyActivate = (handler) => (e) => {
-    if (e.key === 'Enter' || e.key === ' ') {
-        e.preventDefault();
-        handler();
-    }
-};
-
 /**
  * The Import Routes dialog's landing screen - two tiles ("Add a route" / "Import a whole
  * folder"), per the product decision that desktop does not ask the user to classify their
@@ -102,27 +78,17 @@ const onKeyActivate = (handler) => (e) => {
  * Presentational only - `onAddRoute`/`onSelectFolder` are `useImportRoutes()`'s
  * `importSingle`/`scan`, wired in by the dialog shell.
  */
-export const LandingView = ({ onAddRoute, onSelectFolder }) => {
-    const ui = useAppUI();
-
+export const LandingView = ({ onAddRoute, onSelectFolder, onClose }) => {
     const handleAddRouteDrop = useCallback((dropInfo) => {
         const files = (Array.isArray(dropInfo) ? dropInfo : [dropInfo]).filter(Boolean);
         if (files.length > 0 && onAddRoute)
             onAddRoute(files);
     }, [onAddRoute]);
 
-    const handleSelectFolder = useCallback(async () => {
-        const result = await ui?.selectDirectory();
-        if (!result || result.canceled)
-            return;
-        if (onSelectFolder)
-            onSelectFolder({ uri: result.selected, displayName: result.displayName });
-    }, [ui, onSelectFolder]);
-
     return (
         <>
             <TilesArea>
-                <RouteTileWrapper>
+                <TileWrapper>
                     <Dropzone
                         id="add-route-tile"
                         width="100%"
@@ -137,19 +103,24 @@ export const LandingView = ({ onAddRoute, onSelectFolder }) => {
                             </TileContent>
                         }
                     />
-                </RouteTileWrapper>
-                <FolderTile
-                    id="import-folder-tile"
-                    role="button"
-                    tabIndex={0}
-                    onClick={handleSelectFolder}
-                    onKeyDown={onKeyActivate(handleSelectFolder)}
-                >
-                    <TileTitle>Import a whole folder</TileTitle>
-                    <TileSubline>Find every video route in a folder and its sub-folders — a library on a disk or NAS</TileSubline>
-                </FolderTile>
+                </TileWrapper>
+                <TileWrapper>
+                    <FolderTile
+                        id="import-folder-tile"
+                        onSelect={onSelectFolder}
+                        text={
+                            <TileContent>
+                                <TileTitle>Import a whole folder</TileTitle>
+                                <TileSubline>Find every video route in a folder and its sub-folders — a library on a disk or NAS</TileSubline>
+                            </TileContent>
+                        }
+                    />
+                </TileWrapper>
             </TilesArea>
             <HintText>…or drop route files anywhere on the Routes page</HintText>
+            <ButtonBar justify="center">
+                <Button text="Close" onClick={onClose} />
+            </ButtonBar>
         </>
     );
 };

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
+import { scrollbar } from '../../../../../utils/scrollbar';
 import { Button, ButtonBar, Text } from '../../../../atoms';
 import { getImportErrorText } from '../../importErrorText';
 
@@ -20,7 +21,7 @@ const FailedList = styled.div`
     flex-direction: column;
     gap: 0.5vh;
     max-height: 20vh;
-    overflow-y: auto;
+    ${scrollbar}
 `;
 
 /**

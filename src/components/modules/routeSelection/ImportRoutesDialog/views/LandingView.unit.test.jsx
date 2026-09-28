@@ -34,6 +34,14 @@ describe('LandingView', () => {
         rendered.dropzoneProps = null
     })
 
+    test('offers a Close button in the dialog button bar', () => {
+        const onClose = vi.fn()
+        render(<LandingView onAddRoute={vi.fn()} onSelectFolder={vi.fn()} onClose={onClose} />)
+
+        fireEvent.click(screen.getByText('Close'))
+        expect(onClose).toHaveBeenCalledTimes(1)
+    })
+
     test('renders both tiles with the exact copy-deck labels', () => {
         render(<LandingView onAddRoute={vi.fn()} onSelectFolder={vi.fn()} />)
 
