@@ -285,7 +285,7 @@ describe('RouteListScreen', () => {
             expect(screen.queryByText('No routes yet')).toBeNull()
         })
 
-        test('an empty library offers Import Routes and Free Ride', () => {
+        test('an empty library explains what to do; the actions are the header buttons, not repeated in the empty state', () => {
             const onImportRoutes = vi.fn()
             const onFreeRide = vi.fn()
             const { container } = render(<RouteListScreen {...baseProps} routes={[]} cards={[]} totalCount={0}
@@ -295,12 +295,13 @@ describe('RouteListScreen', () => {
             expect(empty).toHaveTextContent('No routes yet')
             expect(empty).toHaveTextContent('Import your own GPX routes or a folder of video routes — or start a Free Ride and pick any road on the map.')
             expect(screen.queryByText('No Routes found')).toBeNull()
+            expect(empty.querySelectorAll('button')).toHaveLength(0)
 
-            const buttons = empty.querySelectorAll('button')
-            expect(buttons[0]).toHaveTextContent('Import Routes')
-            expect(buttons[1]).toHaveTextContent('Free Ride')
-            fireEvent.click(buttons[0])
-            fireEvent.click(buttons[1])
+            // exactly one Import Routes and one Free Ride button on the page: the header's
+            expect(container.querySelectorAll('#importRoutes')).toHaveLength(1)
+            expect(container.querySelectorAll('#freeRide')).toHaveLength(1)
+            fireEvent.click(container.querySelector('#importRoutes'))
+            fireEvent.click(container.querySelector('#freeRide'))
             expect(onImportRoutes).toHaveBeenCalledTimes(1)
             expect(onFreeRide).toHaveBeenCalledTimes(1)
         })

@@ -1,7 +1,7 @@
 import React, { useCallback, useLayoutEffect, useRef, useState } from "react"
 import styled from "styled-components"
 import MainPage from "../../components/molecules/MainPage"
-import { Button, Center, GroupTitle, Loader, PageTitle, Text } from "../../components/atoms"
+import { Button, Center, Loader, PageTitle, Text } from "../../components/atoms"
 import { Column, Row } from "../../components/atoms/layout/View"
 import { BikeIcon } from "../../components/atoms/Icons/BikeIcon"
 import { ImportIcon } from "../../components/atoms/Icons/ImportIcon"
@@ -120,13 +120,6 @@ const HeaderButtonContent = styled.span`
     flex-shrink: 0;
 `
 
-const ButtonContent = styled.span`
-    display: inline-flex;
-    align-items: center;
-    gap: 0.6ch;
-    padding: 0 0.5ch;
-`
-
 const ListArea = styled.div`
     flex: 1 1 0;
     min-height: 0;
@@ -148,6 +141,16 @@ const StateArea = styled(Column)`
     width: 100%;
     justify-content: center;
     align-items: center;
+    text-align: center;
+    color: white;
+`
+
+// GroupTitle is left-aligned and full width (it titles a form group); this is a centered
+// headline of a state that fills the whole content area
+const StateTitle = styled.div`
+    font-size: 3vh;
+    font-weight: bold;
+    color: white;
     text-align: center;
 `
 
@@ -228,23 +231,15 @@ const useElementWidth = (ref) => {
     return width
 }
 
-const FreeRideButton = ({onClick, secondary, header}) => header ? (
+const FreeRideButton = ({onClick}) => (
     <Button id='freeRide' title={FREE_RIDE_TOOLTIP} outline no3D margin='0' onClick={onClick}>
         <HeaderButtonContent><BikeIcon width='1.9em' height='1.25em' color='currentColor'/>Free Ride</HeaderButtonContent>
     </Button>
-) : (
-    <Button id='freeRide' title={FREE_RIDE_TOOLTIP} secondary={secondary} onClick={onClick}>
-        <ButtonContent><BikeIcon width={32} height={18} color='currentColor'/>Free Ride</ButtonContent>
-    </Button>
 )
 
-const ImportRoutesButton = ({onClick, primary, header}) => header ? (
+const ImportRoutesButton = ({onClick}) => (
     <Button id='importRoutes' outline no3D margin='0' onClick={onClick}>
         <HeaderButtonContent><ImportIcon/>Import Routes</HeaderButtonContent>
-    </Button>
-) : (
-    <Button id='importRoutes' primary={primary} onClick={onClick}>
-        <ButtonContent><ImportIcon size={16}/>Import Routes</ButtonContent>
     </Button>
 )
 
@@ -390,12 +385,8 @@ export const RouteListScreen = ({
         if (!totalCount) {
             return (
                 <StateArea className='empty-library'>
-                    <GroupTitle>No routes yet</GroupTitle>
-                    <StateText text='Import your own GPX routes or a folder of video routes — or start a Free Ride and pick any road on the map.' />
-                    <Row justify='center'>
-                        <ImportRoutesButton primary onClick={onImportRoutes} />
-                        <FreeRideButton secondary onClick={onFreeRide} />
-                    </Row>
+                    <StateTitle>No routes yet</StateTitle>
+                    <StateText align='center' color='white' text='Import your own GPX routes or a folder of video routes — or start a Free Ride and pick any road on the map.' />
                 </StateArea>
             )
         }
@@ -403,8 +394,8 @@ export const RouteListScreen = ({
         if (!routes?.length) {
             return (
                 <StateArea className='no-match'>
-                    <GroupTitle>No routes match</GroupTitle>
-                    {noMatchHint ? <StateText text={noMatchHint} /> : null}
+                    <StateTitle>No routes match</StateTitle>
+                    {noMatchHint ? <StateText align='center' color='white' text={noMatchHint} /> : null}
                     <Row justify='center'>
                         <Button id='clearAllFilters' primary onClick={onClearAllFilters}>Clear all filters</Button>
                     </Row>
@@ -428,13 +419,13 @@ export const RouteListScreen = ({
                     onDragLeaveCapture={onContentDragLeaveCapture} onDropCapture={onContentDropCapture}>
                     <HeaderLayout className='route-list-header' $stacked={stackHeader} data-header-layout={stackHeader ? 'stacked' : 'grid'}>
                         <HeaderSlot className='route-list-free-ride' ref={freeRideRef} $area='free'>
-                            <FreeRideButton header onClick={onFreeRide} />
+                            <FreeRideButton onClick={onFreeRide} />
                         </HeaderSlot>
                         <TitleCell className='route-list-title' ref={titleRef} $stacked={stackHeader}>
                             <PageTitle>Routes</PageTitle>
                         </TitleCell>
                         <HeaderSlot className='route-list-import' ref={importRef} $area='import' $end>
-                            <ImportRoutesButton header onClick={onImportRoutes} />
+                            <ImportRoutesButton onClick={onImportRoutes} />
                         </HeaderSlot>
                     </HeaderLayout>
 
