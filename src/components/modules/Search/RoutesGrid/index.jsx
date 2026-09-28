@@ -1,6 +1,7 @@
 import React,{ useCallback } from 'react'
 import { Autosize, Dynamic, View } from '../../../atoms'
 import styled  from 'styled-components'
+import { scrollbar } from '../../../../utils/scrollbar'
 import { AppThemeProvider } from '../../../../theme'
 import { useFoldWindow } from '../../../../hooks'
 import { useRouteList } from 'incyclist-services'
@@ -25,29 +26,7 @@ export const Container = styled(View)`
     gap: 1.5vh 1vw;
     padding: 1.5vh 0;
 
-    &::-webkit-scrollbar-button {
-        display: none;
-    }
-
-    &::-webkit-scrollbar {
-        width: 2vw;
-    }
-      
-      /* Track */
-    &::-webkit-scrollbar-track {
-        box-shadow: inset 0 0 5px grey;
-        border-radius: 10px;
-        display: none;
-        
-    }
-    
-    /* Handle */
-    &::-webkit-scrollbar-thumb {
-        background: ${props => props.theme.list.hover.background};
-        border-radius: 10px;
-    }
-
-
+    ${scrollbar}
 `
 
 const getCardKey = (card,idx) => card?.id??`route-${idx}`
@@ -95,7 +74,12 @@ export const RoutesGrid = ({cards,onSelect,onDelete}) => {
             return {Card:ActiveImportCard, props}
         }
         else {
-            const props = {...stdProps, ...routeCard.getDisplayProperties() }            
+            const onDeleteCard = (event) => {
+                event?.stopPropagation?.()
+                if (typeof onDelete==='function')
+                    onDelete(routeCard.id)
+            }
+            const props = {...stdProps, ...routeCard.getDisplayProperties(), onDelete:onDeleteCard, onOK:()=>{onItemSelected(routeCard.id)} }
             return {Card:VideoCard, props}
         }
             

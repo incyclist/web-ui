@@ -32,11 +32,17 @@ export const Container = styled(Row)`
 
 //    padding-top: 0.5vh;
 
+// Fixed 7vh x 235:132 box (the same geometry as the skeleton row). Without a fixed width the box
+// took the natural width of whatever image it held, and a row with a different image shape pushed
+// its title and data columns sideways.
 export const ImageContainer = styled.div`
     position:relative;
-    height: ${props => props.height};
-    min-height: ${props => props.height};
-    aspect-ratio: auto 235 / 132;
+    flex: 0 0 auto;
+    height: 7vh;
+    min-height: 7vh;
+    width: calc(7vh * 235 / 132);
+    min-width: calc(7vh * 235 / 132);
+    overflow: hidden;
     user-select: none;
     pointer-events: none;
 `

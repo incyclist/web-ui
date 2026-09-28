@@ -13,7 +13,12 @@ vi.mock('incyclist-services', async (importOriginal) => {
 
 // cards are stubbed - this suite covers the grid's wiring to the fold window
 vi.mock('../../routeSelection/VideoCard', () => ({
-    VideoCard: ({ id, outsideFold, onClick }) => <div data-testid={`card-${id}`} data-outside={String(outsideFold)} onClick={onClick} />,
+    VideoCard: ({ id, outsideFold, onClick, onDelete, onOK }) => (
+        <div data-testid={`card-${id}`} data-outside={String(outsideFold)} onClick={onClick}>
+            <button data-testid={`delete-${id}`} onClick={onDelete} />
+            <button data-testid={`ok-${id}`} onClick={onOK} />
+        </div>
+    ),
 }))
 vi.mock('../../routeSelection/FreeRideCard', () => ({ FreeRideCard: () => null }))
 vi.mock('../../routeSelection/UploadCard', () => ({ UploadCard: () => null }))
@@ -60,5 +65,25 @@ describe('RoutesGrid', () => {
 
         fireEvent.click(screen.getByTestId('card-c5'))
         expect(onSelect).toHaveBeenCalledWith('c5')
+    })
+
+    test('the delete button of a tile hands the route id to onDelete, without selecting the route', () => {
+        const onDelete = vi.fn()
+        const onSelect = vi.fn()
+        render(<RoutesGrid cards={cards} onSelect={onSelect} onDelete={onDelete} />)
+
+        fireEvent.click(screen.getByTestId('delete-c5'))
+
+        expect(onDelete).toHaveBeenCalledWith('c5')
+        expect(onSelect).not.toHaveBeenCalled()
+    })
+
+    test('the OK button of a tile selects the route (opens its details)', () => {
+        const onSelect = vi.fn()
+        render(<RoutesGrid cards={cards} onSelect={onSelect} />)
+
+        fireEvent.click(screen.getByTestId('ok-c7'))
+
+        expect(onSelect).toHaveBeenCalledWith('c7')
     })
 })

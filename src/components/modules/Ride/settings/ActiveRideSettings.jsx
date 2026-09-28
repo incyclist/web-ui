@@ -164,7 +164,7 @@ export class ActiveRideSettings extends React.Component {
 
         return (
             <AppThemeProvider>
-            <Dialog id='RideOptions' className='dialog rideOptions' level={1}  onESC={this.props.onOK}>
+            <Dialog id='RideOptions' scrollbar='large' className='dialog rideOptions' level={1}  onESC={this.props.onOK}>
                 
                     <Tabs zIndex={10} activeTab={area} onChangeTab={(tab)=>this.onAreaSelected(tab)} buttonBar={true}>
                         

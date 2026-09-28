@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import styled from 'styled-components';
 import { AppThemeProvider } from '../../../theme';
+import { scrollbarVars } from '../../../utils/scrollbar';
 import { useKey } from '../../../hooks';
 import { EventLogger } from 'gd-eventlog';
 import { useUnmountEffect } from '../../../hooks';
@@ -38,6 +39,7 @@ const ModalDialog = styled.div`
     box-shadow: 5px 5px 15px 5px #000000;
     background: ${props => props.theme.dialog.background};
     color: ${props => props.theme.dialog.text};
+    ${props => scrollbarVars(props.$scrollbar)}
 `;
 
 export const TitleBar = styled.div`
@@ -134,13 +136,16 @@ export const Dialog = (props) => {
     const level = (props.level || zIndex/10)-1;       
     const height = props.height || `${80-4*level}%`;
     const width = props.width ||  `${80-4*level}%`
+    // dialogs are used at the PC, so they get the compact scrollbar - unless they are opened while
+    // the user is on the bike
+    const scrollbarVariant = props.scrollbar ?? 'compact'
 
     if ( !props.flex) {
         return (
             <AppThemeProvider>
                 <Container $zIndex={zIndex} onClick={onOutsideClicked}>
                 <ModalDialog className='dialog'  onClick={(e)=>e.stopPropagation()}
-                    width={width} height={height} >
+                    width={width} height={height} $scrollbar={scrollbarVariant}>
     
                     {props.title && <TitleBar  className='title-bar'><Text>{props.title}</Text></TitleBar>}
                     
@@ -157,7 +162,7 @@ export const Dialog = (props) => {
             <AppThemeProvider>
                 <Container $zIndex={zIndex} onClick={onOutsideClicked}>
                 <ModalDialog  className='dialog flex' onClick={(e)=>e.stopPropagation()}
-                    width={width} height={height}>
+                    width={width} height={height} $scrollbar={scrollbarVariant}>
                 
                     <ContainerArea  $fullsize={!props.title} className='dialog-content'>
                         {props.title && <TitleBar><Text>{props.title}</Text></TitleBar>}

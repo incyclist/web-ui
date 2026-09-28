@@ -179,10 +179,13 @@ describe('RouteItem', () => {
             expect(container.querySelector('#delete')).toBeNull()
         })
 
-        test('a local/imported route asks for confirmation, worded from the copy deck, before deleting', async () => {
+        test.each([
+            ['a local/imported route', false],
+            ['a downloaded copy of a catalog route', true],
+        ])('%s is deleted immediately, without a confirmation', async (_name, isDownloaded) => {
             const onDelete = vi.fn()
             const { container } = render(
-                <RouteItem {...route} canDelete={true} isDownloaded={false} loaded={true} points={points} outsideFold={false} onDelete={onDelete} />
+                <RouteItem {...route} canDelete={true} isDownloaded={isDownloaded} loaded={true} points={points} outsideFold={false} onDelete={onDelete} />
             )
 
             const icon = revealDeleteIcon(container)
@@ -190,42 +193,8 @@ describe('RouteItem', () => {
 
             await act(async () => { fireEvent.click(icon) })
 
-            expect(onDelete).not.toHaveBeenCalled()
-            expect(screen.getByText('Remove “Col de la Madone” from your library?')).toBeInTheDocument()
-            expect(screen.getByText('The file on your computer is not deleted.')).toBeInTheDocument()
-
-            await act(async () => { fireEvent.click(screen.getByText('Remove')) })
-
             expect(onDelete).toHaveBeenCalledTimes(1)
-        })
-
-        test('cancelling the confirmation does not delete', async () => {
-            const onDelete = vi.fn()
-            const { container } = render(
-                <RouteItem {...route} canDelete={true} isDownloaded={false} loaded={true} points={points} outsideFold={false} onDelete={onDelete} />
-            )
-
-            const icon = revealDeleteIcon(container)
-            await act(async () => { fireEvent.click(icon) })
-            expect(screen.getByText('Remove “Col de la Madone” from your library?')).toBeInTheDocument()
-
-            await act(async () => { fireEvent.click(screen.getByText('Cancel')) })
-
-            expect(onDelete).not.toHaveBeenCalled()
-            expect(screen.queryByText('Remove “Col de la Madone” from your library?')).toBeNull()
-        })
-
-        test('a downloaded copy of a catalog route deletes immediately, with no confirmation', async () => {
-            const onDelete = vi.fn()
-            const { container } = render(
-                <RouteItem {...route} canDelete={true} isDownloaded={true} loaded={true} points={points} outsideFold={false} onDelete={onDelete} />
-            )
-
-            const icon = revealDeleteIcon(container)
-            await act(async () => { fireEvent.click(icon) })
-
-            expect(onDelete).toHaveBeenCalledTimes(1)
-            expect(screen.queryByText('The file on your computer is not deleted.')).toBeNull()
+            expect(screen.queryByText(/from your library/)).toBeNull()
         })
     })
 })

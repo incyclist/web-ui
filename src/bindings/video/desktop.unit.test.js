@@ -1,6 +1,6 @@
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 
-const { hasFeatureMock, apiMock, workaroundMock } = vi.hoisted(() => ({
+const { hasFeatureMock, apiMock, workaroundMock, decodeMock } = vi.hoisted(() => ({
     hasFeatureMock: vi.fn(),
     apiMock: {
         video: {
@@ -9,7 +9,8 @@ const { hasFeatureMock, apiMock, workaroundMock } = vi.hoisted(() => ({
             convertOffline: vi.fn()
         }
     },
-    workaroundMock: vi.fn((url) => `fixed(${url})`)
+    workaroundMock: vi.fn((url) => `fixed(${url})`),
+    decodeMock: vi.fn((url) => url)
 }))
 
 vi.mock('../../utils/electron/integration', () => ({
@@ -18,7 +19,8 @@ vi.mock('../../utils/electron/integration', () => ({
 }))
 
 vi.mock('../../utils/legacyVideoUrlWorkaround', () => ({
-    withLegacyLocalUrlWorkaround: workaroundMock
+    withLegacyLocalUrlWorkaround: workaroundMock,
+    withDecodedLocalPath: decodeMock
 }))
 
 import { DesktopBinding } from './desktop'
@@ -30,6 +32,7 @@ describe('DesktopBinding', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         workaroundMock.mockImplementation((url) => `fixed(${url})`)
+        decodeMock.mockImplementation((url) => url)
         hasFeatureMock.mockReturnValue(true)
         binding = new DesktopBinding()
     })
@@ -64,5 +67,15 @@ describe('DesktopBinding', () => {
     test('throws when desktop does not support the underlying feature', async () => {
         hasFeatureMock.mockReturnValue(false)
         await expect(binding.convertOnline('video:///home/dirk/route.avi')).rejects.toThrow('not supported')
+    })
+
+    test('a percent-encoded local url is decoded first, then run through the legacy-url workaround', async () => {
+        decodeMock.mockImplementation((url) => `decoded(${url})`)
+        apiMock.video.convert.mockResolvedValue('client')
+
+        await binding.convertOnline('video:///mnt/nas/Hochb%C3%A4rneck-1.avi')
+
+        expect(workaroundMock).toHaveBeenCalledWith('decoded(video:///mnt/nas/Hochb%C3%A4rneck-1.avi)')
+        expect(apiMock.video.convert).toHaveBeenCalledWith('fixed(decoded(video:///mnt/nas/Hochb%C3%A4rneck-1.avi))', {})
     })
 })

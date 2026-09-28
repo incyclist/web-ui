@@ -1,5 +1,4 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
 
 
 import { ElevationPreview } from '../../elevation/ElevationPreview';
@@ -13,7 +12,6 @@ import Flag from 'react-world-flags';
 import { useAppState, useRouteList, useAppsService } from 'incyclist-services';
 import { useHoverObserver } from '../../../../hooks/ui/useHover';
 import { DeleteIcon } from '../../../molecules/Activity/ActivityListItem/atoms';
-import { MessageBox } from '../../../molecules';
 import { routeDetailsQueue } from '../../../../utils/routeDetailsLoader';
 
 const Map = ({points}) => {
@@ -38,39 +36,18 @@ export const RouteItem = ( props) => {
     const appState = useAppState()
     const containerRef = useRef()
     const [hoverObserverRef,setHoverObserver] = useHoverObserver(containerRef)
-    const [confirmDelete,setConfirmDelete] = useState(false)
 
     const newSearchUI = appState.hasFeature('NEW_SEARCH_UI')
 
 
-    // a downloaded copy of a catalog route only clears the local copy - the route stays in the
-    // catalog and is recoverable, so it is deleted without a prompt. A local/imported route is not
-    // re-downloadable, so it gets a confirmation first.
+    // removing a route is immediate, like deleting an activity or a workout - no confirmation
     const onDeleteHandler = (event) => {
-        const {onDelete, isDownloaded} = props
-        event.stopPropagation();
-        if (typeof (onDelete)!=='function')
-            return
-
-        if (isDownloaded)
-            onDelete()
-        else
-            setConfirmDelete(true)
-    }
-
-    const onDeleteConfirmed = () => {
-        setConfirmDelete(false)
         const {onDelete} = props
+        event.stopPropagation();
         if (typeof (onDelete)==='function')
             onDelete()
     }
 
-    const onDeleteCancelled = () => {
-        setConfirmDelete(false)
-    }
-
-    
-                                    
     const onContainerClicked = (e) =>{
         const {onClick } = props
         if (onClick)
@@ -220,7 +197,7 @@ export const RouteItem = ( props) => {
         <Container  height={'7vh'} onClick={ onContainerClicked} ref={containerRef}>
 
                 <ImageContainer>
-                    {renderImage ? <Image src={previewUrl}  height='7vh'  />: null}
+                    {renderImage ? <Image src={previewUrl}  width='100%' height='100%' style={{objectFit:'cover'}} />: null}
                     {renderMap ? <Map points={points}/> : null}
                     {!renderImage && !renderMap ? <div>&nbsp;</div> : null}
 
@@ -276,19 +253,6 @@ export const RouteItem = ( props) => {
 
         </Container>
 
-        {confirmDelete && createPortal(
-            <MessageBox
-                title={`Remove “${title}” from your library?`}
-                text='The file on your computer is not deleted.'
-                yes='Remove'
-                no='Cancel'
-                defaultButton='Cancel'
-                center
-                onYes={onDeleteConfirmed}
-                onNo={onDeleteCancelled}
-            />,
-            document.body
-        )}
         </AppThemeProvider>
     )
 }
