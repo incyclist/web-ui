@@ -26,37 +26,32 @@ const OutsideFold = styled.div`
 export const VideoSummary = ( props) => {
 
     const refInitialized = useRef(false)
-    const refInitializing = useRef(false)
     const [state,setState] = useState( {loading:false, points:props.points})
     const service = useRouteList()
+    const cancelLoadRef = useRef(null)
 
-    
+    // the shape store's decimated points (props.shape) are preferred over a details load, and are
+    // shared with VideoDetails (mounted at the same time, CSS-rotated out of view - see Card.jsx)
+    // through the same de-duplicating, concurrency-bounded request - see RouteListService.requestRouteDetails()
     useEffect( ()=> {
         if (refInitialized.current)
             return
+        refInitialized.current = true
 
-        refInitializing.current = true
-        if (!props.loaded) {
+        const hasShape = Array.isArray(props.shape) && props.shape.length>0
+        if (!hasShape && !props.loaded) {
             setState( current => ({...current,loading:true}))
-            service.getRouteDetails(props.id).then(details => {
-                if (!refInitialized.current && !refInitializing.current)
-                    return;
-
-                if (details) {
-                    setState( current => ({...current,loading:false, points:details.points}))
-                }
+            cancelLoadRef.current = service.requestRouteDetails(props.id, (details) => {
+                // a failed load (no details) must end the loading state too
+                setState( current => ({...current, loading:false, ...(details ? {points:details.points} : {})}))
             })
-
-
         }
-
-
-        refInitialized.current = true;
-        refInitializing.current = false
     },[props, service])
 
     useUnmountEffect( ()=>{
-        refInitialized.current = false        
+        refInitialized.current = false
+        cancelLoadRef.current?.()
+        cancelLoadRef.current = null
     },[])
 
     const onContainerClicked = (e) =>{
@@ -66,9 +61,9 @@ export const VideoSummary = ( props) => {
     }
 
 
-    const { id, width='20vw',height='30vh',title,country,totalDistance, totalElevation,previewUrl,videoUrl,visible, hasVideo,isDemo,isNew,initialized,cntActive } = props
+    const { id, width='20vw',height='30vh',title,country,totalDistance, totalElevation,previewUrl,videoUrl,visible, hasVideo,isDemo,isNew,initialized,cntActive, shape } = props
     const routeProps = {title,country, totalDistance, totalElevation, width, height,visible,isDemo}
-    const {points} = state
+    const points = shape ?? state.points
     const hasPoints = points?.length>0
 
     const renderElevation =  initialized &&  visible && hasPoints  

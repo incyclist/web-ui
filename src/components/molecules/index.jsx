@@ -1,6 +1,7 @@
 export * from './MainPage'
 export * from './dialogs'
 export * from './Dropzone'
+export * from './FolderTile'
 export * from './Dialog'
 export * from './ElevationGraph'
 export * from './Maps'

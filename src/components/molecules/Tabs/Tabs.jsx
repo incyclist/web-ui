@@ -1,6 +1,7 @@
 import React, { Component } from 'react';
 import {Tab} from './Tab';
 import styled from 'styled-components';
+import { scrollbar } from '../../../utils/scrollbar';
 import { copyPropsExcluding } from '../../../utils';
 
 const TabContainer = styled.div`
@@ -20,31 +21,8 @@ const Content = styled.div`
     width: 100%;
     height:  calc(100% - 6.66vh);
     min-height:  calc(100% - 6.66vh);
-    overflow-y: auto;
 
-    &::-webkit-scrollbar-button {
-        display: none;
-    }
-
-    &::-webkit-scrollbar {
-        width: 2vw;
-    }
-      
-      /* Track */
-    &::-webkit-scrollbar-track {
-        box-shadow: inset 0 0 5px grey;
-        border-radius: 10px;
-        display: none;
-        
-    }
-    
-    /* Handle */
-    &::-webkit-scrollbar-thumb {
-        background: ${props => props.theme.list.hover.background};
-        border-radius: 10px;
-    }
-
-
+    ${scrollbar}
 `;
 
 export class Tabs extends Component {

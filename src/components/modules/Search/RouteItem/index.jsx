@@ -5,11 +5,11 @@ import { ElevationPreview } from '../../elevation/ElevationPreview';
 import { Column,Dynamic,Loader, Pill, Row, Text, Image, UserIcon } from '../../../atoms';
 import {FreeMap} from '../../../molecules/Maps';
 import {Container,ImageContainer,ElevationContainer,Title, DataContainer, ImageLabel, DetailsContainer, PillContainer} from './atoms'
-import {useWindowDimensions } from '../../../../hooks';
+import { RouteItemSkeleton } from './skeleton';
+import {useWindowDimensions, useUnmountEffect } from '../../../../hooks';
 import {AppThemeProvider } from '../../../../theme';
 import Flag from 'react-world-flags';
-import styled from 'styled-components';
-import { Observer, useAppState, useRouteList, waitNextTick,useAppsService } from 'incyclist-services';
+import { useAppState, useRouteList, useAppsService } from 'incyclist-services';
 import { useHoverObserver } from '../../../../hooks/ui/useHover';
 import { DeleteIcon } from '../../../molecules/Activity/ActivityListItem/atoms';
 
@@ -18,16 +18,18 @@ const Map = ({points}) => {
     if (!points)
         return null
 
-    return <FreeMap  noAttribution scrollWheelZoom={false}  zoomControl={false} points={points} startPos={0} draggable={false} /> 
+    return <FreeMap  noAttribution scrollWheelZoom={false}  zoomControl={false} points={points} startPos={0} draggable={false} />
 }
-const OutsideFold = styled(Container)`
-    opacity: 0.1;
-`
 
 export const RouteItem = ( props) => {
 
+    // true while the row is inside the fold and its content has been initialized
     const initialized = useRef(false)
-    const [observer,setObserver] = useState(null)
+    // incremented whenever the row leaves the fold, so that a details request still in flight is ignored
+    const loadGeneration = useRef(0)
+    // cancels the row's queued/in-flight getRouteDetails() request, if any
+    const cancelLoadRef = useRef(null)
+    const [loadedPoints,setLoadedPoints] = useState(undefined)
     const service = useRouteList()
     const apps = useAppsService()
     const appState = useAppState()
@@ -37,77 +39,90 @@ export const RouteItem = ( props) => {
     const newSearchUI = appState.hasFeature('NEW_SEARCH_UI')
 
 
-    const onDeleteHandler = (event) => {        
+    // removing a route is immediate, like deleting an activity or a workout - no confirmation
+    const onDeleteHandler = (event) => {
         const {onDelete} = props
         event.stopPropagation();
         if (typeof (onDelete)==='function')
             onDelete()
     }
 
-    
-                                    
     const onContainerClicked = (e) =>{
         const {onClick } = props
         if (onClick)
             onClick(id)
     }
 
-    const getDetails = useCallback( (id) =>{
+    const loadDetails = useCallback( (id) =>{
+        const generation = loadGeneration.current
         try {
-            const pointsObserver = new Observer();
-
-            service.getRouteDetails(id).then( details=> {
+            cancelLoadRef.current = service.requestRouteDetails(id, (details) => {
+                // row has left the fold in the meantime
+                if (generation!==loadGeneration.current)
+                    return
 
                 if (details) {
-                    pointsObserver.emit( 'loaded', details.points)
-                    waitNextTick().then ( pointsObserver.stop())
+                    setLoadedPoints(details.points)
                 }
             })
-            return pointsObserver
-            
         }
-        catch(err) {
-            return null;
-        }
+        catch { /* ignore - row is rendered without map/elevation */ }
     },[service])
 
 
+    // The fold transition is two-way: when the row leaves the fold, its map and loaded details are
+    // released; when it re-enters, they are initialized again. A request still queued (not yet its
+    // turn) is dequeued outright rather than merely ignored, so it never consumes a concurrency slot.
     useEffect( ()=> {
-        const {outsideFold, loaded, points, id} = props
+        const {outsideFold, loaded, points, shape, id} = props
+
+        if (outsideFold) {
+            if (initialized.current) {
+                initialized.current = false
+                loadGeneration.current++
+                setLoadedPoints(undefined)
+                cancelLoadRef.current?.()
+                cancelLoadRef.current = null
+            }
+            return
+        }
+
         if (initialized.current)
             return
 
-        if (!outsideFold && newSearchUI) {
+        if (newSearchUI) {
             setHoverObserver(containerRef)
         }
 
-        if ( (!loaded || !points) && !outsideFold) {
-            if (id!==undefined) {
-                setObserver( getDetails(id))
-            }
+        const hasShape = Array.isArray(shape) && shape.length>0
+        if (!hasShape && (!loaded || !points) && id!==undefined) {
+            loadDetails(id)
         }
 
-        
-        initialized.current = !props.outsideFold
-    },[getDetails, newSearchUI, props, setHoverObserver])
-    
+        initialized.current = true
+    },[loadDetails, newSearchUI, props, setHoverObserver])
 
-    
+    // safety net for the (today theoretical) case of a full unmount while still inside the fold
+    useUnmountEffect( ()=>{
+        cancelLoadRef.current?.()
+        cancelLoadRef.current = null
+    }, [])
+
+
+
     const dimensions  = useWindowDimensions()
     const height = dimensions.height*0.07; // 7vh
     const width = height *2;
 
-    const { id, title,country,distance,totalDistance,elevation,totalElevation,points,previewUrl,ready, hasVideo,isLoop,isDemo,isNew,source,cntActive } = props
+    const { id, title,country,distance,totalDistance,elevation,totalElevation,previewUrl,ready, hasVideo,isLoop,isDemo,isNew,source,cntActive, shape, canDelete } = props
+    // the shape store's decimated points are preferred over a full details load - see RouteListService.requestRouteDetails()
+    const points = shape ?? loadedPoints ?? props.points
 
-    const renderImage = hasVideo && ready && previewUrl!==undefined 
-    const renderMap   = initialized && !hasVideo 
+    const renderImage = hasVideo && ready && previewUrl!==undefined
+    const renderMap   = !hasVideo
 
     if (props.outsideFold) {
-        return (
-            <AppThemeProvider>
-                <OutsideFold opacity='0.1'  height={'7vh'} onClick={ onContainerClicked}></OutsideFold>        
-            </AppThemeProvider>
-        )
+        return <RouteItemSkeleton onClick={ onContainerClicked} />
     }
 
 
@@ -181,21 +196,14 @@ export const RouteItem = ( props) => {
         <Container  height={'7vh'} onClick={ onContainerClicked} ref={containerRef}>
 
                 <ImageContainer>
-                    {renderImage ? <Image src={previewUrl}  height='7vh'  />: null}
-                    {renderMap ? 
-                        <Dynamic observer={observer} events={'loaded'} prop='points'>                        
-                            <Map points={points}/> 
-                        </Dynamic>
-
-                        : null}
+                    {renderImage ? <Image src={previewUrl}  width='100%' height='100%' style={{objectFit:'cover'}} />: null}
+                    {renderMap ? <Map points={points}/> : null}
                     {!renderImage && !renderMap ? <div>&nbsp;</div> : null}
-                    
+
                 </ImageContainer>
 
                 <ElevationContainer>
-                    <Dynamic observer={observer} events={'loaded'} prop='points'>                        
-                        <ElevationPreview line='white' width={width} height={height} color='lightblue' points={points} />
-                    </Dynamic>
+                    <ElevationPreview line='white' width={width} height={height} color='lightblue' points={points} />
                 </ElevationContainer>
 
                 <DataContainer width='calc(100% - 13vw - 28vh)'>
@@ -220,7 +228,7 @@ export const RouteItem = ( props) => {
                 </DataContainer>
 
                 <DetailsContainer>
-                    {newSearchUI?
+                    {newSearchUI && canDelete?
                     <DataContainer width='3vw' justify='end'    align='center' >
                             <Dynamic observer={hoverObserverRef.current} event='hovered' prop='visible'>
                                 <DeleteIcon onClick={onDeleteHandler} logContext={{id,title}} />
@@ -240,9 +248,10 @@ export const RouteItem = ( props) => {
                     </DataContainer>
 
                 </DetailsContainer>
-            
-            
+
+
         </Container>
+
         </AppThemeProvider>
     )
 }

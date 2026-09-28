@@ -104,6 +104,8 @@ export const useHoverObserver = (ref)=>{
 
     const update =(ref) => {
         stopObserver()
+        // the previous element might have been removed while hovered (no mouseleave) - start with a clean state
+        hoverStateRef.current = {}
         initObserver(ref?.current)
     }
 

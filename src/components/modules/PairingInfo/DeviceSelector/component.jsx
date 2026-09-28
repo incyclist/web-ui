@@ -70,7 +70,7 @@ export const DeviceSelector = ({isScanning, capability,pairingState,changeForAll
         format:[(d)=><DeviceEntry device={d}/>],            
     }
 
-    return <Dialog id='DeviceSelector' log={{capability,title}} title={title} onESC={onUserCancel} onOutsideClicked={onUserCancel} width="35vw" height="70vh" zIndex={100}>
+    return <Dialog id='DeviceSelector' scrollbar='large' log={{capability,title}} title={title} onESC={onUserCancel} onOutsideClicked={onUserCancel} width="35vw" height="70vh" zIndex={100}>
         <ContentArea>
             <Table data={devices} rows={10} rowHeight='6vh' columns={columns}
                 onDelete={onDeleteItem}

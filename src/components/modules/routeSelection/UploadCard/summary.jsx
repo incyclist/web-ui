@@ -5,7 +5,9 @@ import { Dropzone } from '../../../molecules';
 import styled from 'styled-components';
 
 const DEFAULT_TITLE = 'Import Route'
-const DEFAULT_FILTERS = [
+// Exported so other route-import surfaces (ImportRoutesDialog) can reuse and extend this
+// list instead of maintaining a second copy of it.
+export const DEFAULT_FILTERS = [
     { name: 'Routes', extensions: ['gpx','epm','xml'] },
     { name: 'Tracks', extensions: ['gpx'] },
     { name: 'RLV: ErgoPlanet', extensions: ['epm'] }, 

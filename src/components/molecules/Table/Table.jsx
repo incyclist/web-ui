@@ -1,5 +1,6 @@
 import React, { Component } from 'react';
-import styled from 'styled-components';
+import styled, { css } from 'styled-components';
+import { scrollbar } from '../../../utils/scrollbar';
 import {TrashIcon,PencilIcon ,ChevronDownIcon,ChevronUpIcon  } from '@primer/octicons-react'
 import { AppThemeProvider } from '../../../theme';
 
@@ -74,54 +75,9 @@ const Body=styled.div`
     height: ${props => props.rows ? `${ (props.rowHeight||3.4)*(props.rows||10)}vh` : undefined};
     width: 100%;
 
-    &::-webkit-scrollbar {         
-        width: 1vw; 
-        position: absolute;
-        z-index: 10;
-        display: ${props => props.noScroll? 'none': undefined }
+    ${scrollbar}
 
-    }
-    &::-webkit-scrollbar-thumb {
-        -webkit-box-shadow: inset 0 0 6px rgba(0,0,0,0.5); 
-        background-clip: content-box !important;
-    }
-    &:-webkit-scrollbar-track {
-        -webkit-box-shadow: inset 0 0 6px rgba(0,0,0,0.3); 
-        background-clip: content-box !important;
-      }
-      &::-webkit-scrollbar-track-piece {
-        background: lightgray;
-      }
-      &::-webkit-scrollbar-button {
-        background: lightgray;
-        color: black;
-      }
-      &::-webkit-scrollbar-button:single-button {
-        background-color: #bbbbbb;
-        display: none;
-        border-style: solid;
-        height: 1vh;
-        width: 1vw;
-        pagding: 0.1vh;
-      }
-      /* Up */
-      &::-webkit-scrollbar-button:single-button:vertical:decrement {
-        border-width: 0 8px 8px 8px;
-        border-color: transparent transparent #555555 transparent;
-      }
-      
-      &::-webkit-scrollbar-button:single-button:vertical:decrement:hover {
-        border-color: transparent transparent #777777 transparent;
-      }
-      /* Down */
-      &::-webkit-scrollbar-button:single-button:vertical:increment {
-        border-width: 8px 8px 0 8px;
-        border-color: #555555 transparent transparent transparent;
-      }
-      
-      &::-webkit-scrollbar-button:vertical:single-button:increment:hover {
-        border-color: #777777 transparent transparent transparent;
-      }      
+    ${props => props.noScroll ? css`&::-webkit-scrollbar { display: none; }` : ''}
 `
 
 const BodyRow=styled.tr`

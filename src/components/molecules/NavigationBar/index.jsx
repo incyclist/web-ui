@@ -57,7 +57,13 @@ export const NavigationBarComponent = ( {hidden,height,width, selected, hotkeysD
     
     const ui = useAppUI()
 
-    const onToggleFullScreen = ()=>{
+    // with the merged Routes page, Search is no longer a page of its own
+    const searchMerged = appState.hasFeature('NEW_SEARCH_UI')
+
+    const onToggleFullScreen = (key)=>{
+        // only the bare letter - e.g. Ctrl+F is used by pages as a shortcut
+        if (key?.ctrlKey || key?.altKey || key?.metaKey)
+            return
         if (!hotkeysDisabled)
             ui.toggleFullscreen()
     }
@@ -147,12 +153,13 @@ export const NavigationBarComponent = ( {hidden,height,width, selected, hotkeysD
                             </PageIcon>
                         </Row>
 
+                        {searchMerged ? null :
                         <Row padding='10px 0 10px' >
-                            <PageIcon label='Search' selected={selected==='search'} width={100} height={h}  className='search' 
-                                onClick={()=>{onIconSelected('search')}}> 
+                            <PageIcon label='Search' selected={selected==='search'} width={100} height={h}  className='search'
+                                onClick={()=>{onIconSelected('search')}}>
                                 <SearchIcon/>
                             </PageIcon>
-                        </Row>
+                        </Row>}
 
                         <Row padding='10px 0 10px' >
                            <PageIcon label='Routes' selected={selected==='routes'} width={100} height={h}  className='route'

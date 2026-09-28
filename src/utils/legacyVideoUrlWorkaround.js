@@ -29,3 +29,33 @@ export const withLegacyLocalUrlWorkaround = (url) => {
         return url
     return url.replace(/^(video|file):\/\/\//, '$1:////')
 }
+
+
+const LOCAL_URL = /^(video|file):\/\/(.*)$/s
+
+/**
+ * Stored local video URLs are percent-encoded (encodeURI in incyclist-services' URL builders,
+ * e.g. `video:///mnt/nas/Hochb%C3%A4rneck-1.avi`) - right for a <video src>, which the browser
+ * and desktop's protocol handler decode themselves. The desktop IPC calls that convert or
+ * screenshot a file (bindings/video/desktop.js) use the path of the URL as it is as a file name,
+ * so an encoded one is reported as "file not found". Hands them the real path instead.
+ *
+ * Must not run once desktop announces that it decodes these paths itself (video.localUrlDecode):
+ * a name that literally contains e.g. "%20" would then be decoded a second time.
+ * A URL with a malformed percent sequence is left as it is.
+ */
+export const withDecodedLocalPath = (url) => {
+    if (hasFeature('video.localUrlDecode'))
+        return url
+
+    const match = LOCAL_URL.exec(url ?? '')
+    if (!match)
+        return url
+
+    try {
+        return `${match[1]}://${decodeURIComponent(match[2])}`
+    }
+    catch {
+        return url
+    }
+}

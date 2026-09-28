@@ -1,4 +1,5 @@
 import EventEmitter from 'events'
+import { getBindings } from 'incyclist-services'
 
 export class DualFileReader extends FileReader {
     constructor() {
@@ -98,17 +99,17 @@ export class FileLoader   {
         // here we tell the reader what to do when it's done reading...
         context.reader.onload = (readerEvent) => {
             var content = readerEvent.target.result; // this is the content!
-            context.emit('single',content)
+            context.emitter.emit('single',content)
         }
 
-        this.reader.onerror  = readerEvent => {
+        context.reader.onerror  = readerEvent => {
             const error = readerEvent
-            context.emit( 'error',error)
+            context.emitter.emit( 'error',error)
         }
-        this.reader.loadFile = (file) => {
-            
-            this.reader.fileName = file.name;
-            this.reader.readAsText(file ,'UTF-8');
+        context.reader.loadFile = (file) => {
+
+            context.reader.fileName = file.name;
+            context.reader.readAsText(file ,'UTF-8');
 
         }
     }
@@ -117,14 +118,14 @@ export class FileLoader   {
         const prio = (format) => {
             if (format==='EPM')
                 return 2
-            if (format==='EPM')
+            if (format==='EPP')
                 return 1
             return 0
         }
         this.dualFileReader = new DualFileReader();
         this.dualFileReader.onLoadDone = ( infos ) => {
             const sorted = infos.sort( (a,b)=> prio(b.format)-prio(a.format) )
-            context.emitter.emit('dial', [sorted[0].data, sorted[1].data])
+            context.emitter.emit('dual', [sorted[0].data, sorted[1].data])
         }
         this.dualFileReader.onLoadError = ( errors ) => {} 
     }
@@ -133,7 +134,6 @@ export class FileLoader   {
     // returns a Promise<{ error:ErrorInfo|null, content }
     async open(info) {
 
-        console.log('FileReader open'+info)
         let data;
 
         if (info.type === 'url') {
@@ -168,20 +168,27 @@ export class FileLoader   {
         }
 
 
+        // a scanned/picked route file on desktop: {type:'file', dir, name, ext, filename, delimiter} -
+        // read via the platform's real filesystem binding, the same way mobile's own loader does
+        // for its (structurally identical) 'file' case, rather than through a browser File object.
+        if (info.type==='file' && !info.file) {
+            try {
+                const path = info.filename ?? `${info.dir}${info.delimiter??'/'}${info.name}${info.ext?`.${info.ext}`:''}`
+                data = await getBindings().fs.readFile(path, info.encoding==='binary' ? undefined : 'utf8')
+                return { data }
+            }
+            catch (err) {
+                return { error: err?.message ?? 'Could not open file' }
+            }
+        }
+
+        // Dropzone's fallback for environments without Electron file-path support: info.file is a
+        // raw browser File object (or two, for a route + its EPP companion), read via FileReader.
         return new Promise( resolve => {
 
-            if (info.ext && this.props.filters ) {
-                if ( !this.checkExtension(info.ext,this.props.filters)) {
-                    const exts = this.getSupportedExtensions().reduce((p,c) => `${p},${c}` )
-                    this.logger.logEvent({message:'Unsupported file type',ext:info.ext,supported:exts})
-                    throw new Error(`Unsupported file type - Supported type(s): ${exts}` )
-                }
-            }
-
-
-            if (info.type!=='file') {                
+            if (info.type!=='file' || !info.file) {
                 resolve({error:'Internal Error', key:'invalid_srctype'})
-                return 
+                return
             }
 
             const context = {
@@ -198,19 +205,20 @@ export class FileLoader   {
             context.emitter.once('single',(data)=>done( {data} ))
             context.emitter.on('error',(error)=>done( {error} ))
             context.emitter.on('dual',(epmEpp)=>done( {epmEpp} ))
-    
-            if (info!==undefined && info.length===1) {
-                this.reader.loadFile(info[0]);        
+
+            const files = Array.isArray(info.file) ? info.file : [info.file]
+            if (files.length===1) {
+                context.reader.loadFile(files[0]);
             }
-            else if (info!==undefined && info.length===2) {
-                this.dualFileReader.loadFile(info[0]);
-                this.dualFileReader.loadFile(info[1]);
+            else if (files.length===2) {
+                this.dualFileReader.loadFile(files[0]);
+                this.dualFileReader.loadFile(files[1]);
             }
             else {
-                let error = { message:'Please upload only one file', key:'too-many-files' }; 
+                let error = { message:'Please upload only one file', key:'too-many-files' };
                 done ( { error } )
             }
-    
+
         })
 
 

@@ -7,6 +7,21 @@ import LanguageDetector from "./i18n";
 
 export const useAppUI = () => NativeUiService.getInstance()
 
+// derives a display name from a filesystem path's basename, tolerant of both '/' and '\' separators
+export function getDirectoryDisplayName(path) {
+    if (!path)
+        return undefined
+    const parts = path.split(/[\\/]/).filter(p => p.length > 0)
+    return parts.length ? parts[parts.length - 1] : path
+}
+
+/**
+ * @typedef {Object} SelectDirectoryResult
+ * @property {boolean} [canceled] - true if the user cancelled the directory picker
+ * @property {string} [selected] - the selected directory's absolute path
+ * @property {string} [displayName] - the selected directory's basename, for display purposes
+ */
+
 export default class NativeUiService   {
 
     static _instance = null;
@@ -91,15 +106,18 @@ export default class NativeUiService   {
 
             try {
                 const files = await api.openFileDialog({directory:true})
-                if (Array.isArray(files))
-                    return ( {selected: files[0].path} )
-                return ( {selected: files.path} )
-                
+                const file = Array.isArray(files) ? files[0] : files
+
+                if (!file?.path)
+                    return ( {canceled:true} )
+
+                return ( {selected: file.path, displayName: getDirectoryDisplayName(file.path)} )
+
             }
             catch( err) {
                 console.log( '~~~err',err)
-            } 
-    
+            }
+
         }
     }
 

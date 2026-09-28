@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import styled from 'styled-components'
+import { scrollbar } from '../../../../utils/scrollbar'
 import {FileDirectoryIcon } from '@primer/octicons-react'
 
 import {Button,ButtonBar, Divider, EditNumber, SingleSelect,Column, Overlay, Row,
@@ -14,7 +15,7 @@ const ContentArea = styled(Column)`
     width: calc(100% - 0.8vw);
     padding-left:0.4vw;
     padding-right:0.4vw;
-    overflow-y: auto;
+    ${scrollbar}
 `
 
 // never yields its height to the rows the smoothing control adds below it - those absorb their
@@ -455,6 +456,8 @@ export const RouteDetails = ( {route, markers,segment, startPos,endPos,realityFa
 
     if (hasVideo && videoMissing && videoUrl) {
         videoPath = videoUrl.replace('file:///','').replace('video:///','')
+        // the stored URL is percent-encoded - show the path the way it is spelled on disk
+        try { videoPath = decodeURIComponent(videoPath) } catch { /* literal '%' in the name */ }
         if (onVideoSelected)
             onDrop = onVideoSelected
     }

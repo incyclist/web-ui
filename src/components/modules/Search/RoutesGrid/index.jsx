@@ -1,15 +1,15 @@
-import React,{ useCallback, useEffect, useRef  } from 'react'
+import React,{ useCallback } from 'react'
 import { Autosize, Dynamic, View } from '../../../atoms'
 import styled  from 'styled-components'
+import { scrollbar } from '../../../../utils/scrollbar'
 import { AppThemeProvider } from '../../../../theme'
-import { useMouseSwipe } from '../../../../hooks'
-import { Observer, useRouteList } from 'incyclist-services'
+import { useFoldWindow } from '../../../../hooks'
+import { useRouteList } from 'incyclist-services'
 import { FreeRideCard } from '../../routeSelection/FreeRideCard'
 import { UploadCard } from '../../routeSelection/UploadCard'
 import { valid } from '../../../../utils/coding'
 import { ActiveImportCard } from '../../routeSelection/ActiveImportCard'
 import { VideoCard } from '../../routeSelection/VideoCard'
-import { EventLogger } from 'gd-eventlog'
 
 export const CardItem = styled(Autosize)`
     z-index: 0;
@@ -18,47 +18,33 @@ export const CardItem = styled(Autosize)`
 `
 
 export const Container = styled(View)`
+    box-sizing: border-box;
     overflow-x: hidden;
-    display: block;
-    
-    &::-webkit-scrollbar-button {
-        display: none;
-    }
+    display: flex;
+    flex-flow: row wrap;
+    align-content: flex-start;
+    gap: 1.5vh 1vw;
+    padding: 1.5vh 0;
 
-    &::-webkit-scrollbar {
-        width: 2vw;
-    }
-      
-      /* Track */
-    &::-webkit-scrollbar-track {
-        box-shadow: inset 0 0 5px grey;
-        border-radius: 10px;
-        display: none;
-        
-    }
-    
-    /* Handle */
-    &::-webkit-scrollbar-thumb {
-        background: ${props => props.theme.list.hover.background};
-        border-radius: 10px;
-    }
-
-
+    ${scrollbar}
 `
+
+const getCardKey = (card,idx) => card?.id??`route-${idx}`
 
 export const RoutesGrid = ({cards,onSelect,onDelete}) => {
 
-    const refDiv=useRef(null)
-    const mountedRef = useRef(false)
-    
-    const swipeDisabled = useRef(false)
-    const topRef=useRef(0)
-
-    const observerRef = useRef(null)
-    const lastSwipeTS = useRef(null)
-    const elementsOutsideFold  =useRef(null)
     const service = useRouteList()
 
+    const onScrollTop = useCallback( (top)=>{
+        service.setListTop('tiles',top)
+    },[service])
+
+    const {ref, observer, isOutsideFold, getFoldEvent, swipedRecently} = useFoldWindow({
+        items: cards,
+        getKey: getCardKey,
+        initialScrollTop: service.getListTop('tiles'),
+        onScrollTop
+    })
 
     const getCard = (routeCard) => {
         const hidden = false
@@ -88,7 +74,12 @@ export const RoutesGrid = ({cards,onSelect,onDelete}) => {
             return {Card:ActiveImportCard, props}
         }
         else {
-            const props = {...stdProps, ...routeCard.getDisplayProperties() }            
+            const onDeleteCard = (event) => {
+                event?.stopPropagation?.()
+                if (typeof onDelete==='function')
+                    onDelete(routeCard.id)
+            }
+            const props = {...stdProps, ...routeCard.getDisplayProperties(), onDelete:onDeleteCard, onOK:()=>{onItemSelected(routeCard.id)} }
             return {Card:VideoCard, props}
         }
             
@@ -96,117 +87,15 @@ export const RoutesGrid = ({cards,onSelect,onDelete}) => {
     
 
 
-    const updateFoldInfo = useCallback( (initial=false)=>{
-        try {
-
-            if (!cards?.length)
-                return;
-
-            const elemntHeight = refDiv.current.scrollHeight/cards.length
-            const topElement = Math.floor(refDiv.current.scrollTop/elemntHeight)
-            service.setListTop('tiles',refDiv.current.scrollTop)
-            const visible = window.innerHeight/elemntHeight
-
-            if (initial)
-                elementsOutsideFold.current  = cards.map( ()=>true)
-
-            cards.forEach((a,i) => {
-                const outsideFold = i<topElement || i>topElement+visible
-
-                if (elementsOutsideFold.current[i] && outsideFold===false) {
-                    if (!initial) {
-                        observerRef.current.emit(`outsideFold-${i}`,outsideFold)
-                    }
-                    elementsOutsideFold.current[i] = outsideFold
-                }                   
-            })
-        }
-        catch(err) {
-            
-            const logger = new EventLogger('Incyclist')
-            logger.logEvent({message:'error',fn:'onScrollHandler',error:err.message, stack:err.stack})
-
-        }   
-    },[cards,service])
-
-    const onScrollHandler = useCallback( ()=>{
-        updateFoldInfo(false)
-    },[updateFoldInfo])
-
-    useEffect(() => {
-        if (mountedRef.current)
-            return;
-
-        if (refDiv.current) {
-            observerRef.current = new Observer() 
-            refDiv.current.addEventListener('scroll',onScrollHandler)
-        }
-
-        if (service.getListTop()!==undefined) {
-            refDiv.current.scrollTop = service.getListTop('list')
-            
-        }
-        mountedRef.current = true
-
-
-    }, [onScrollHandler, service])
-    
-    useEffect(() => {
-        if (!mountedRef.current || !refDiv.current || elementsOutsideFold.current) 
-            return
-
-        updateFoldInfo(true)
-
-    },[updateFoldInfo]);
-
-
     const onItemSelected = (id) => {
-        if (lastSwipeTS.current && (Date.now()-lastSwipeTS.current)<300)
+        if (swipedRecently())
             return;
 
         if (onSelect)
             onSelect(id)
     }
-    
-
-    const onSwipeEnd = (d)=> {
-        const div = refDiv.current
-        div.focus()
-
-        let top = topRef.current-d.deltaY
-        if (top<0) top=0
-        topRef.current = top
-
-        lastSwipeTS.current = Date.now()
-    }
-    const onSwipe = ( direction, pixels,event)=> {
-
-        if(swipeDisabled.current || !event)
-            return;
-
-        if(direction==='swipe-up'|| direction==='swipe-down') {
-            const {deltaY} = event
-
-            const div = refDiv.current
-           
-            
-            let top = topRef.current-deltaY
-            if (top<0) top=0
-            
-            div.focus()
-            div.scrollTo({top,behavior:'instant'})
-        }
-            
-        
-    }
-
-    useMouseSwipe(['swipe-up','swipe-down'], onSwipe, {div:refDiv.current,onSwipeEnd,debug:true })
 
     const visible = (cards??[]).map( card => getCard(card) )
-    const foldInfo = elementsOutsideFold.current??[]
-
-
-    console.log('# grid', cards?.length, visible?.length, foldInfo, visible[0])
 
     const padding = 0.1
     const height = 25
@@ -214,16 +103,19 @@ export const RoutesGrid = ({cards,onSelect,onDelete}) => {
 
     return (
         <AppThemeProvider>
-            <Container width='100%' height='100%' ref={refDiv} >
-                {visible?.map( ({Card,props},idx) =>    
-                    <Dynamic observer={observerRef.current} key={props?.id??`route-${idx}`} event={`outsideFold-${idx}`} prop='outsideFold' >                 
-                        
-                        <CardItem className='card' height={`${height}vh`} width={`${width}vh`}>
-                            <Card outsideFold={foldInfo[idx]}  key={props?.id} {...props} onClick={()=>{onItemSelected(props?.id)}}/>
-                        </CardItem>
+            <Container width='100%' height='100%' ref={ref} >
+                {visible.map( ({Card,props},idx) => {
+                    const key = getCardKey(cards[idx],idx)
+                    return (
+                        <Dynamic observer={observer} key={key} event={getFoldEvent(key)} prop='outsideFold' >                 
+                            
+                            <CardItem className='card' height={`${height}vh`} width={`${width}vh`}>
+                                <Card outsideFold={isOutsideFold(key)}  key={props?.id} {...props} onClick={()=>{onItemSelected(props?.id)}}/>
+                            </CardItem>
 
-                    </Dynamic>
-                )}
+                        </Dynamic>
+                    )
+                })}
                  
             </Container>
         </AppThemeProvider>

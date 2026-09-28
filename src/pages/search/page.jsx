@@ -197,7 +197,6 @@ export const SearchPage =  () => {
     if (pageState==='closed' )
         searchProps.loading = true
 
-    console.log('# render search page', {searchProps, data})
     return (
     <ErrorBoundary history> 
         <SearchScreen {...searchProps}

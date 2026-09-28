@@ -3,7 +3,7 @@ import { Route,Routes, MemoryRouter} from "react-router";
 import { useIncyclist } from 'incyclist-services';
 import {version} from '../package.json'
 
-import {AppLoadingPage,ActivitiesPage,RidePage, PairingPage,RoutesPage,SearchPage,ExitPage,WorkoutsPage} from './pages';
+import {AppLoadingPage,ActivitiesPage,RidePage, PairingPage,RoutesPageEntry,SearchPageEntry,ExitPage,WorkoutsPage} from './pages';
 import { UpdateChecker } from './components/modules';
 import { MapsApiLoader,MessageBox,MonitorOnlineStatus,MainPage } from './components/molecules';
 import { ErrorBoundary } from './components/atoms';
@@ -106,8 +106,8 @@ export const App = ()=> {
                         <Route path="/rideSkipped" element={<RidePage rideOnly={true} gearSkipped={true} />}/>
                         <Route path="/pairingStart" element={<PairingPage  mode='start'/>} />
                         <Route path="/devices" element={<PairingPage/>} />
-                        <Route path="/routes" element={<RoutesPage/>} />
-                        <Route path="/search" element={<SearchPage  />} />
+                        <Route path="/routes" element={<RoutesPageEntry/>} />
+                        <Route path="/search" element={<SearchPageEntry  />} />
                         <Route path="/workouts" element={<WorkoutsPage  />} />
                         <Route path="/activities" element={<ActivitiesPage  />} />
                         <Route path="/start" element={<PairingPage  />} />
