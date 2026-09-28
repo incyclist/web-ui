@@ -3,7 +3,7 @@ import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render, screen, act, fireEvent } from '@testing-library/react'
 
 const { mockRouteList, mockAppState } = vi.hoisted(() => ({
-    mockRouteList: { getRouteDetails: vi.fn() },
+    mockRouteList: { requestRouteDetails: vi.fn() },
     mockAppState: { hasFeature: vi.fn(() => false) },
 }))
 
@@ -27,22 +27,34 @@ vi.mock('../../elevation/ElevationPreview', () => ({
 vi.mock('react-world-flags', () => ({ default: () => null }))
 
 import { RouteItem } from './index'
-import { routeDetailsQueue, ROUTE_DETAILS_CONCURRENCY } from '../../../../utils/routeDetailsLoader'
 
 const points = [{ lat: 1, lng: 2, routeDistance: 0, elevation: 10 }, { lat: 1.1, lng: 2.1, routeDistance: 100, elevation: 12 }]
 const route = { id: 'route-1', title: 'Col de la Madone', ready: true, hasVideo: false, loaded: false }
 
-const deferred = () => {
-    let resolve
-    const promise = new Promise(r => { resolve = r })
-    return { promise, resolve }
+// RouteListService.requestRouteDetails() (bounded, de-duplicated, cancellable) is covered in
+// incyclist-services - here it is only the row's use of it that is tested
+const requests = []
+const answerWith = (details) => {
+    mockRouteList.requestRouteDetails.mockImplementation((id, onResult) => {
+        const cancel = vi.fn()
+        requests.push({ id, onResult, cancel })
+        Promise.resolve().then(() => onResult(details))
+        return cancel
+    })
+}
+const holdRequests = () => {
+    mockRouteList.requestRouteDetails.mockImplementation((id, onResult) => {
+        const cancel = vi.fn()
+        requests.push({ id, onResult, cancel })
+        return cancel
+    })
 }
 
 describe('RouteItem', () => {
 
     beforeEach(() => {
         vi.clearAllMocks()
-        routeDetailsQueue.reset()
+        requests.length = 0
     })
 
     test('outside the fold it renders a skeleton and loads nothing', () => {
@@ -50,22 +62,22 @@ describe('RouteItem', () => {
 
         expect(screen.getByTestId('route-item-skeleton')).toBeInTheDocument()
         expect(screen.queryByTestId('map')).toBeNull()
-        expect(mockRouteList.getRouteDetails).not.toHaveBeenCalled()
+        expect(mockRouteList.requestRouteDetails).not.toHaveBeenCalled()
     })
 
-    test('inside the fold it loads the details and shows map and elevation', async () => {
-        mockRouteList.getRouteDetails.mockResolvedValue({ points })
+    test('inside the fold it requests the details and shows map and elevation', async () => {
+        answerWith({ points })
         render(<RouteItem {...route} outsideFold={false} />)
 
         await act(async () => { })
 
-        expect(mockRouteList.getRouteDetails).toHaveBeenCalledWith('route-1')
+        expect(mockRouteList.requestRouteDetails).toHaveBeenCalledWith('route-1', expect.any(Function))
         expect(screen.getByTestId('map').dataset.points).toBe('2')
         expect(screen.getByTestId('elevation').dataset.points).toBe('2')
     })
 
-    test('leaving the fold unmounts the map; re-entering loads and shows it again', async () => {
-        mockRouteList.getRouteDetails.mockResolvedValue({ points })
+    test('leaving the fold unmounts the map; re-entering requests and shows it again', async () => {
+        answerWith({ points })
         const { rerender } = render(<RouteItem {...route} outsideFold={false} />)
         await act(async () => { })
         expect(screen.getByTestId('map')).toBeInTheDocument()
@@ -74,86 +86,63 @@ describe('RouteItem', () => {
         expect(screen.queryByTestId('map')).toBeNull()
         expect(screen.getByTestId('route-item-skeleton')).toBeInTheDocument()
 
-        // details are cached by the service by now - resolves immediately
         rerender(<RouteItem {...route} outsideFold={false} />)
         await act(async () => { })
 
-        expect(mockRouteList.getRouteDetails).toHaveBeenCalledTimes(2)
+        expect(mockRouteList.requestRouteDetails).toHaveBeenCalledTimes(2)
         expect(screen.getByTestId('map').dataset.points).toBe('2')
     })
 
     test('details arriving after the row has left the fold are dropped', async () => {
-        const first = deferred()
-        mockRouteList.getRouteDetails.mockReturnValueOnce(first.promise)
+        holdRequests()
 
         const { rerender } = render(<RouteItem {...route} outsideFold={false} />)
         rerender(<RouteItem {...route} outsideFold={true} />)
 
-        await act(async () => { first.resolve({ points }) })
+        await act(async () => { requests[0].onResult({ points }) })
 
         // back inside: the late result of the first request must not be used, a new one is made
-        const second = deferred()
-        mockRouteList.getRouteDetails.mockReturnValueOnce(second.promise)
         rerender(<RouteItem {...route} outsideFold={false} />)
+        expect(requests).toHaveLength(2)
         expect(screen.getByTestId('elevation').dataset.points).toBe('0')
 
-        await act(async () => { second.resolve({ points: [points[0]] }) })
+        await act(async () => { requests[1].onResult({ points: [points[0]] }) })
         expect(screen.getByTestId('map').dataset.points).toBe('1')
     })
 
-    test('points already in the display props are used without loading details', () => {
+    test('a row leaving the fold cancels its pending request', () => {
+        holdRequests()
+
+        const { rerender } = render(<RouteItem {...route} outsideFold={false} />)
+        expect(requests[0].cancel).not.toHaveBeenCalled()
+
+        rerender(<RouteItem {...route} outsideFold={true} />)
+
+        expect(requests[0].cancel).toHaveBeenCalledTimes(1)
+    })
+
+    test('unmounting a row cancels its pending request', () => {
+        holdRequests()
+
+        const { unmount } = render(<RouteItem {...route} outsideFold={false} />)
+        unmount()
+
+        expect(requests[0].cancel).toHaveBeenCalledTimes(1)
+    })
+
+    test('points already in the display props are used without requesting details', () => {
         render(<RouteItem {...route} loaded={true} points={points} outsideFold={false} />)
 
-        expect(mockRouteList.getRouteDetails).not.toHaveBeenCalled()
+        expect(mockRouteList.requestRouteDetails).not.toHaveBeenCalled()
         expect(screen.getByTestId('map').dataset.points).toBe('2')
     })
 
-    test('a shape in the display props is used without loading details', () => {
+    test('a shape in the display props is used without requesting details', () => {
         render(<RouteItem {...route} shape={points} outsideFold={false} />)
 
-        expect(mockRouteList.getRouteDetails).not.toHaveBeenCalled()
+        expect(mockRouteList.requestRouteDetails).not.toHaveBeenCalled()
         expect(screen.getByTestId('map').dataset.points).toBe('2')
         expect(screen.getByTestId('elevation').dataset.points).toBe('2')
-    })
-
-    describe('bounding the backfill fetch concurrency', () => {
-
-        const neverResolves = () => new Promise(() => { })
-
-        test('no more than the concurrency cap is in flight at once', () => {
-            mockRouteList.getRouteDetails.mockImplementation(neverResolves)
-
-            Array.from({ length: ROUTE_DETAILS_CONCURRENCY + 3 }).forEach((_, i) => {
-                render(<RouteItem {...route} id={`route-${i}`} outsideFold={false} />)
-            })
-
-            expect(mockRouteList.getRouteDetails).toHaveBeenCalledTimes(ROUTE_DETAILS_CONCURRENCY)
-        })
-
-        test('a row leaving the fold before its turn is dequeued outright, not just ignored', async () => {
-            const pending = []
-            mockRouteList.getRouteDetails.mockImplementation((id) => new Promise((resolve) => { pending.push({ id, resolve }) }))
-
-            // fill every concurrency slot with rows that stay in the fold
-            Array.from({ length: ROUTE_DETAILS_CONCURRENCY }).forEach((_, i) => {
-                render(<RouteItem {...route} id={`active-${i}`} outsideFold={false} />)
-            })
-
-            // one more row, still waiting for a free slot
-            const { rerender } = render(<RouteItem {...route} id='queued-route' outsideFold={false} />)
-
-            expect(mockRouteList.getRouteDetails).toHaveBeenCalledTimes(ROUTE_DETAILS_CONCURRENCY)
-            expect(mockRouteList.getRouteDetails).not.toHaveBeenCalledWith('queued-route')
-
-            // it leaves the fold before ever being started
-            rerender(<RouteItem {...route} id='queued-route' outsideFold={true} />)
-
-            // free up a slot - if 'queued-route' were merely ignored rather than dequeued, this would start it
-            await act(async () => { pending[0].resolve({ points }) })
-
-            expect(mockRouteList.getRouteDetails).not.toHaveBeenCalledWith('queued-route')
-            expect(mockRouteList.getRouteDetails).toHaveBeenCalledTimes(ROUTE_DETAILS_CONCURRENCY)
-        })
     })
 
     describe('hover-delete confirmation', () => {

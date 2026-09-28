@@ -12,7 +12,6 @@ import Flag from 'react-world-flags';
 import { useAppState, useRouteList, useAppsService } from 'incyclist-services';
 import { useHoverObserver } from '../../../../hooks/ui/useHover';
 import { DeleteIcon } from '../../../molecules/Activity/ActivityListItem/atoms';
-import { routeDetailsQueue } from '../../../../utils/routeDetailsLoader';
 
 const Map = ({points}) => {
 
@@ -57,7 +56,7 @@ export const RouteItem = ( props) => {
     const loadDetails = useCallback( (id) =>{
         const generation = loadGeneration.current
         try {
-            cancelLoadRef.current = routeDetailsQueue.request(service, id, (details) => {
+            cancelLoadRef.current = service.requestRouteDetails(id, (details) => {
                 // row has left the fold in the meantime
                 if (generation!==loadGeneration.current)
                     return
@@ -116,7 +115,7 @@ export const RouteItem = ( props) => {
     const width = height *2;
 
     const { id, title,country,distance,totalDistance,elevation,totalElevation,previewUrl,ready, hasVideo,isLoop,isDemo,isNew,source,cntActive, shape, canDelete } = props
-    // the shape store's decimated points are preferred over a full details load - see routeDetailsLoader.js
+    // the shape store's decimated points are preferred over a full details load - see RouteListService.requestRouteDetails()
     const points = shape ?? loadedPoints ?? props.points
 
     const renderImage = hasVideo && ready && previewUrl!==undefined

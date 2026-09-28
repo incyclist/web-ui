@@ -8,7 +8,6 @@ import { copyPropsExcluding } from '../../../../utils/props';
 import { useRouteList } from 'incyclist-services';
 import { useUnmountEffect } from '../../../../hooks';
 import styled from 'styled-components';
-import { routeDetailsQueue } from '../../../../utils/routeDetailsLoader';
 
 const OutsideFold = styled.div`
     opacity: 0.1;
@@ -39,7 +38,7 @@ export const VideoDetails = ( props) => {
 
     // the shape store's decimated points (props.shape) are preferred over a details load, and are
     // shared with VideoSummary (mounted at the same time - see Card.jsx) through the same
-    // de-duplicating/concurrency-bounded queue - see routeDetailsLoader.js
+    // de-duplicating, concurrency-bounded request - see RouteListService.requestRouteDetails()
     useEffect( ()=> {
         if (refInitialized.current)
             return
@@ -48,10 +47,9 @@ export const VideoDetails = ( props) => {
         const hasShape = Array.isArray(props.shape) && props.shape.length>0
         if (!hasShape && !props.loaded) {
             setState( current => ({...current,loading:true}))
-            cancelLoadRef.current = routeDetailsQueue.request(service, props.id, (details) => {
-                if (details) {
-                    setState( current => ({...current,loading:false, points:details.points}))
-                }
+            cancelLoadRef.current = service.requestRouteDetails(props.id, (details) => {
+                // a failed load (no details) must end the loading state too
+                setState( current => ({...current, loading:false, ...(details ? {points:details.points} : {})}))
             })
         }
     },[props, service])
