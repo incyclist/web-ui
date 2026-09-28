@@ -117,7 +117,7 @@ export const Dropzone = (props) => {
 
     
     const scheme = props.scheme || 'file';
-    const {disabled=false,multiple=false,directory=false,text,filters} = props;
+    const {disabled=false,multiple=false,directory=false,text,filters,id} = props;
 
     
 
@@ -182,7 +182,7 @@ export const Dropzone = (props) => {
             return;
         setSelecting(true)
     
-        logger.logEvent( {message:'dropzone clicked',eventSource:'user'})
+        logger.logEvent( {message:'dropzone clicked',dropZone:id,eventSource:'user'})
         setError(null);
         if (props.onClearError) props.onClearError();
 
