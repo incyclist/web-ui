@@ -9,9 +9,9 @@ export const CONTENT_PADDING = 80
 // content width below which the filter panel collapses to one column
 export const FILTER_COLUMNS_MIN_WIDTH = 700
 
-// allowance added to the measured actions+title width before comparing it against the content
-// width - keeps the header from flipping to the stacked layout right at the pixel where the two
-// groups' rendered boxes would otherwise touch
+// allowance added to the measured button+title widths before comparing them against the content
+// width - keeps the header from flipping to the stacked layout right at the pixel where the
+// rendered boxes would otherwise touch
 export const HEADER_LAYOUT_GAP = 24
 
 export const SORT_OPTIONS = [
@@ -41,11 +41,11 @@ export const getDropOverlayHint = (fileCount) => {
 /**
  * Determines how the header and the filter panel degrade on narrow windows.
  *
- * The header normally renders as one row (Free Ride/Import Routes, the page title, an empty
- * spacer) laid out as three equal-ish grid columns so the title sits at the true horizontal
- * center of the row. That only works while the actions group and the title both fit next to each
- * other - once their combined rendered width would exceed the available content width, the header
- * falls back to a stacked layout (title alone on its own row, actions left-aligned below it).
+ * The header normally renders as one row of three slots: Free Ride (left), the page title
+ * (center) and Import Routes (right). The two outer slots are equal-width (1fr), so the title sits
+ * at the true horizontal center - which means each side needs as much room as the wider of the two
+ * buttons. Once that no longer fits, the header falls back to a stacked layout: the title alone on
+ * its own row, Free Ride (left) and Import Routes (right) on a second row.
  *
  * This is deliberately based on the actual rendered widths rather than a fixed pixel breakpoint:
  * the header's contents are all sized in viewport-relative units, so a fixed px threshold flips
@@ -54,20 +54,21 @@ export const getDropOverlayHint = (fileCount) => {
  * An unknown/unmeasured width (0, negative, NaN or undefined) is treated as wide, so the page
  * renders its normal single-row layout before the first real measurement lands.
  *
- * @param {number} actionsWidth rendered width of the Free Ride/Import Routes actions group
+ * @param {number} freeRideWidth rendered width of the Free Ride button
+ * @param {number} importWidth rendered width of the Import Routes button
  * @param {number} titleWidth rendered width of the page title
  * @param {number} contentWidth width of the content area, excluding its padding
  * @returns {{stackHeader:boolean, singleColumnFilters:boolean}}
  */
-export const getHeaderLayout = (actionsWidth, titleWidth, contentWidth) => {
+export const getHeaderLayout = (freeRideWidth, importWidth, titleWidth, contentWidth) => {
     if (!contentWidth || contentWidth<0 || Number.isNaN(contentWidth))
         return { stackHeader:false, singleColumnFilters:false }
 
-    const actions = Number(actionsWidth)||0
+    const side = Math.max(Number(freeRideWidth)||0, Number(importWidth)||0)
     const title = Number(titleWidth)||0
 
     return {
-        stackHeader: (actions+title+HEADER_LAYOUT_GAP)>contentWidth,
+        stackHeader: (2*side+title+2*HEADER_LAYOUT_GAP)>contentWidth,
         singleColumnFilters: contentWidth<FILTER_COLUMNS_MIN_WIDTH
     }
 }

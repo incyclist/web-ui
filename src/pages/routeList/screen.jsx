@@ -1,10 +1,10 @@
 import React, { useCallback, useLayoutEffect, useRef, useState } from "react"
 import styled from "styled-components"
-import { UploadIcon } from "@primer/octicons-react"
 import MainPage from "../../components/molecules/MainPage"
 import { Button, Center, GroupTitle, Loader, PageTitle, Text } from "../../components/atoms"
 import { Column, Row } from "../../components/atoms/layout/View"
 import { BikeIcon } from "../../components/atoms/Icons/BikeIcon"
+import { ImportIcon } from "../../components/atoms/Icons/ImportIcon"
 import { NavigationBar } from "../../components/molecules/NavigationBar"
 import { Dropzone } from "../../components/molecules"
 import { RoutesTable } from "../../components/modules/Search/RoutesTable"
@@ -38,6 +38,7 @@ const ContentArea = styled(Column)`
     padding-left:${CONTENT_PADDING/2}px;
     padding-right: ${CONTENT_PADDING/2}px;
     overflow-y: hidden;
+    overflow-x: hidden;
     box-sizing: border-box;
     position: relative;
 `
@@ -51,6 +52,10 @@ const DropOverlay = styled(Dropzone)`
     left: 0;
     right: 0;
     bottom: 0;
+    // Dropzone adds padding and a border on top of the 100% it is given - without border-box the
+    // overlay is wider than the page and a horizontal scrollbar appears while dragging
+    box-sizing: border-box;
+    margin: 0;
     z-index: 20;
     background-color: rgba(0,0,0,0.6);
     border-width: 3px;
@@ -70,34 +75,31 @@ const DropOverlayHint = styled.div`
     opacity: 0.85;
 `
 
-// Header, one row, three slots: actions (left) / title (center) / an empty spacer (right). The
+// Header, one row, three slots: Free Ride (left) / title (center) / Import Routes (right). The
 // left and right slots are both 1fr, so the title sits at the true horizontal center of the row,
-// exactly like every other page's title - the empty right slot exists only to balance the left
-// one, not to hold content of its own.
+// exactly like every other page's title.
 //
-// When the actions group and the title don't both fit next to each other at the current window
-// size (see getHeaderLayout() in utils.js), this falls back to a stacked layout: title alone,
-// centered, on its own row; actions left-aligned below it. Both layouts render the exact same
-// Actions/title elements - only their CSS (grid vs. flex-column, and each one's `order`) changes -
-// so the refs used to measure their rendered widths keep pointing at live DOM nodes across the
-// switch.
+// When the buttons and the title don't all fit in one row at the current window size (see
+// getHeaderLayout() in utils.js), this falls back to a stacked layout: title alone, centered, on
+// its own row; Free Ride (left) and Import Routes (right) on a second row. Both layouts render the
+// exact same elements - only the grid template changes - so the refs used to measure their
+// rendered widths keep pointing at live DOM nodes across the switch.
 const HeaderLayout = styled.div`
-    display: ${props => props.$stacked ? 'flex' : 'grid'};
-    flex-direction: column;
-    grid-template-columns: ${props => props.$stacked ? undefined : '1fr auto 1fr'};
-    align-items: ${props => props.$stacked ? 'flex-start' : 'center'};
-    gap: ${props => props.$stacked ? '1.65vh' : '0'};
+    display: grid;
+    grid-template-columns: ${props => props.$stacked ? '1fr 1fr' : '1fr auto 1fr'};
+    grid-template-areas: ${props => props.$stacked ? '"title title" "free import"' : '"free title import"'};
+    align-items: center;
+    row-gap: 1vh;
     width: 100%;
 `
 
-const Actions = styled.div`
+// max-content: the wrapper's width is the button's own width, whatever its grid column offers.
+// display:flex: the Button atom floats itself, which would otherwise collapse the wrapper's height.
+const HeaderSlot = styled.div`
     display: flex;
-    flex-direction: row;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: flex-start;
-    width: 100%;
-    order: ${props => props.$stacked ? 2 : 1};
+    width: max-content;
+    grid-area: ${props => props.$area};
+    justify-self: ${props => props.$end ? 'end' : 'start'};
 `
 
 // The bare PageTitle atom (unchanged) - PageTitle sets width:100% internally to center its own
@@ -106,15 +108,16 @@ const Actions = styled.div`
 // fill it - hence the nowrap, no explicit width here). In the stacked fallback it goes back to
 // full width, letting PageTitle center itself across the whole row exactly as it did before.
 const TitleCell = styled.div`
+    grid-area: title;
     ${props => props.$stacked ? 'width: 100%;' : 'white-space: nowrap;'}
-    order: ${props => props.$stacked ? 1 : 2};
 `
 
-// exists only to balance the left (actions) column so the title lands at the true center -
-// see HeaderLayout above
-const TitleSpacer = styled.div`
-    order: 3;
-    display: ${props => props.$stacked ? 'none' : 'block'};
+// header buttons are never truncated or collapsed to icon-only, they stack instead
+const HeaderButtonContent = styled.span`
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4em;
+    flex-shrink: 0;
 `
 
 const ButtonContent = styled.span`
@@ -225,15 +228,23 @@ const useElementWidth = (ref) => {
     return width
 }
 
-const FreeRideButton = ({onClick, secondary, margin}) => (
-    <Button id='freeRide' title={FREE_RIDE_TOOLTIP} secondary={secondary} margin={margin} onClick={onClick}>
+const FreeRideButton = ({onClick, secondary, header}) => header ? (
+    <Button id='freeRide' title={FREE_RIDE_TOOLTIP} outline no3D margin='0' onClick={onClick}>
+        <HeaderButtonContent><BikeIcon width='1.9em' height='1.25em' color='currentColor'/>Free Ride</HeaderButtonContent>
+    </Button>
+) : (
+    <Button id='freeRide' title={FREE_RIDE_TOOLTIP} secondary={secondary} onClick={onClick}>
         <ButtonContent><BikeIcon width={32} height={18} color='currentColor'/>Free Ride</ButtonContent>
     </Button>
 )
 
-const ImportRoutesButton = ({onClick, primary, margin}) => (
-    <Button id='importRoutes' primary={primary} margin={margin} onClick={onClick}>
-        <ButtonContent><UploadIcon size={16}/>Import Routes</ButtonContent>
+const ImportRoutesButton = ({onClick, primary, header}) => header ? (
+    <Button id='importRoutes' outline no3D margin='0' onClick={onClick}>
+        <HeaderButtonContent><ImportIcon/>Import Routes</HeaderButtonContent>
+    </Button>
+) : (
+    <Button id='importRoutes' primary={primary} onClick={onClick}>
+        <ButtonContent><ImportIcon size={16}/>Import Routes</ButtonContent>
     </Button>
 )
 
@@ -253,7 +264,8 @@ export const RouteListScreen = ({
     const contentRef = useRef(null)
     const listRef = useRef(null)
     const searchRef = useRef(null)
-    const actionsRef = useRef(null)
+    const freeRideRef = useRef(null)
+    const importRef = useRef(null)
     const titleRef = useRef(null)
     const [fieldFocused,setFieldFocused] = useState(false)
 
@@ -292,8 +304,13 @@ export const RouteListScreen = ({
         // reach the browser before the overlay ever mounts, and an unhandled drop's default action
         // is to navigate the window to the dropped file instead of importing it.
         e.preventDefault()
-        dragDepth.current = 0
-        setDragActive(false)
+        // The overlay is hidden only after this event has been fully dispatched. React flushes a
+        // state change made here before the event reaches the overlay's own (bubble-phase) drop
+        // handler, which would unmount the overlay and lose the drop.
+        setTimeout( ()=>{
+            dragDepth.current = 0
+            setDragActive(false)
+        },0)
     }
 
     // dropping never opens ImportRoutesDialog - it imports immediately through the same
@@ -305,9 +322,10 @@ export const RouteListScreen = ({
     }
 
     const contentWidth = useContentWidth(contentRef)
-    const actionsWidth = useElementWidth(actionsRef)
+    const freeRideWidth = useElementWidth(freeRideRef)
+    const importWidth = useElementWidth(importRef)
     const titleWidth = useElementWidth(titleRef)
-    const {stackHeader, singleColumnFilters} = getHeaderLayout(actionsWidth, titleWidth, contentWidth)
+    const {stackHeader, singleColumnFilters} = getHeaderLayout(freeRideWidth, importWidth, titleWidth, contentWidth)
 
     const chips = getFilterChips(filters)
 
@@ -409,14 +427,15 @@ export const RouteListScreen = ({
                     onDragEnterCapture={onContentDragEnterCapture} onDragOverCapture={onContentDragOverCapture}
                     onDragLeaveCapture={onContentDragLeaveCapture} onDropCapture={onContentDropCapture}>
                     <HeaderLayout className='route-list-header' $stacked={stackHeader} data-header-layout={stackHeader ? 'stacked' : 'grid'}>
-                        <Actions className='route-list-actions' ref={actionsRef} $stacked={stackHeader}>
-                            <FreeRideButton onClick={onFreeRide} margin='0 1vw 0 0' />
-                            <ImportRoutesButton onClick={onImportRoutes} margin='0 1vw 0 0' />
-                        </Actions>
+                        <HeaderSlot className='route-list-free-ride' ref={freeRideRef} $area='free'>
+                            <FreeRideButton header onClick={onFreeRide} />
+                        </HeaderSlot>
                         <TitleCell className='route-list-title' ref={titleRef} $stacked={stackHeader}>
                             <PageTitle>Routes</PageTitle>
                         </TitleCell>
-                        <TitleSpacer $stacked={stackHeader} />
+                        <HeaderSlot className='route-list-import' ref={importRef} $area='import' $end>
+                            <ImportRoutesButton header onClick={onImportRoutes} />
+                        </HeaderSlot>
                     </HeaderLayout>
 
                     <RouteListToolbar ref={searchRef}

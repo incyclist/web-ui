@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from "react"
 
-import styled from 'styled-components';
+import styled, { css } from 'styled-components';
 import { EventLogger } from 'gd-eventlog';
 import AppTheme from "../../../../theme";
 import {copyPropsExcluding} from "../../../../utils/props"
@@ -49,6 +49,29 @@ const getFontSize = (props) => {
     return props.fontSize!==undefined ? props.fontSize : fontSize
 }
 
+// Outline variant (same look as the mobile header actions): orange border and text on a light dark
+// tint (the tint keeps it legible on the blurred photo backgrounds). Hover turns green with white
+// text and, deliberately, never grows the border, so the button's size stays stable.
+const outlineStyle = css`
+    background: rgba(0,0,0,0.25);
+    color: #dd9933;
+    border: 1px solid #dd9933;
+    font-weight: 500;
+    padding: ${props => props.padding!==undefined ? props.padding : '0 0.75em'};
+
+    &:hover {
+        background: ${props => props.disabled ? 'rgba(0,0,0,0.25)' : '#8dc100'};
+        border: 1px solid ${props => props.disabled ? '#dd9933' : '#8dc100'};
+        color: ${props => props.disabled ? '#dd9933' : 'white'};
+        box-shadow: none;
+    }
+
+    &:focus-visible {
+        outline: 2px solid white;
+        outline-offset: 2px;
+    }
+`
+
 const Btn = styled.button`
     background: ${props => getButtonColor(props)} ;
     position: relative;
@@ -91,6 +114,8 @@ const Btn = styled.button`
         box-shadow: ${props => !props.no3D ? '0px 15px 10px 0px rgba(0, 0, 0, 1)' : undefined}
 
     }
+
+    ${props => props.outline ? outlineStyle : ''}
 `
 
 export const Button = ( props )=>{ 

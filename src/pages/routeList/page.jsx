@@ -288,6 +288,7 @@ export const RouteListPage =  () => {
     // files dropped anywhere on the page's content area - no dialog, same call the old
     // carousel's UploadCard used; progress reports as pinned ActiveImport rows
     const onImportFiles = (files) => {
+        logger.logEvent({message:'files dropped on routes page', count:Array.isArray(files) ? files.length : 1, eventSource:'user'})
         service.import(files)
     }
 

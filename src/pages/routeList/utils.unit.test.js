@@ -6,9 +6,9 @@ import {
 
 describe('getHeaderLayout', () => {
 
-    // actions/title widths chosen so their sum (plus the internal gap) never gets close to the
+    // button/title widths chosen so their sum (plus the internal gap) never gets close to the
     // FILTER_COLUMNS_MIN_WIDTH boundary - these two thresholds are unrelated and must not interact
-    const FITS = [300, 200]
+    const FITS = [150, 150, 200]
 
     test('the filter panel stays multi-column at 700px and above', () => {
         expect(getHeaderLayout(...FITS, 700)).toEqual({stackHeader:false, singleColumnFilters:false})
@@ -26,25 +26,33 @@ describe('getHeaderLayout', () => {
         expect(getHeaderLayout(...FITS, NaN)).toEqual({stackHeader:false, singleColumnFilters:false})
     })
 
-    test('actions and title fit next to each other: single-row (grid) header', () => {
-        // 300 + 200 + gap(24) = 524, well under 900
-        expect(getHeaderLayout(300, 200, 900)).toEqual({stackHeader:false, singleColumnFilters:false})
+    test('buttons and title fit next to each other: single-row (grid) header', () => {
+        // 2*300 + 200 + 2*gap(24) = 848, under 900
+        expect(getHeaderLayout(300, 250, 200, 900)).toEqual({stackHeader:false, singleColumnFilters:false})
     })
 
-    test('actions and title together overflow the content width: stacked header', () => {
-        // 500 + 400 + gap(24) = 924, over 800
-        expect(getHeaderLayout(500, 400, 800)).toEqual({stackHeader:true, singleColumnFilters:false})
+    test('buttons and title together overflow the content width: stacked header', () => {
+        // 2*500 + 400 + 2*gap(24) = 1448, over 800
+        expect(getHeaderLayout(500, 400, 400, 800)).toEqual({stackHeader:true, singleColumnFilters:false})
     })
 
     test('right at the boundary: fitting exactly does not stack, one pixel over does', () => {
-        // 500 + 400 + gap(24) = 924
-        expect(getHeaderLayout(500, 400, 924)).toEqual({stackHeader:false, singleColumnFilters:false})
-        expect(getHeaderLayout(500, 400, 923)).toEqual({stackHeader:true, singleColumnFilters:false})
+        // 2*max(500,400) + 400 + 2*gap(24) = 1448
+        expect(getHeaderLayout(500, 400, 400, 1448)).toEqual({stackHeader:false, singleColumnFilters:false})
+        expect(getHeaderLayout(500, 400, 400, 1447)).toEqual({stackHeader:true, singleColumnFilters:false})
     })
 
-    test('unmeasured (falsy) actions/title widths never force a stack on their own', () => {
-        expect(getHeaderLayout(0, 0, 300)).toEqual({stackHeader:false, singleColumnFilters:true})
-        expect(getHeaderLayout(undefined, undefined, 300)).toEqual({stackHeader:false, singleColumnFilters:true})
+    test('the wider button sets the width reserved on both sides of the title', () => {
+        // 2*300 + 200 + 48 = 848 whichever side the wide button is on
+        expect(getHeaderLayout(300, 100, 200, 848).stackHeader).toBe(false)
+        expect(getHeaderLayout(100, 300, 200, 848).stackHeader).toBe(false)
+        expect(getHeaderLayout(300, 100, 200, 847).stackHeader).toBe(true)
+        expect(getHeaderLayout(100, 300, 200, 847).stackHeader).toBe(true)
+    })
+
+    test('unmeasured (falsy) button/title widths never force a stack on their own', () => {
+        expect(getHeaderLayout(0, 0, 0, 300)).toEqual({stackHeader:false, singleColumnFilters:true})
+        expect(getHeaderLayout(undefined, undefined, undefined, 300)).toEqual({stackHeader:false, singleColumnFilters:true})
     })
 })
 

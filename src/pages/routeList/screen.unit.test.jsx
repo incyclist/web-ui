@@ -1,6 +1,6 @@
 import React from 'react'
 import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest'
-import { render, screen, fireEvent, act } from '@testing-library/react'
+import { render, screen, fireEvent, act, waitFor } from '@testing-library/react'
 
 vi.mock('../../components/molecules/MainPage', () => ({
     default: ({children}) => <div data-testid='main-page'>{children}</div>
@@ -28,7 +28,8 @@ vi.mock('../../components/molecules', async (importOriginal) => {
         ...actual,
         Dropzone: (props) => {
             rendered.dropzoneProps = props
-            return <div data-testid='drop-overlay' className={props.className}>{props.text}</div>
+            // like the real Dropzone, the file hand-over happens in the element's own (bubble-phase) drop handler
+            return <div data-testid='drop-overlay' className={props.className} onDrop={() => props.onDrop?.([{type:'url', url:'file:///routes/ride.gpx'}])}>{props.text}</div>
         }
     }
 })
@@ -73,7 +74,7 @@ describe('RouteListScreen', () => {
         Object.defineProperty(HTMLElement.prototype, 'scrollWidth', {
             configurable: true,
             get() {
-                if (this.classList?.contains('route-list-actions')) return actionsWidth
+                if (this.classList?.contains('route-list-free-ride') || this.classList?.contains('route-list-import')) return actionsWidth
                 if (this.classList?.contains('route-list-title')) return titleWidth
                 return 0
             }
@@ -121,15 +122,16 @@ describe('RouteListScreen', () => {
 
             const header = container.querySelector('.route-list-header')
             expect(header.dataset.headerLayout).toBe('grid')
-            // actions, title and the balancing spacer are all still part of the one header row
-            expect(header.querySelector('.route-list-actions')).not.toBeNull()
+            // Free Ride (left), title (center) and Import Routes (right) are all part of the one row
+            expect(header.querySelector('.route-list-free-ride #freeRide')).not.toBeNull()
             expect(header.querySelector('.route-list-title')).not.toBeNull()
+            expect(header.querySelector('.route-list-import #importRoutes')).not.toBeNull()
         })
 
         test('the List/Tile toggle lives in the toolbar, not in the header actions', () => {
             const { container } = render(<RouteListScreen {...baseProps} />)
 
-            const actions = container.querySelector('.route-list-actions')
+            const actions = container.querySelector('.route-list-header')
             const toolbar = container.querySelector('.route-list-toolbar')
             expect(actions.querySelector('#list')).toBeNull()
             expect(actions.querySelector('#tiles')).toBeNull()
@@ -176,7 +178,7 @@ describe('RouteListScreen', () => {
         })
 
         test('actions and title fitting next to each other renders the single-row grid header', () => {
-            setContentWidth(900)
+            setContentWidth(1000)
             setActionsWidth(300)
             setTitleWidth(200)
             const { container } = render(<RouteListScreen {...baseProps} />)
@@ -422,7 +424,7 @@ describe('RouteListScreen', () => {
             expect(container.querySelector('.route-drop-overlay')).toBeNull()
         })
 
-        test('disappears on drop', () => {
+        test('disappears on drop', async () => {
             const { container } = render(<RouteListScreen {...baseProps} />)
             const contentArea = container.querySelector('.route-list-page')
 
@@ -430,7 +432,18 @@ describe('RouteListScreen', () => {
             expect(container.querySelector('.route-drop-overlay')).not.toBeNull()
 
             fireEvent.drop(contentArea)
-            expect(container.querySelector('.route-drop-overlay')).toBeNull()
+            await waitFor(() => expect(container.querySelector('.route-drop-overlay')).toBeNull())
+        })
+
+        test('a file dropped on the overlay reaches onImportFiles - the overlay is still mounted when its own drop handler runs', async () => {
+            const onImportFiles = vi.fn()
+            const { container } = render(<RouteListScreen {...baseProps} onImportFiles={onImportFiles} />)
+
+            fireEvent.dragEnter(container.querySelector('.route-list-page'), {dataTransfer:{items:{length:1}}})
+            fireEvent.drop(container.querySelector('.route-drop-overlay'))
+
+            expect(onImportFiles).toHaveBeenCalledWith([{type:'url', url:'file:///routes/ride.gpx'}])
+            await waitFor(() => expect(container.querySelector('.route-drop-overlay')).toBeNull())
         })
 
         test('a drag crossing into and back out of a nested row does not flicker the overlay', () => {
