@@ -298,7 +298,7 @@ export const AutoConvertVideo = ( { src, startTime, observer, width, height,mute
 
             if (refInfo.current) {
                 refInfo.current.error = new Error('Conversion Error')
-                this.logError(err,'getNextSegment')
+                logError(err,'getNextSegment')
                 onError()
             }            
             
