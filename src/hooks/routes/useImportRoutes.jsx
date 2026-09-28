@@ -52,7 +52,7 @@ export const useImportRoutes = () => {
         onUpdate()
     }, [onUpdate, onParseResult])
 
-    // Phase 2 - not exposed on its own: the current phase machine has scan flip the display
+    // The parse step - not exposed on its own: the current phase machine has scan flip the display
     // phase to 'parsing' as soon as scanning completes (RouteLibraryScannerService.scan()),
     // so parse() is chained on 'scan-complete' rather than left to a caller-driven step.
     const parse = useCallback((scannedRoutes) => {

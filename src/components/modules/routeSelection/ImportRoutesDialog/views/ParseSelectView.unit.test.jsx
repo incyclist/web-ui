@@ -54,7 +54,7 @@ const baseProps = () => ({
 describe('ParseSelectView', () => {
 
     test('falls back to the not-yet-implemented placeholder during the single-route import\'s transient "parsing" moment', () => {
-        // no scanProgress at all - the signal that this is not a bulk scan (session 5.2's flagged ambiguity)
+        // no scanProgress at all - the signal that this is not a bulk scan
         const displayProps = { phase: 'parsing', routes: [], hasICloudDownloadFailures: false }
         render(<ParseSelectView displayProps={displayProps} {...baseProps()} />)
 

@@ -20,19 +20,19 @@ const TITLE = 'Import Routes';
 
 // While one of these is running, nothing has been confirmed by the user yet that Esc/close
 // should be allowed to interrupt without asking - the corresponding view is the one that
-// owns its own Cancel/Stop affordance instead. Every other phase (including this session's
-// Landing and Result) closes normally on Esc.
+// owns its own Cancel/Stop affordance instead. Every other phase (including Landing
+// and Result) closes normally on Esc.
 const NON_DISMISSABLE_PHASES = new Set(['scanning', 'parsing', 'ingesting']);
 
 // A folder scan populates `scanProgress` as soon as `RouteLibraryScannerService.scan()` starts,
 // before the phase ever reaches 'parsing'; a single-route import never sets it at all. Both
-// paths pass through phase 'parsing' (session 5.2's flagged ambiguity), so this is the reliable
+// paths pass through phase 'parsing', so this is the reliable
 // way to tell "streaming the bulk-scan selection list" apart from the single-route import's
 // brief transient moment - not `routes.length`, which can legitimately be zero for a real scan
 // of a folder with nothing importable in it.
 const isBulkScanPhase = (displayProps) => displayProps?.scanProgress != null;
 
-// One title per phase, exactly as the copy deck lists them: "Import Routes" /
+// One title per phase: "Import Routes" /
 // "Select Routes" / "Importing" / "Import Finished". Phases with no distinct title of their own
 // (landing, scanning, the single-route result) keep the dialog's default title.
 const getDialogTitle = (phase, displayProps) => {
@@ -47,8 +47,7 @@ const getDialogTitle = (phase, displayProps) => {
     return TITLE;
 };
 
-// Seam for session 5.3: Landing and Result were the only phases with a real view before this
-// session. Add a `<phase>: <View>` entry here as each further phase gets built - nothing else in
+// Phase-to-view map. Add a `<phase>: <View>` entry here for each further phase - nothing else in
 // this file, or in Landing/Result, needs to change for that to slot in. `parsing` and `selecting`
 // share `ParseSelectView`, which treats them as one screen (streaming vs. complete), and
 // itself resolves the 'parsing' ambiguity noted above.
@@ -64,7 +63,7 @@ const PHASE_VIEWS = {
 
 /**
  * The desktop Import Routes dialog. Owns the fixed dialog chrome and the phase-to-view
- * switch; the phases themselves are wired to `useImportRoutes()` (session 5.1) and handed
+ * switch; the phases themselves are wired to `useImportRoutes()` and handed
  * down as props so each view stays a plain, testable presentational component.
  *
  * Mounting this component opens the dialog; unmounting it closes it (`useImportRoutes()`

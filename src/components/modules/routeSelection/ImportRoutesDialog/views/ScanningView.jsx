@@ -21,9 +21,9 @@ const Body = styled.div`
  * `LandingView` - `useImportRoutes()`'s display props don't carry it (the scanner only reports
  * counts), so it is threaded down as a prop instead.
  *
- * Surfaces session 1.3's incomplete-scan count as soon as it is non-zero, live, using the exact
- * copy-deck sentence rather than session 1.3's own internal wording - `<drive>` in
- * that sentence is the chosen folder's display name, the only path-like value available here.
+ * Surfaces the incomplete-scan count (folders that could not be read) as soon as it is non-zero,
+ * live. `<drive>` in the sentence is the chosen folder's display name, the only path-like value
+ * available here.
  */
 export const ScanningView = ({ displayProps, folderInfo, cancel }) => {
     const { scannedFolders = 0, failedFolders = 0 } = displayProps?.scanProgress ?? {};

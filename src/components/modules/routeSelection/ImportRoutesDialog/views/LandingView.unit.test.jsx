@@ -42,7 +42,7 @@ describe('LandingView', () => {
         expect(onClose).toHaveBeenCalledTimes(1)
     })
 
-    test('renders both tiles with the exact copy-deck labels', () => {
+    test('renders both tiles with their labels', () => {
         render(<LandingView onAddRoute={vi.fn()} onSelectFolder={vi.fn()} />)
 
         expect(screen.getByText('Add a route')).toBeTruthy()

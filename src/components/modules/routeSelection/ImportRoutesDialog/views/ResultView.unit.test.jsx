@@ -17,7 +17,7 @@ describe('ResultView', () => {
         expect(screen.getByText('Close')).toBeTruthy()
     })
 
-    test('shows the copy-deck sentence for the failure\'s code, not the service\'s raw text', () => {
+    test('shows the sentence for the failure\'s code, not the service\'s raw text', () => {
         const failure = { code: 'MISSING_COMPANION', reason: 'Missing companion file (.epp)', missingExt: 'epp' }
         render(<ResultView error={failure.reason} failure={failure} onPickAnotherFile={vi.fn()} onClose={vi.fn()} />)
 

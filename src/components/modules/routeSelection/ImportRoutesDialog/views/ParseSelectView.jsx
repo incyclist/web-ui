@@ -65,7 +65,7 @@ const getRouteKey = (route, idx) => route?.id ?? `route-${idx}`;
  * `parsing` additionally shows the "Reading routes…" progress header and disables Import.
  *
  * `phase==='parsing'` is shared with a brief transient moment during a single-route import
- * (session 5.2's territory: the "Importing <file>" screen, not built yet). That path never sets
+ * (which has its own result screen). That path never sets
  * `scanProgress` - only `RouteLibraryScannerService.scan()` does, and it does so before the phase
  * ever reaches 'parsing' - so its absence is the reliable signal that this render is not a bulk
  * scan. Falls back to the same "nothing built yet" placeholder that phase rendered before this
@@ -101,7 +101,7 @@ export const ParseSelectView = ({
     const alreadyImportedCount = allRoutes.filter(route => route.alreadyImported).length;
     const problemCount = allRoutes.filter(route => route.errorReason != null).length;
 
-    // The scanner deliberately excludes GPX (§4.7/§5.6) - a folder with none of the video-route
+    // The scanner deliberately excludes GPX - a folder with none of the video-route
     // formats it looks for reaches 'selecting' with an empty list rather than an empty table.
     if (phase === 'selecting' && allRoutes.length === 0) {
         return (

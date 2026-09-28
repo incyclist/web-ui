@@ -400,7 +400,7 @@ describe('RouteListScreen', () => {
 
     describe('page-level drop overlay', () => {
 
-        test('appears on drag-enter over the content area, with the exact copy-deck text', () => {
+        test('appears on drag-enter over the content area, with its text', () => {
             const { container } = render(<RouteListScreen {...baseProps} />)
             const contentArea = container.querySelector('.route-list-page')
 

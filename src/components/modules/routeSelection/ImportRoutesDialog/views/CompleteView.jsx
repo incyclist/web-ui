@@ -26,7 +26,7 @@ const FailedList = styled.div`
 
 /**
  * The bulk-import summary screen (phase `complete`) - counts plus the "videos stay
- * where they are" note, exact copy-deck wording throughout.
+ * where they are" note.
  */
 export const CompleteView = ({ displayProps, folderInfo, onClose }) => {
     const { imported = 0, skipped = 0, errors = 0, failedRoutes = [] } = displayProps?.completionSummary ?? {};

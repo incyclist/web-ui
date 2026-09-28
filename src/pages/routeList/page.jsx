@@ -57,8 +57,8 @@ export const RouteListPage =  () => {
     const [filtersExpanded,setFiltersExpanded] = useState( ()=>service.getFiltersExpanded() )
     // whether ImportRoutesDialog is mounted - a plain conditional render (not DialogLauncher,
     // which is shaped for the onStart/onCancel ride-launch dialogs; this dialog's own API is a
-    // single onClose, session 5.2). Mounting/unmounting it is also what resets its phase back to
-    // Landing on every open - useImportRoutes()'s unmount cleanup calls scanner.done() (session 5.1)
+    // single onClose). Mounting/unmounting it is also what resets its phase back to
+    // Landing on every open - useImportRoutes()'s unmount cleanup calls scanner.done()
     const [importDialogOpen,setImportDialogOpen] = useState(false)
     // changed whenever the result set is re-queried by the user, so the list restarts at the top
     const [listKey,setListKey] = useState(0)

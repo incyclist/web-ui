@@ -68,8 +68,8 @@ const HintText = styled.div`
 
 /**
  * The Import Routes dialog's landing screen - two tiles ("Add a route" / "Import a whole
- * folder"), per the product decision that desktop does not ask the user to classify their
- * own file: the parser already tells single route files apart from a folder scan.
+ * folder"). Desktop does not ask the user to classify their own file: the parser already
+ * tells single route files apart from a folder scan.
  *
  * "Add a route" allows picking several files at once (which is also how many GPX routes are
  * added in one go - a folder import only looks for video routes); every picked file is handed

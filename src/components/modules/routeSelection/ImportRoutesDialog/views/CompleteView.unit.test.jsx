@@ -5,7 +5,7 @@ import { CompleteView } from './CompleteView'
 
 describe('CompleteView', () => {
 
-    test('shows the exact copy-deck counts', () => {
+    test('shows the counts', () => {
         const displayProps = {
             phase: 'complete',
             routes: [],

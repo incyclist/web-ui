@@ -87,7 +87,7 @@ describe('ImportRoutesDialog', () => {
 
     test('a phase with no view at all does not go blank, and keeps the same geometry', () => {
         // 'error' is declared on ImportDisplayProps but never actually assigned by the service -
-        // the one phase value genuinely unmapped now that session 5.3 filled in the rest.
+        // the one phase value that has no view of its own.
         mockImportRoutes.displayProps = { phase: 'error', routes: [], error: 'unexpected' }
 
         render(<ImportRoutesDialog onClose={vi.fn()} />)
@@ -108,7 +108,7 @@ describe('ImportRoutesDialog', () => {
         expect(dialogProps[0].onESC).toBeUndefined()
     })
 
-    test('titles the dialog per phase, exactly per the copy deck', () => {
+    test('titles the dialog per phase, one title per phase', () => {
         mockImportRoutes.displayProps = { phase: 'selecting', routes: [], scanProgress: { scannedFolders: 1, failedFolders: 0 } }
         const { rerender } = render(<ImportRoutesDialog onClose={vi.fn()} />)
         expect(screen.getByTestId('dialog').title).toBe('Select Routes')

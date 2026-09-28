@@ -23,7 +23,7 @@ export const SORT_OPTIONS = [
 
 export const FREE_RIDE_TOOLTIP = 'Pick any spot on the map and ride the real roads from there'
 
-// copy deck for the page-level drop overlay shown while a file is dragged over the page
+// texts of the page-level drop overlay shown while a file is dragged over the page
 export const DROP_OVERLAY_TITLE = 'Drop to import'
 
 /**

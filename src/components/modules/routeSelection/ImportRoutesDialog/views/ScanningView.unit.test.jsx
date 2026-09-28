@@ -20,7 +20,7 @@ describe('ScanningView', () => {
         expect(screen.queryByText(/unreachable/)).not.toBeInTheDocument()
     })
 
-    test('surfaces session 1.3\'s incomplete-scan count with the copy deck\'s exact wording', () => {
+    test('surfaces the incomplete-scan count as soon as it is non-zero', () => {
         const displayProps = { phase: 'scanning', routes: [], scanProgress: { scannedFolders: 12, failedFolders: 3 } }
         render(<ScanningView displayProps={displayProps} folderInfo={{ displayName: 'D:\\Videos' }} cancel={() => {}} />)
 

@@ -11,10 +11,9 @@ const Center = styled.div`
 `;
 
 /**
- * Placeholder for the phases this session does not build (scanning, parsing, selecting,
- * ingesting, complete). Add a `<phase>: <View>` entry to `PHASE_VIEWS` in
- * `ImportRoutesDialog.jsx` as each real view lands - nothing else in this file needs to
- * change. Keeps the dialog from ever going blank while those views are still being built.
+ * Fallback for a phase that has no view of its own, and for the brief 'parsing' moment of a
+ * single-route import. Add a `<phase>: <View>` entry to `PHASE_VIEWS` in
+ * `ImportRoutesDialog.jsx` for a phase that needs one. Keeps the dialog from ever going blank.
  */
 export const NotYetImplementedView = () => (
     <Center>
