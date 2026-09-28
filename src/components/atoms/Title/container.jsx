@@ -5,7 +5,7 @@ import { copyPropsExcluding } from '../../../utils';
 
 export const ContainerTitleDiv = styled.div`    
     color: white;
-    z-index:${props => props.zIndex}
+    z-index:${props => props.zIndex};
     font-size: ${props=>props.size ? props.size :'6vh'};
     text-transform: uppercase;
     font-weight: ${props=>props.fontWeight};
