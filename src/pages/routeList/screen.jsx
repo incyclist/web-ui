@@ -1,7 +1,7 @@
 import React, { useCallback, useLayoutEffect, useRef, useState } from "react"
 import styled from "styled-components"
 import MainPage from "../../components/molecules/MainPage"
-import { Button, Center, Loader, PageTitle, Text } from "../../components/atoms"
+import { Button, Center, Loader, PageTitle, Text, Tooltip } from "../../components/atoms"
 import { Column, Row } from "../../components/atoms/layout/View"
 import { BikeIcon } from "../../components/atoms/Icons/BikeIcon"
 import { ImportIcon } from "../../components/atoms/Icons/ImportIcon"
@@ -232,9 +232,11 @@ const useElementWidth = (ref) => {
 }
 
 const FreeRideButton = ({onClick}) => (
-    <Button id='freeRide' title={FREE_RIDE_TOOLTIP} outline no3D margin='0' onClick={onClick}>
-        <HeaderButtonContent><BikeIcon width='1.9em' height='1.25em' color='currentColor'/>Free Ride</HeaderButtonContent>
-    </Button>
+    <Tooltip text={FREE_RIDE_TOOLTIP}>
+        <Button id='freeRide' outline no3D margin='0' onClick={onClick}>
+            <HeaderButtonContent><BikeIcon width='1.9em' height='1.25em' color='currentColor'/>Free Ride</HeaderButtonContent>
+        </Button>
+    </Tooltip>
 )
 
 const ImportRoutesButton = ({onClick}) => (
