@@ -178,21 +178,25 @@ export const GoogleStreetView =  (props) => {
 
                     // registered before anything else, so the very first status is seen here
                     // and never missed (INC-42): 'Loaded' now means Google confirmed OK, not
-                    // that the panorama object merely exists.
+                    // that the panorama object merely exists. No imagery at a position is a
+                    // routine, legitimate answer (not a failure) - it resolves the start exactly
+                    // like 'Loaded' does, and it keeps being reported on every later status
+                    // change too (a rider can ride through several coverage gaps on one route),
+                    // just without re-logging the license event, which was already billed once
+                    // at construction.
                     sv.addListener('status_changed', ()=>{
-                        if (refStatusConfirmed.current)
-                            return
-                        refStatusConfirmed.current = true
-
                         const status = typeof sv.getStatus === 'function' ? sv.getStatus() : undefined
-                        if (status===undefined || status==='OK') {
-                            logLicenseEvent('ok', status??'OK')
-                            emit('Loaded')
+                        const isOk = status===undefined || status==='OK'
+
+                        if (!refStatusConfirmed.current) {
+                            refStatusConfirmed.current = true
+                            logLicenseEvent(isOk ? 'ok' : 'no-coverage', status??'OK')
+                            emit(isOk ? 'Loaded' : 'NoPanorama', status)
+                            return
                         }
-                        else {
-                            logLicenseEvent('failed', status)
+
+                        if (!isOk)
                             emit('NoPanorama', status)
-                        }
                     })
 
                     if (props.onEvent) {

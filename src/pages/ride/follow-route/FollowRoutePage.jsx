@@ -20,7 +20,7 @@ export const cameraSound = new Audio(CAMERA_SOUND);
 
 export const FollowRouteRidePage = ( { workout, activity, route, state,initialized,startOverlayProps= {},
                                        position, markers, hideAll,rideView,realityFactor,startPos, endPos,
-                                       displayObserver, onDisplayEvent,displayPosition, sideViews, svInitAllowed, rideViewNotice,
+                                       displayObserver, onDisplayEvent,displayPosition, sideViews, svInitAllowed, rideViewNotice, svCoverageNotice,
                                        map,upcomingElevation,totalElevation,dbColumns,xScale, yScale,
                                        prevRides,nearbyRides, showShiftingButtons, showDashboard, showWorkout,
                                        screenshotRequested, onScreenshot, onSettings,
@@ -94,7 +94,8 @@ export const FollowRouteRidePage = ( { workout, activity, route, state,initializ
                             {/* ride view */}
                             <GpxRideView visible={true} isMain={true} position={displayPosition} route={route} rideView={rideView} svInitAllowed={svInitAllowed} onEvent={onDisplayEvent} observer={displayObserver} />
 
-                            <RideViewNotice notice={rideViewNotice} />
+                            <RideViewNotice notice={rideViewNotice} message="Street View isn't available right now. Showing the Map instead." />
+                            <RideViewNotice notice={svCoverageNotice} message="No Street View imagery at this location." />
 
                             {/* dashboards and controls */}
                             <DynamicRideDashboard visible={showDashboard} scheme='light' fold='top-right' foldId='gpx-ride-dashboard' opacity={1.0}  height={'10vh'} top={0} left={`${(100-dbWidth)/2}vw`} width={`${dbWidth}vw`}  />

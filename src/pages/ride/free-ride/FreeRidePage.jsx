@@ -16,7 +16,7 @@ export const cameraSound = new Audio(CAMERA_SOUND);
 
 export const FreeRideRidePage = ( { workout, activity, route, state,initialized,startOverlayProps= {},
                                        position, markers, options, hideAll,rideView,
-                                       displayObserver, onDisplayEvent,displayPosition, sideViews, svInitAllowed, rideViewNotice,
+                                       displayObserver, onDisplayEvent,displayPosition, sideViews, svInitAllowed, rideViewNotice, svCoverageNotice,
                                        showShiftingButtons, showDashboard, showWorkout,
                                        map,optionProps,dbColumns,
                                        screenshotRequested, onScreenshot, onSettings, onFreeRideOptionSelected,
@@ -62,7 +62,8 @@ export const FreeRideRidePage = ( { workout, activity, route, state,initialized,
                             {/* ride view */}
                             <GpxRideView visible={true} options={options} isMain={true} position={displayPosition} route={route} rideView={rideView} svInitAllowed={svInitAllowed} onEvent={onDisplayEvent} observer={displayObserver} />
 
-                            <RideViewNotice notice={rideViewNotice} />
+                            <RideViewNotice notice={rideViewNotice} message="Street View isn't available right now. Showing the Map instead." />
+                            <RideViewNotice notice={svCoverageNotice} message="No Street View imagery at this location." />
 
                             {/* dashboards and controls */}
                             <DynamicRideDashboard visible={showDashboard} scheme='light'fold='top-right' foldId='gpx-ride-dashboard' opacity={1.0}  height={'10vh'} top={0} left={`${(100-dbWidth)/2}vw`} width={`${dbWidth}vw`}  />

@@ -27,12 +27,12 @@ const CloseButton = styled.span`
 `;
 
 /**
- * One-line, self-dismissing in-ride notice shown after a Street View start fallback (INC-42,
- * `ux.md` §7.3). `notice` is a one-shot prop - `GpxDisplayService.getDisplayProperties()` sets
- * it once and clears it on the next read, so its cause (never shown raw to the rider) is
- * captured into local state here to survive that prop going back to undefined.
+ * One-line, self-dismissing in-ride notice. `notice` is a one-shot prop - the service sets it
+ * once (`rideViewNotice` after a Street View start fallback, INC-42 `ux.md` §7.3; `svCoverageNotice`
+ * on every no-imagery answer) and clears it on the next read, so its presence (never any raw
+ * cause/status) is captured into local state here to survive that prop going back to undefined.
  */
-export const RideViewNotice = ({notice}) => {
+export const RideViewNotice = ({notice, message}) => {
     const [visible, setVisible] = useState(false)
 
     useEffect(() => {
@@ -49,7 +49,7 @@ export const RideViewNotice = ({notice}) => {
 
     return (
         <NoticeBox>
-            <span>Street View isn&apos;t available right now. Showing the Map instead.</span>
+            <span>{message}</span>
             <CloseButton onClick={() => setVisible(false)}>✕</CloseButton>
         </NoticeBox>
     )
