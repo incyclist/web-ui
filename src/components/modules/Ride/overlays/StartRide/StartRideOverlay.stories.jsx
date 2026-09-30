@@ -120,6 +120,47 @@ VideoError.args = {
 };
 
 
+// INC-42: Street View-specific states, gated on `viewState`. Every story above has no
+// `viewState` and is the acceptance reference for "unchanged" (architecture.md §3.5a).
+
+export const StreetViewPreparing = Template.bind({});
+StreetViewPreparing.args = {
+    mode: RIDE_MODES.FOLLOW_ROUTE,
+    visible: true,
+    devices: [
+        {name:'KICKR CORE',isControl:true, state:GEAR_STATES.START_OK},
+        {name:'HRM-Pro',isControl:false, state:GEAR_STATES.START_OK}
+    ],
+    mapType: 'Street View',
+    viewState: 'loading'
+};
+
+export const StreetViewSlow = Template.bind({});
+StreetViewSlow.args = {
+    mode: RIDE_MODES.FOLLOW_ROUTE,
+    visible: true,
+    devices: [
+        {name:'KICKR CORE',isControl:true, state:GEAR_STATES.START_OK},
+        {name:'HRM-Pro',isControl:false, state:GEAR_STATES.START_OK}
+    ],
+    mapType: 'Street View',
+    viewState: 'slow'
+};
+
+export const StreetViewFallbackWithFailedSensor = Template.bind({});
+StreetViewFallbackWithFailedSensor.args = {
+    mode: RIDE_MODES.FOLLOW_ROUTE,
+    visible: true,
+    readyToStart: true,
+    devices: [
+        {name:'KICKR CORE',isControl:true, state:GEAR_STATES.START_OK},
+        {name:'HRM-Pro',isControl:false, state:GEAR_STATES.START_FAILURE}
+    ],
+    mapType: 'Street View',
+    viewState: 'unavailable',
+    viewFallbackCause: 'timeout'
+};
+
 export const WithinRidePage = RidePageTemplate.bind({});
 WithinRidePage.args = {
     mode: RIDE_MODES.VIDEO,

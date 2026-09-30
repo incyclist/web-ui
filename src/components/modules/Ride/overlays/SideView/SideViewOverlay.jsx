@@ -1,9 +1,9 @@
 import React from "react"
 import { GoogleStreetView } from "../../../../molecules"
 
-export const SideViewOverlay = ( {direction, position, observer, minimized, foldId})=> {
+export const SideViewOverlay = ( {direction, position, observer, minimized, foldId, svInitAllowed})=> {
 
-    const childProps = {position, observer, visible:!minimized, id: foldId??`SideView-${direction}`}
+    const childProps = {position, observer, visible:!minimized, id: foldId??`SideView-${direction}`, allowInit: svInitAllowed}
 
     if (direction==='left')
         childProps.headingOffset = -90

@@ -6,10 +6,13 @@ import { GoogleStreetView } from '../../../../molecules/Maps/GoogleStreetView';
 
 export const GpxRideView = (  props ) => { 
 
-        const {rideView} = props??{}
+        const {rideView, svInitAllowed} = props??{}
         const childProps = copyPropsExcluding( props??{}, ['rideView','children','onSettingsChanged'])
 
         const svProps  = copyPropsExcluding(childProps, ['route'])
+        // gates panorama creation (not the free Maps API load) on services having released
+        // Street View (INC-42) - undefined (e.g. non-GPX callers) keeps today's eager behaviour
+        svProps.allowInit = svInitAllowed
         //svProps.position = svProps.initPosition
 
         if (!rideView)

@@ -10,6 +10,7 @@ import { WorkoutControl } from "../../../components/modules/workout/control";
 import { GpxRideView } from "../../../components/modules/Ride/views/gpx/GpxRideView";
 import { PrevRides } from "../../../components/modules/Ride/lists/PreviousRides";
 import { ShiftingControl } from "../../../components/modules/shifting/control";
+import { RideViewNotice } from "../../../components/modules/Ride/overlays/RideViewNotice";
 
 
 export const PAGE_ID = 'Ride'
@@ -19,12 +20,12 @@ export const cameraSound = new Audio(CAMERA_SOUND);
 
 export const FollowRouteRidePage = ( { workout, activity, route, state,initialized,startOverlayProps= {},
                                        position, markers, hideAll,rideView,realityFactor,startPos, endPos,
-                                       displayObserver, onDisplayEvent,displayPosition, sideViews,
+                                       displayObserver, onDisplayEvent,displayPosition, sideViews, svInitAllowed, rideViewNotice, svCoverageNotice,
                                        map,upcomingElevation,totalElevation,dbColumns,xScale, yScale,
                                        prevRides,nearbyRides, showShiftingButtons, showDashboard, showWorkout,
-                                       screenshotRequested, onScreenshot, onSettings, 
-                                       onStartRetry, onStartIgnore, onStartCancel, onToggleCyclingMode
-                                    } ) => { 
+                                       screenshotRequested, onScreenshot, onSettings,
+                                       onStartRetry, onStartIgnore, onStartCancel, onStartWithMap, onToggleCyclingMode
+                                    } ) => {
 
 
     // time, distance, speed, power, slope, heartrate, cadence
@@ -76,7 +77,7 @@ export const FollowRouteRidePage = ( { workout, activity, route, state,initializ
 
 
     if (initialized && isStarting) {
-        const childProps = {...startOverlayProps, onRetry:onStartRetry, onIgnore:onStartIgnore, onCancel:onStartCancel}
+        const childProps = {...startOverlayProps, onRetry:onStartRetry, onIgnore:onStartIgnore, onCancel:onStartCancel, onStartWithMap:onStartWithMap}
         View = ()=><StartRideOverlay {...childProps} />
     }
 
@@ -91,7 +92,10 @@ export const FollowRouteRidePage = ( { workout, activity, route, state,initializ
 
                         <RidePageItems visible={true} width='100%' height='100%' zIndex={1}  >
                             {/* ride view */}
-                            <GpxRideView visible={true} isMain={true} position={displayPosition} route={route} rideView={rideView} onEvent={onDisplayEvent} observer={displayObserver} />                           
+                            <GpxRideView visible={true} isMain={true} position={displayPosition} route={route} rideView={rideView} svInitAllowed={svInitAllowed} onEvent={onDisplayEvent} observer={displayObserver} />
+
+                            <RideViewNotice notice={rideViewNotice} message="Street View isn't available right now. Showing the Map instead." />
+                            <RideViewNotice notice={svCoverageNotice} message="No Street View imagery at this location." />
 
                             {/* dashboards and controls */}
                             <DynamicRideDashboard visible={showDashboard} scheme='light' fold='top-right' foldId='gpx-ride-dashboard' opacity={1.0}  height={'10vh'} top={0} left={`${(100-dbWidth)/2}vw`} width={`${dbWidth}vw`}  />
@@ -128,14 +132,14 @@ export const FollowRouteRidePage = ( { workout, activity, route, state,initializ
                             {sideViews?.enabled ? 
                                 <SideViewOverlay {...sideViewProps} {...svl} foldId='sv-left' hidden={sideViews.hide}
                                 useMinimizeProp
-                                direction='left'  position={displayPosition}  observer={displayObserver}
+                                direction='left'  position={displayPosition}  observer={displayObserver} svInitAllowed={svInitAllowed}
                                 minimized={!sideViews?.left} transparent={false} opacity={1}
                                 />                            
                             : null}
                             {sideViews?.enabled ? 
                                 <SideViewOverlay {...sideViewProps} {...svr} foldId='sv-right'  hidden={sideViews.hide}
                                 useMinimizeProp
-                                direction='right' position={displayPosition} observer={displayObserver}
+                                direction='right' position={displayPosition} observer={displayObserver} svInitAllowed={svInitAllowed}
                                 minimized={!sideViews?.right} transparent={false} opacity={1}
                                 />                            
                             : null}
