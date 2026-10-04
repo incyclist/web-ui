@@ -107,4 +107,18 @@ describe('ImportRow', () => {
         expect(screen.getByTestId('import-row-rB-distance').textContent).toBe('99km')
         expect(screen.getByTestId('import-row-rA-distance').textContent).toBe('42km')
     })
+
+    test('a repeat of a route earlier in the import is a duplicate, not a problem', () => {
+        const route = buildRoute({
+            id: 'route.xml',
+            importable: false,
+            errorReason: 'Duplicate of Alpe du Grand Serre',
+            duplicateOf: 'Alpe du Grand Serre',
+        })
+        render(<ImportRow route={route} outsideFold={false} selected={false} onToggle={() => {}} />)
+
+        expect(screen.getByTestId('import-row-route.xml-status').textContent).toBe('Duplicate')
+        expect(screen.getByTestId('import-row-route.xml-distance').textContent).toBe('Duplicate of Alpe du Grand Serre')
+        expect(screen.getByRole('checkbox', { name: route.label })).toBeDisabled()
+    })
 })
