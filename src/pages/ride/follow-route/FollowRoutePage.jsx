@@ -1,10 +1,11 @@
-import React from "react"
+import React, { useEffect, useState } from "react"
 import { useUserSettings } from "incyclist-services";
 
-import { DynamicRideDashboard, MapOverlay, NearbyRiders, StartRideOverlay, TotalElevationOverlay, UpcomingElevationOverlay, 
+import { DynamicRideDashboard, MapOverlay, NearbyRiders, StartRideOverlay, TotalElevationOverlay, UpcomingElevationOverlay,
          SideViewOverlay, RouteOptions,RidePageItems  } from "../../../components/modules/Ride";
 import { DynamicWorkoutDashboard } from "../../../components/modules/workout/dashboard/wrapper";
 import { Center, ErrorBoundary, Loader } from "../../../components/atoms";
+import { InfoText } from "../../../components/molecules";
 import { MainArea } from "../atoms/MainArea";
 import { WorkoutControl } from "../../../components/modules/workout/control";
 import { GpxRideView } from "../../../components/modules/Ride/views/gpx/GpxRideView";
@@ -19,12 +20,12 @@ export const cameraSound = new Audio(CAMERA_SOUND);
 
 export const FollowRouteRidePage = ( { workout, activity, route, state,initialized,startOverlayProps= {},
                                        position, markers, hideAll,rideView,realityFactor,startPos, endPos,
-                                       displayObserver, onDisplayEvent,displayPosition, sideViews,
+                                       displayObserver, onDisplayEvent,displayPosition, sideViews, svInitAllowed, rideViewNotice, svCoverageNotice, svHasCoverage,
                                        map,upcomingElevation,totalElevation,dbColumns,xScale, yScale,
                                        prevRides,nearbyRides, showShiftingButtons, showDashboard, showWorkout,
-                                       screenshotRequested, onScreenshot, onSettings, 
-                                       onStartRetry, onStartIgnore, onStartCancel, onToggleCyclingMode
-                                    } ) => { 
+                                       screenshotRequested, onScreenshot, onSettings,
+                                       onStartRetry, onStartIgnore, onStartCancel, onStartWithMap, onToggleCyclingMode
+                                    } ) => {
 
 
     // time, distance, speed, power, slope, heartrate, cadence
@@ -36,6 +37,14 @@ export const FollowRouteRidePage = ( { workout, activity, route, state,initializ
     const settings = useUserSettings()
     const deltaX = settings.get('preferences.rideListDeltaX',0)
     // .... STOP TODO
+
+    // the service clears rideViewNotice/svCoverageNotice right after this render, so the key is
+    // captured here to keep InfoText showing for its own timeout instead of disappearing on the
+    // very next page update
+    const [fallbackNoticeKey, setFallbackNoticeKey] = useState(undefined)
+    useEffect( ()=> { if (rideViewNotice) setFallbackNoticeKey(Date.now()) }, [rideViewNotice])
+    const [coverageNoticeKey, setCoverageNoticeKey] = useState(undefined)
+    useEffect( ()=> { if (svCoverageNotice) setCoverageNoticeKey(svCoverageNotice.ts) }, [svCoverageNotice])
 
     const opacity = rideView==='map' ? 1 : 0.6
 
@@ -76,7 +85,7 @@ export const FollowRouteRidePage = ( { workout, activity, route, state,initializ
 
 
     if (initialized && isStarting) {
-        const childProps = {...startOverlayProps, onRetry:onStartRetry, onIgnore:onStartIgnore, onCancel:onStartCancel}
+        const childProps = {...startOverlayProps, onRetry:onStartRetry, onIgnore:onStartIgnore, onCancel:onStartCancel, onStartWithMap:onStartWithMap}
         View = ()=><StartRideOverlay {...childProps} />
     }
 
@@ -85,13 +94,16 @@ export const FollowRouteRidePage = ( { workout, activity, route, state,initializ
     const showMap = map?.show && rideView!=='map'
 
     
-    return <MainArea>            
+    return <MainArea>
                 <ErrorBoundary hideOnError>
                         {!isReady ? <View/> : null}
 
+                        {fallbackNoticeKey ? <InfoText text="Street View isn't available right now. Showing the Map instead." routeDistance={fallbackNoticeKey} timeout={8000} /> : null}
+                        {coverageNoticeKey && svHasCoverage!==true ? <InfoText text="No Street View imagery at this location." routeDistance={coverageNoticeKey} timeout={8000} /> : null}
+
                         <RidePageItems visible={true} width='100%' height='100%' zIndex={1}  >
                             {/* ride view */}
-                            <GpxRideView visible={true} isMain={true} position={displayPosition} route={route} rideView={rideView} onEvent={onDisplayEvent} observer={displayObserver} />                           
+                            <GpxRideView visible={true} isMain={true} position={displayPosition} route={route} rideView={rideView} svInitAllowed={svInitAllowed} onEvent={onDisplayEvent} observer={displayObserver} />
 
                             {/* dashboards and controls */}
                             <DynamicRideDashboard visible={showDashboard} scheme='light' fold='top-right' foldId='gpx-ride-dashboard' opacity={1.0}  height={'10vh'} top={0} left={`${(100-dbWidth)/2}vw`} width={`${dbWidth}vw`}  />
@@ -128,14 +140,14 @@ export const FollowRouteRidePage = ( { workout, activity, route, state,initializ
                             {sideViews?.enabled ? 
                                 <SideViewOverlay {...sideViewProps} {...svl} foldId='sv-left' hidden={sideViews.hide}
                                 useMinimizeProp
-                                direction='left'  position={displayPosition}  observer={displayObserver}
+                                direction='left'  position={displayPosition}  observer={displayObserver} svInitAllowed={svInitAllowed}
                                 minimized={!sideViews?.left} transparent={false} opacity={1}
                                 />                            
                             : null}
                             {sideViews?.enabled ? 
                                 <SideViewOverlay {...sideViewProps} {...svr} foldId='sv-right'  hidden={sideViews.hide}
                                 useMinimizeProp
-                                direction='right' position={displayPosition} observer={displayObserver}
+                                direction='right' position={displayPosition} observer={displayObserver} svInitAllowed={svInitAllowed}
                                 minimized={!sideViews?.right} transparent={false} opacity={1}
                                 />                            
                             : null}
