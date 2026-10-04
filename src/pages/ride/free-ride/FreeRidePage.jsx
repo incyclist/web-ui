@@ -16,7 +16,7 @@ export const cameraSound = new Audio(CAMERA_SOUND);
 
 export const FreeRideRidePage = ( { workout, activity, route, state,initialized,startOverlayProps= {},
                                        position, markers, options, hideAll,rideView,
-                                       displayObserver, onDisplayEvent,displayPosition, sideViews, svInitAllowed, rideViewNotice, svCoverageNotice,
+                                       displayObserver, onDisplayEvent,displayPosition, sideViews, svInitAllowed, rideViewNotice, svCoverageNotice, svHasCoverage,
                                        showShiftingButtons, showDashboard, showWorkout,
                                        map,optionProps,dbColumns,
                                        screenshotRequested, onScreenshot, onSettings, onFreeRideOptionSelected,
@@ -64,7 +64,7 @@ export const FreeRideRidePage = ( { workout, activity, route, state,initialized,
                         {!isReady ? <View/> : null}
 
                         {fallbackNoticeKey ? <InfoText text="Street View isn't available right now. Showing the Map instead." routeDistance={fallbackNoticeKey} timeout={8000} /> : null}
-                        {coverageNoticeKey ? <InfoText text="No Street View imagery at this location." routeDistance={coverageNoticeKey} timeout={8000} /> : null}
+                        {coverageNoticeKey && svHasCoverage!==true ? <InfoText text="No Street View imagery at this location." routeDistance={coverageNoticeKey} timeout={8000} /> : null}
 
                         <RidePageItems visible={true} width='100%' height='100%' zIndex={1}  >
                             {/* ride view */}
