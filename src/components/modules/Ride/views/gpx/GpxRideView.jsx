@@ -11,7 +11,7 @@ export const GpxRideView = (  props ) => {
 
         const svProps  = copyPropsExcluding(childProps, ['route'])
         // gates panorama creation (not the free Maps API load) on services having released
-        // Street View (INC-42) - undefined (e.g. non-GPX callers) keeps today's eager behaviour
+        // Street View - undefined (e.g. non-GPX callers) keeps today's eager behaviour
         svProps.allowInit = svInitAllowed
         //svProps.position = svProps.initPosition
 

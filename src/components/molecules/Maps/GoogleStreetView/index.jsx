@@ -25,7 +25,7 @@ export const GoogleStreetView =  (props) => {
     const refObserver = useRef(null)
     // latest known position, from props.position or a position-update event - never (0,0)
     const refPosition = useRef(props.position)
-    // first status_changed result, used to log/emit exactly once per panorama (INC-42)
+    // first status_changed result, used to log/emit exactly once per panorama
     const refStatusConfirmed = useRef(false)
     const refTsCreated = useRef(null)
 
@@ -113,7 +113,7 @@ export const GoogleStreetView =  (props) => {
 
     // remember the latest known position - from props (the initial start position) or from the
     // observer once it starts pushing live updates - so a panorama created later (e.g. a side
-    // view opened after Street View already released) never falls back to (0,0) (P7)
+    // view opened after Street View already released) never falls back to (0,0)
     useEffect( ()=> {
         if (props.position)
             refPosition.current = props.position
@@ -150,7 +150,7 @@ export const GoogleStreetView =  (props) => {
     },[logger, mapsService, props.id])
 
     // Panorama Init effect - triggered once the map is initialized, allowInit is true, and a
-    // real (non-(0,0)) position is known. `allowInit` gates the actual billable step (INC-42) -
+    // real (non-(0,0)) position is known. `allowInit` gates the actual billable step -
     // services owns *when* a panorama may be created, this component only obeys the flag.
     useEffect( ()=> {
         if (initialized && hasMaps && allowInit && refPosition.current && !refPanorama.current) {
@@ -177,7 +177,7 @@ export const GoogleStreetView =  (props) => {
                     const sv = refPanorama.current
 
                     // registered before anything else, so the very first status is seen here
-                    // and never missed (INC-42): 'Loaded' now means Google confirmed OK, not
+                    // and never missed: 'Loaded' now means Google confirmed OK, not
                     // that the panorama object merely exists. No imagery at a position is a
                     // routine, legitimate answer (not a failure) - it resolves the start exactly
                     // like 'Loaded' does, and it keeps being reported on every later status
@@ -225,7 +225,7 @@ export const GoogleStreetView =  (props) => {
 
     useUnmountEffect( ()=>{
         if (refPanorama.current && !refStatusConfirmed.current) {
-            // the panorama was billed at construction (P1) but never told us how it resolved
+            // the panorama was billed at construction but never told us how it resolved
             logLicenseEvent('unconfirmed')
         }
 

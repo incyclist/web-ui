@@ -104,8 +104,8 @@ export const StartRideOverlay = (props) => {
         visible=true,width=DEFAULT_WIDTH,height=DEFAULT_HEIGHT,top=DEFAULT_TOP,left=DEFAULT_LEFT,videoProgress={}
     } = props;
 
-    // Street View-specific content only (INC-42) - gated on viewState so Video, Workout-only and
-    // Map/Satellite starts render exactly as today. See architecture.md §3.5a.
+    // Street View-specific content only - gated on viewState so Video, Workout-only and
+    // Map/Satellite starts render exactly as today.
     const isStreetViewStart = viewState !== undefined
 
     const bikeError = devices?.find( d=>(d.isControl||d.isMandatory) && (d.state===GEAR_STATES.START_FAILURE || d.status==='Error') )!==undefined
@@ -152,7 +152,7 @@ export const StartRideOverlay = (props) => {
         return mapState
     }
 
-    // Street View row text (INC-42, ux.md §6) - only used when isStreetViewStart
+    // Street View row text - only used when isStreetViewStart
     const viewStateText = ()=> {
         switch (viewState) {
             case 'loaded': return <Success>Loaded</Success>
@@ -200,7 +200,7 @@ export const StartRideOverlay = (props) => {
     }
     
     const OverlayStarting = (props) => {
-        // "Preparing Street View ..." only while it's actually loading (INC-42, ux.md step 2/2b).
+        // "Preparing Street View ..." only while it's actually loading.
         // Every other case - including every non-Street-View start - keeps today's heading.
         const heading = isStreetViewStart && (viewState==='loading' || viewState==='slow')
             ? 'Preparing Street View ...'

@@ -120,8 +120,8 @@ VideoError.args = {
 };
 
 
-// INC-42: Street View-specific states, gated on `viewState`. Every story above has no
-// `viewState` and is the acceptance reference for "unchanged" (architecture.md §3.5a).
+// Street View-specific states, gated on `viewState`. Every story above has no
+// `viewState` and is the acceptance reference for "unchanged".
 
 export const StreetViewPreparing = Template.bind({});
 StreetViewPreparing.args = {

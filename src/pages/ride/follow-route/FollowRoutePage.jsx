@@ -1,16 +1,16 @@
-import React from "react"
+import React, { useEffect, useState } from "react"
 import { useUserSettings } from "incyclist-services";
 
-import { DynamicRideDashboard, MapOverlay, NearbyRiders, StartRideOverlay, TotalElevationOverlay, UpcomingElevationOverlay, 
+import { DynamicRideDashboard, MapOverlay, NearbyRiders, StartRideOverlay, TotalElevationOverlay, UpcomingElevationOverlay,
          SideViewOverlay, RouteOptions,RidePageItems  } from "../../../components/modules/Ride";
 import { DynamicWorkoutDashboard } from "../../../components/modules/workout/dashboard/wrapper";
 import { Center, ErrorBoundary, Loader } from "../../../components/atoms";
+import { InfoText } from "../../../components/molecules";
 import { MainArea } from "../atoms/MainArea";
 import { WorkoutControl } from "../../../components/modules/workout/control";
 import { GpxRideView } from "../../../components/modules/Ride/views/gpx/GpxRideView";
 import { PrevRides } from "../../../components/modules/Ride/lists/PreviousRides";
 import { ShiftingControl } from "../../../components/modules/shifting/control";
-import { RideViewNotice } from "../../../components/modules/Ride/overlays/RideViewNotice";
 
 
 export const PAGE_ID = 'Ride'
@@ -37,6 +37,14 @@ export const FollowRouteRidePage = ( { workout, activity, route, state,initializ
     const settings = useUserSettings()
     const deltaX = settings.get('preferences.rideListDeltaX',0)
     // .... STOP TODO
+
+    // the service clears rideViewNotice/svCoverageNotice right after this render, so the key is
+    // captured here to keep InfoText showing for its own timeout instead of disappearing on the
+    // very next page update
+    const [fallbackNoticeKey, setFallbackNoticeKey] = useState(undefined)
+    useEffect( ()=> { if (rideViewNotice) setFallbackNoticeKey(Date.now()) }, [rideViewNotice])
+    const [coverageNoticeKey, setCoverageNoticeKey] = useState(undefined)
+    useEffect( ()=> { if (svCoverageNotice) setCoverageNoticeKey(svCoverageNotice.ts) }, [svCoverageNotice])
 
     const opacity = rideView==='map' ? 1 : 0.6
 
@@ -86,16 +94,16 @@ export const FollowRouteRidePage = ( { workout, activity, route, state,initializ
     const showMap = map?.show && rideView!=='map'
 
     
-    return <MainArea>            
+    return <MainArea>
                 <ErrorBoundary hideOnError>
                         {!isReady ? <View/> : null}
+
+                        {fallbackNoticeKey ? <InfoText text="Street View isn't available right now. Showing the Map instead." routeDistance={fallbackNoticeKey} timeout={8000} /> : null}
+                        {coverageNoticeKey ? <InfoText text="No Street View imagery at this location." routeDistance={coverageNoticeKey} timeout={8000} /> : null}
 
                         <RidePageItems visible={true} width='100%' height='100%' zIndex={1}  >
                             {/* ride view */}
                             <GpxRideView visible={true} isMain={true} position={displayPosition} route={route} rideView={rideView} svInitAllowed={svInitAllowed} onEvent={onDisplayEvent} observer={displayObserver} />
-
-                            <RideViewNotice notice={rideViewNotice} message="Street View isn't available right now. Showing the Map instead." />
-                            <RideViewNotice notice={svCoverageNotice} message="No Street View imagery at this location." />
 
                             {/* dashboards and controls */}
                             <DynamicRideDashboard visible={showDashboard} scheme='light' fold='top-right' foldId='gpx-ride-dashboard' opacity={1.0}  height={'10vh'} top={0} left={`${(100-dbWidth)/2}vw`} width={`${dbWidth}vw`}  />
