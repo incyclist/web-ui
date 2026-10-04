@@ -102,8 +102,9 @@ describe('RouteListScreen', () => {
 
         test('Free Ride carries its tooltip', () => {
             render(<RouteListScreen {...baseProps} />)
-            const button = screen.getByText('Free Ride').closest('button')
-            expect(button.getAttribute('title')).toBe('Pick any spot on the map and ride the real roads from there')
+            expect(screen.getByRole('tooltip', { hidden: true })).toHaveTextContent(
+                'Pick any spot on the map and ride the real roads from there'
+            )
         })
 
         test('header actions call their handlers', () => {
