@@ -57,7 +57,12 @@ const Spacer = styled.div`
     flex: 1;
 `;
 
-const getRouteKey = (route, idx) => route?.id ?? `route-${idx}`;
+// The file URI is stable from scan to parse and unique per file; `id` changes once a row is parsed
+// and can be shared by two files with the same name, so it is only the fallback here.
+// a duplicate of a route in the same import is not a problem with the file, so it is not counted as one
+const isProblem = (route) => route.errorReason != null && route.duplicateOf == null;
+
+const getRouteKey = (route, idx) => route?.fileUri ?? route?.id ?? `route-${idx}`;
 
 /**
  * The folder scan's parse-select screen - phases `parsing` (the list streams in) and
@@ -86,7 +91,7 @@ export const ParseSelectView = ({
         items: allRoutes.filter(route => {
             if (hideAlreadyImported && route.alreadyImported)
                 return false;
-            if (onlyProblems && route.errorReason == null)
+            if (onlyProblems && !isProblem(route))
                 return false;
             return true;
         }),
@@ -99,7 +104,7 @@ export const ParseSelectView = ({
     const isStreaming = phase === 'parsing';
     const selectedCount = selectedIds?.size ?? 0;
     const alreadyImportedCount = allRoutes.filter(route => route.alreadyImported).length;
-    const problemCount = allRoutes.filter(route => route.errorReason != null).length;
+    const problemCount = allRoutes.filter(isProblem).length;
 
     // The scanner deliberately excludes GPX - a folder with none of the video-route
     // formats it looks for reaches 'selecting' with an empty list rather than an empty table.
@@ -121,7 +126,7 @@ export const ParseSelectView = ({
     const visibleRoutes = allRoutes.filter(route => {
         if (hideAlreadyImported && route.alreadyImported)
             return false;
-        if (onlyProblems && route.errorReason == null)
+        if (onlyProblems && !isProblem(route))
             return false;
         return true;
     });
