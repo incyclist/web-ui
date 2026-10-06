@@ -30,8 +30,11 @@ const Toggle = styled.button`
     }
 `
 
+// the right padding keeps the centred icon and state text clear of the toggle on narrow tiles
 const Status = styled.div`
     position: absolute;
+    box-sizing: border-box;
+    padding-right: calc(3.9vh + 2vw);
     background: black;
     height: 20%;
     min-heigt: 20%;
