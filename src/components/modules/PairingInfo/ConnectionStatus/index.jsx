@@ -3,20 +3,31 @@ import styled from "styled-components";
 
 import Loader from "react-spinners/BounceLoader";
 import { CheckIcon, XCircleFillIcon } from "@primer/octicons-react";
-import { Button } from "../../../atoms";
 
-const IconButton = styled(Button)`
-    justify-content:center;
-    align-items: center;
+// on/off colours match the mobile toggle
+const Toggle = styled.button`
     position: absolute;
-    right:0;
-    color:white;
-    font-size:1.3vw;
-    font-weight: bold;
-    background: none;    
-    height:${props => props.size};
-    aspect-ratio : 1 / 1;
-    margin-right: 1vw;   
+    right: 1vw;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 3.9vh;
+    height: 2.2vh;
+    padding: 0;
+    border: none;
+    border-radius: 1.1vh;
+    cursor: pointer;
+    background: ${props => props.$on ? 'lightgreen' : '#767577'};
+    &::after {
+        content: '';
+        position: absolute;
+        top: 0.25vh;
+        left: ${props => props.$on ? 'calc(100% - 1.95vh)' : '0.25vh'};
+        width: 1.7vh;
+        height: 1.7vh;
+        border-radius: 50%;
+        background: ${props => props.$on ? 'green' : '#f4f3f4'};
+        transition: left 0.15s;
+    }
 `
 
 const Status = styled.div`
@@ -57,9 +68,12 @@ export const LaunchStatusIcon = ( {status}) => {
 
 
 export const ConnectionStatus = ({state,onUnselect})=>{
-    
-    const onUnselectClicked = (e) => {
+
+    // the toggle is on while the device is used; switching it off unselects the capability.
+    // stopPropagation keeps the click from also opening the device list on the tile.
+    const onToggleClicked = (e) => {
         e.preventDefault()
+        e.stopPropagation()
         if (onUnselect)
             onUnselect()
     }
@@ -68,7 +82,14 @@ export const ConnectionStatus = ({state,onUnselect})=>{
         <Status>
             <LaunchStatusIcon status={state}/>
             <Text>{state}</Text>
-            <IconButton size='4vh' onClick={onUnselectClicked}>x</IconButton>
+            <Toggle
+                type="button"
+                role="switch"
+                aria-checked="true"
+                aria-label="Use device"
+                $on={true}
+                onClick={onToggleClicked}
+            />
 
         </Status>
     )
