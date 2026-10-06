@@ -199,7 +199,7 @@ export const PairingPage =  ({mode}) =>{
         const isRideReady =  isRideReadyS!==undefined && isRideReadyS!==false
 
 
-        const pathname =  isRideReady ? '/rideDeviceOK': getNextPage()
+        const pathname =  isRideReady ? (selectedRoute ? '/rideOK' : '/rideDeviceOK') : getNextPage()
 
         const state = {source: location?.state?.source}
         
