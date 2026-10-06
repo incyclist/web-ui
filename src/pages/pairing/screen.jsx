@@ -6,7 +6,28 @@ import { EventLogger } from 'gd-eventlog';
 import { SearchingDevice, SelectedDevice } from '../../components/modules/PairingInfo';
 import {InterfaceInfo}  from '../../components/modules/PairingInfo/InterfaceSettings/interface-info';
 import { Button } from '../../components/atoms/Buttons/Button';
-import { useAppState, getCapabilityHelpText, getEmptyTileFooterText, getPairingGuidanceText, getPairingRowLabelId } from 'incyclist-services';
+import { useAppState, getCapabilityHelpText, getEmptyTileFooterText, getPairingGuidanceText, getPairingRowLabelId, getPairingStatusDisplay, toPairingInterfaceStates } from 'incyclist-services';
+
+const StatusLine = styled.div`
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 2vh;
+    color: white;
+    text-align: center;
+    margin-top: -2vh;
+`
+
+const StatusDot = styled.span`
+    display: inline-block;
+    width: 1.2vh;
+    height: 1.2vh;
+    border-radius: 50%;
+    margin-right: 0.8vw;
+    background: ${props => props.$color};
+`
+
+const statusDotColors = { red: '#e74c3c', green: '#2ecc71', amber: '#f5a623' }
 
 const RowLabel = styled.div`
     position: absolute;
@@ -74,7 +95,7 @@ const Interfaces = styled.div`
     
 `
 
-export const PairingScreen = ( {onOK,onSkip,onSimulate, onCapabilityClick,onCapabilityUnselect,onInterfaceClick,capabilities,interfaces,connectRetry, readyToStart,showSimulate=false, title, labelOK, labelSkip}) => {
+export const PairingScreen = ( {onOK,onSkip,onSimulate, onCapabilityClick,onCapabilityUnselect,onInterfaceClick,capabilities,interfaces,connectRetry, readyToStart,initialized,rideMode=false,showSimulate=false, title, labelOK, labelSkip}) => {
 
     const ref = useRef(null);
     const logger = new EventLogger('PairingPage') 
@@ -103,14 +124,24 @@ export const PairingScreen = ( {onOK,onSkip,onSimulate, onCapabilityClick,onCapa
         { title:'Controller', key:'app_control', row:'bottom', role:'optional' },
     ]
 
+    const status = getPairingStatusDisplay({
+        platform: 'desktop',
+        interfaces: toPairingInterfaceStates(interfaces ?? []),
+        capabilities: capabilities ?? [],
+        canStartRide: readyToStart,
+        loading: !initialized,
+        rideMode,
+    })
+    const noSearch = status.id === 'S1'
+
     const initCapability = ( target, tile)=> {
         const info = capabilities?.find( c=> c.capability.toLowerCase()===tile.key)
         const props = {
             title: tile.title,
             capability: tile.key,
-            role: tile.role,
+            waiting: tile.role==='required' && !readyToStart && !noSearch,
             helpText: getCapabilityHelpText(tile.key, 'full'),
-            emptyFooter: getEmptyTileFooterText(tile.role),
+            emptyFooter: noSearch ? 'Not searching' : getEmptyTileFooterText(tile.role),
         }
         target.push( info ? {...info, ...props} : props)
     }
@@ -192,7 +223,11 @@ export const PairingScreen = ( {onOK,onSkip,onSimulate, onCapabilityClick,onCapa
 
     return (
         <MainPage className='main'>
-            <PageTitle>{title??'Paired Devices'}</PageTitle>                
+            <PageTitle>{title??'Paired Devices'}</PageTitle>
+            <StatusLine>
+                <StatusDot $color={statusDotColors[status.dot]} />
+                <span>{status.text}</span>
+            </StatusLine>
             <TopRow className='top'>
                 <RowLabel>
                     <div>{topLabel.text}</div>
@@ -200,7 +235,7 @@ export const PairingScreen = ( {onOK,onSkip,onSimulate, onCapabilityClick,onCapa
                 </RowLabel>
                 {top.map( (c,idx) => c.deviceName?
                     <SelectedDevice key={idx} title={c.title} capability={c.capability} deviceName={c.deviceName} connectState={c.connectState} value={c.value} unit={c.unit}  onClick={ onCapabilityClicked } onUnselect={onUnselect} /> :
-                    <SearchingDevice key={idx} title={c.title} capability={c.capability} waiting={c.role==='required' && !readyToStart} helpText={c.helpText} footer={c.emptyFooter}  onClick={ onCapabilityClicked } />
+                    <SearchingDevice key={idx} title={c.title} capability={c.capability} waiting={c.waiting} helpText={c.helpText} footer={c.emptyFooter}  onClick={ onCapabilityClicked } />
                     )}
             </TopRow>
             <BottomRow className='bottom'>
@@ -210,7 +245,7 @@ export const PairingScreen = ( {onOK,onSkip,onSimulate, onCapabilityClick,onCapa
                 </RowLabel>
                 {bottom.map( (c,idx) => c.deviceName?
                     <SelectedDevice key={idx} title={c.title} capability={c.capability} deviceName={c.deviceName} connectState={c.connectState} value={c.value} unit={c.unit}  onClick={ onCapabilityClicked } onUnselect={onUnselect} /> :
-                    <SearchingDevice key={idx} title={c.title} capability={c.capability} waiting={c.role==='required' && !readyToStart} helpText={c.helpText} footer={c.emptyFooter}  onClick={ onCapabilityClicked } />
+                    <SearchingDevice key={idx} title={c.title} capability={c.capability} waiting={c.waiting} helpText={c.helpText} footer={c.emptyFooter}  onClick={ onCapabilityClicked } />
                         )}
             </BottomRow>
             {showButtons(readyToStart)}

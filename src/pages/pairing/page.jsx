@@ -260,7 +260,7 @@ export const PairingPage =  ({mode}) =>{
     const showSimulate = simRef.current
     return (
         <div >
-            <PairingScreen  zIndex={1} initialized={initialized.current} interfaces={interfaces} capabilities={capabilities} readyToStart={canStartRide}
+            <PairingScreen  zIndex={1} initialized={initialized.current} interfaces={interfaces} capabilities={capabilities} readyToStart={canStartRide} rideMode={mode==='start'}
                 onSkip = {onSkipClicked}
                 onOK = {onOKClicked}
                 onSimulate = {onSimulateClicked}
