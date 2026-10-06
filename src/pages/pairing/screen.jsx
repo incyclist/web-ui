@@ -15,7 +15,7 @@ const StatusLine = styled.div`
     font-size: 2vh;
     color: white;
     text-align: center;
-    margin-top: -2vh;
+    margin-top: 1vh;
 `
 
 const StatusDot = styled.span`
@@ -69,10 +69,10 @@ const TopRow = styled.div`
     display: flex;
     flex-direction: row;
     justify-content: center;
-    padding-top: 4vh;
+    padding-top: 7vh;
     padding-bottom: 4vh;
     >* {
-        margin-right: 4vw;        
+        margin-right: 4vw;
     }
 `
 
