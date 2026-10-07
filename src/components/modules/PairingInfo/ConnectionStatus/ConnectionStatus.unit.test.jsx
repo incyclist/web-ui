@@ -27,3 +27,29 @@ describe('ConnectionStatus use toggle', ()=> {
         expect(onTileClicked).not.toHaveBeenCalled()
     })
 })
+
+describe('ConnectionStatus T16 (switched off, device remembered)', ()=> {
+
+    test('shows the footer text instead of the connect state, and the toggle in the off position', ()=> {
+        const { getByText, queryByText, getByRole } = render(
+            <ConnectionStatus state="connected" disabled={true} footer="Not used" onUse={vi.fn()} />
+        )
+
+        expect(getByText('Not used')).toBeTruthy()
+        expect(queryByText('connected')).toBeNull()
+        expect(getByRole('switch').getAttribute('aria-checked')).toBe('false')
+    })
+
+    test('clicking the toggle restores the device (onUse), not onUnselect', ()=> {
+        const onUse = vi.fn()
+        const onUnselect = vi.fn()
+        const { getByRole } = render(
+            <ConnectionStatus state="connected" disabled={true} footer="Not used" onUse={onUse} onUnselect={onUnselect} />
+        )
+
+        fireEvent.click(getByRole('switch'))
+
+        expect(onUse).toHaveBeenCalledTimes(1)
+        expect(onUnselect).not.toHaveBeenCalled()
+    })
+})

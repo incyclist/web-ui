@@ -95,7 +95,7 @@ const Interfaces = styled.div`
     
 `
 
-export const PairingScreen = ( {onOK,onSkip,onSimulate, onCapabilityClick,onCapabilityUnselect,onInterfaceClick,capabilities,interfaces,connectRetry, readyToStart,initialized,rideMode=false,showSimulate=false, title, labelOK, labelSkip}) => {
+export const PairingScreen = ( {onOK,onSkip,onSimulate, onCapabilityClick,onCapabilityUnselect,onCapabilityUse,onInterfaceClick,capabilities,interfaces,connectRetry, readyToStart,initialized,rideMode=false,showSimulate=false, title, labelOK, labelSkip}) => {
 
     const ref = useRef(null);
     const logger = new EventLogger('PairingPage') 
@@ -136,12 +136,19 @@ export const PairingScreen = ( {onOK,onSkip,onSimulate, onCapabilityClick,onCapa
 
     const initCapability = ( target, tile)=> {
         const info = capabilities?.find( c=> c.capability.toLowerCase()===tile.key)
+        // switched off (disabled) by the rider: T16 keeps the device name (dimmed, shown via
+        // SelectedDevice), T16b has nothing remembered. Takes priority over "not searching"/role.
+        const switchedOff = Boolean(info?.disabled)
+        const hasRememberedDevice = switchedOff && Boolean(info?.deviceName)
         const props = {
             title: tile.title,
             capability: tile.key,
-            waiting: tile.role==='required' && !readyToStart && !noSearch,
+            waiting: tile.role==='required' && !readyToStart && !noSearch && !switchedOff,
             helpText: getCapabilityHelpText(tile.key, 'full'),
-            emptyFooter: noSearch ? 'Not searching' : getEmptyTileFooterText(tile.role),
+            emptyFooter: switchedOff
+                ? (hasRememberedDevice ? 'Not used' : 'Not used · tap to search')
+                : (noSearch ? 'Not searching' : getEmptyTileFooterText(tile.role)),
+            disabled: switchedOff,
         }
         target.push( info ? {...info, ...props} : props)
     }
@@ -169,6 +176,12 @@ export const PairingScreen = ( {onOK,onSkip,onSimulate, onCapabilityClick,onCapa
             onCapabilityUnselect(capability)
 
 
+    }
+
+    const onUse = (capability) => {
+        logger.logEvent( {message:'capability use clicked',capability, eventSource:'user'})
+        if (onCapabilityUse)
+            onCapabilityUse(capability)
     }
 
     const onOKClicked = ()=>{
@@ -234,7 +247,7 @@ export const PairingScreen = ( {onOK,onSkip,onSimulate, onCapabilityClick,onCapa
                     {topLabel.subtext ? <div>{topLabel.subtext}</div> : null}
                 </RowLabel>
                 {top.map( (c,idx) => c.deviceName?
-                    <SelectedDevice key={idx} title={c.title} capability={c.capability} deviceName={c.deviceName} connectState={c.connectState} value={c.value} unit={c.unit}  onClick={ onCapabilityClicked } onUnselect={onUnselect} /> :
+                    <SelectedDevice key={idx} title={c.title} capability={c.capability} deviceName={c.deviceName} connectState={c.connectState} value={c.value} unit={c.unit} disabled={c.disabled} footer={c.emptyFooter}  onClick={ onCapabilityClicked } onUnselect={onUnselect} onUse={onUse} /> :
                     <SearchingDevice key={idx} title={c.title} capability={c.capability} waiting={c.waiting} helpText={c.helpText} footer={c.emptyFooter}  onClick={ onCapabilityClicked } />
                     )}
             </TopRow>
@@ -244,7 +257,7 @@ export const PairingScreen = ( {onOK,onSkip,onSimulate, onCapabilityClick,onCapa
                     {bottomLabel.subtext ? <div>{bottomLabel.subtext}</div> : null}
                 </RowLabel>
                 {bottom.map( (c,idx) => c.deviceName?
-                    <SelectedDevice key={idx} title={c.title} capability={c.capability} deviceName={c.deviceName} connectState={c.connectState} value={c.value} unit={c.unit}  onClick={ onCapabilityClicked } onUnselect={onUnselect} /> :
+                    <SelectedDevice key={idx} title={c.title} capability={c.capability} deviceName={c.deviceName} connectState={c.connectState} value={c.value} unit={c.unit} disabled={c.disabled} footer={c.emptyFooter}  onClick={ onCapabilityClicked } onUnselect={onUnselect} onUse={onUse} /> :
                     <SearchingDevice key={idx} title={c.title} capability={c.capability} waiting={c.waiting} helpText={c.helpText} footer={c.emptyFooter}  onClick={ onCapabilityClicked } />
                         )}
             </BottomRow>

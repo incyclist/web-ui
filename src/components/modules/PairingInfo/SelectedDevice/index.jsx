@@ -80,8 +80,8 @@ const Value = styled.div`
 `
 
 
-export const SelectedDevice = ( {title, capability, value, unit, deviceName, imageUrl, connectState, onClick,onUnselect }) => {
-   
+export const SelectedDevice = ( {title, capability, value, unit, deviceName, imageUrl, connectState, disabled, footer, onClick,onUnselect, onUse }) => {
+
     const onContainerClicked = (e) =>{
         if (onClick)
             onClick(capability)
@@ -92,23 +92,29 @@ export const SelectedDevice = ( {title, capability, value, unit, deviceName, ima
             onUnselect(capability)
     }
 
-    
+    const onUseClicked = (e) =>{
+        if (onUse)
+            onUse(capability)
+    }
+
+    // T16: switched off by the rider, but the device is still remembered - shown muted, with no
+    // value, and the toggle in the off position (onUse turns it back on, with no new scan)
     const failed = connectState==='failed'
-    const background = failed ? style.failed.background : style.selected.background
-    
+    const background = disabled ? style.searching.background : failed ? style.failed.background : style.selected.background
+
     return (
         <Container background={background} onClick={ onContainerClicked}>
             <ContainerTitle size='2.5vh'  bold={true}>{title??capability} </ContainerTitle>
             <DeviceName>{deviceName}</DeviceName>
-            {value!==undefined && value!==null && !isNaN(value)? 
+            {!disabled && value!==undefined && value!==null && !isNaN(value)?
             <Info>
                 <Value>{value}</Value>
                 <Unit>{unit}</Unit>
             </Info>
             : null}
-            
-            
-            <ConnectionStatus state={connectState} onUnselect={onUnselectClicked} />
+
+
+            <ConnectionStatus state={connectState} disabled={disabled} footer={footer} onUnselect={onUnselectClicked} onUse={onUseClicked} />
         </Container>
     )
 }

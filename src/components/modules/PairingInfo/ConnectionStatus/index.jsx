@@ -70,27 +70,33 @@ export const LaunchStatusIcon = ( {status}) => {
 }
 
 
-export const ConnectionStatus = ({state,onUnselect})=>{
+export const ConnectionStatus = ({state,disabled,footer,onUnselect,onUse})=>{
 
-    // the toggle is on while the device is used; switching it off unselects the capability.
-    // stopPropagation keeps the click from also opening the device list on the tile.
+    // the toggle is on while the capability is used; switching it off unselects the capability.
+    // On a switched-off (T16) tile the toggle is off; switching it on restores the remembered
+    // device with no new scan (onUse). stopPropagation keeps the click from also opening the
+    // device list on the tile.
     const onToggleClicked = (e) => {
         e.preventDefault()
         e.stopPropagation()
-        if (onUnselect)
+        if (disabled) {
+            if (onUse)
+                onUse()
+        }
+        else if (onUnselect)
             onUnselect()
     }
 
     return (
         <Status>
-            <LaunchStatusIcon status={state}/>
-            <Text>{state}</Text>
+            {!disabled && <LaunchStatusIcon status={state}/>}
+            <Text>{disabled ? (footer ?? 'Not used') : state}</Text>
             <Toggle
                 type="button"
                 role="switch"
-                aria-checked="true"
+                aria-checked={disabled ? "false" : "true"}
                 aria-label="Use device"
-                $on={true}
+                $on={!disabled}
                 onClick={onToggleClicked}
             />
 

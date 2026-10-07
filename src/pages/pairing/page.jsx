@@ -248,6 +248,10 @@ export const PairingPage =  ({mode}) =>{
         devicePairing.unselectDevices(capability)
     })
 
+    const onCapabilityUse = (capability => {
+        devicePairing.useCapability(capability)
+    })
+
     const onCapabilityCancelled = (capability) => {
         closeDialog()
     }
@@ -266,6 +270,7 @@ export const PairingPage =  ({mode}) =>{
                 onSimulate = {onSimulateClicked}
                 onCapabilityClick={ onCapabilityClicked}
                 onCapabilityUnselect={ onCapabilityUnselect}
+                onCapabilityUse={ onCapabilityUse}
                 onInterfaceClick={ onInterfaceClicked}
                 showSimulate={showSimulate}
                 labelOK= {mode==='start' ? 'Start' : undefined}
