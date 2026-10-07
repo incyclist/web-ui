@@ -49,6 +49,7 @@ const buildCard = (overrides = {}) => {
         getCurrentDownload: () => null,
         getCurrentConversion: () => null,
         getRouteDescription: () => ({ id: 'route-1' }),
+        getDisplayProperties: () => ({ isNew: true, cntActive: 3 }),
         getMarkers: () => [],
         getVideoDir: () => '/videos',
         canStart: () => true,
@@ -87,6 +88,15 @@ describe('RouteDetailsDialog - Terrain Smoothing plumbing', () => {
 
     beforeEach(() => { rendered.props = null })
     afterEach(() => { vi.clearAllMocks() })
+
+    test('passes the optional routeList presentation and service status to the view', async () => {
+        const Header = () => null
+        await act(async () => { render(<RouteDetailsDialog card={buildCard()} DetailsHeader={Header} />) })
+
+        expect(rendered.props.DetailsHeader).toBe(Header)
+        expect(rendered.props.isNew).toBe(true)
+        expect(rendered.props.cntActive).toBe(3)
+    })
 
     test('passes the smoothing card props and the stored level down to the dialog', async () => {
         const gradient = { routeSteepest: 20.4, smoothedSteepest: 8.5, hasVisibleEffect: true }

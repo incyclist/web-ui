@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import styled from 'styled-components'
+import styled, { css } from 'styled-components'
 import { scrollbar } from '../../../../utils/scrollbar'
 import {FileDirectoryIcon } from '@primer/octicons-react'
 
@@ -15,6 +15,14 @@ const ContentArea = styled(Column)`
     width: calc(100% - 0.8vw);
     padding-left:0.4vw;
     padding-right:0.4vw;
+    ${props => props.$routeListLayout && css`
+        width: 100%;
+        box-sizing: border-box;
+        padding: 0 1.5rem 1.25rem;
+        overflow-y: auto;
+        background: #130b24;
+        color: #f8f6ff;
+    `}
     ${scrollbar}
 `
 
@@ -23,6 +31,9 @@ const ContentArea = styled(Column)`
 const PreviewRow = styled(Row)`
     width: 100%;
     flex-shrink: 0;
+    ${props => props.$routeListLayout && css`
+        @media (max-width: 650px) { flex-direction: column; }
+    `}
 `
 
 const Preview = styled(Column)`
@@ -33,6 +44,18 @@ const Preview = styled(Column)`
     padding-right: ${props => props?.position==='left'? '0.25vw' :undefined};
     padding-left: ${props => props?.position==='right'? '0.25vw' :undefined};
     margin-bottom: 1vh;
+    ${props => props.$routeListLayout && css`
+        overflow: hidden;
+        border: 1px solid rgba(255, 255, 255, .12);
+        border-radius: 9px;
+        background: #1a1229;
+        @media (max-width: 650px) {
+            width: 100%;
+            height: 200px;
+            box-sizing: border-box;
+            padding: 0;
+        }
+    `}
 
 `
 // height is fixed per route type (video vs GPX), never toggled by the smoothing level - nothing
@@ -93,7 +116,7 @@ const formatDelta = (smoothed, original) => {
     const delta = Math.round(smoothed-original)
     return delta>0 ? `+${delta}` : `−${Math.abs(delta)}`
 }
-export const RouteDetails = ( {route, markers,segment, startPos,endPos,realityFactor,downloadProgress,convertOngoing, convertSupported,convertProgress,activeRides, convertError,downloadOngoing, downloadError,canStart=true,isOnline=true, requestVideoDir=false,
+export const RouteDetails = ( {route, markers,segment, startPos,endPos,realityFactor,downloadProgress,convertOngoing, convertSupported,convertProgress,activeRides, isNew, isDemo, cntActive, DetailsHeader, convertError,downloadOngoing, downloadError,canStart=true,isOnline=true, requestVideoDir=false,
                                 showLoopOverwrite=false, showNextOverwrite=false,
                                 videoChecking, videoMissing, onVideoSelected,videoDir, 
                                 loopOverwrite, nextOverwrite,showWorkout,
@@ -105,6 +128,7 @@ export const RouteDetails = ( {route, markers,segment, startPos,endPos,realityFa
 
     const [dialogState,setDialogState] = useState(null)
     const [initialized,setInitialized] = useState(false)
+    const [previewFailed,setPreviewFailed] = useState(false)
 
     const routeDescr = route.description??{}
     const routeData = route.details??{}
@@ -431,6 +455,8 @@ export const RouteDetails = ( {route, markers,segment, startPos,endPos,realityFa
     }
 
     const {previewUrl,videoUrl,videoFormat,isLocal,requiresDownload,isDownloaded, hasVideo}   = routeDescr||{}
+    const routeListLayout = Boolean(DetailsHeader)
+    const previewAvailable = Boolean(previewUrl && !previewFailed && !videoMissing)
     const localVideoFile = hasVideo && ( isLocal  && !videoUrl?.startsWith('http'))
 
     const showStopDownload = downloadOngoing && !requestVideoDir && ( downloadProgress!==100 && downloadError===undefined)
@@ -466,8 +492,8 @@ export const RouteDetails = ( {route, markers,segment, startPos,endPos,realityFa
 
 
     if (loading)
-        return  <Dialog id='RouteDetails' log={{title:routeDescr?.title}} title={routeDescr?.title} /*onOutsideClicked={onUserCancel}*/ width="60vw" height="70vh" zIndex={100} onESC={onCancelClicked}> 
-            <ContentArea>
+        return  <Dialog id='RouteDetails' log={{title:routeDescr?.title}} title={routeListLayout ? undefined : routeDescr?.title} fullsize={routeListLayout} width={routeListLayout ? 'min(940px, 94vw)' : '60vw'} height={routeListLayout ? 'min(860px, 90vh)' : '70vh'} zIndex={100} onESC={onCancelClicked}>
+            <ContentArea $routeListLayout={routeListLayout}>
                 <Row align='center' justify='center' height='100%'>
                     <Loader/>
                 </Row>
@@ -484,12 +510,15 @@ export const RouteDetails = ( {route, markers,segment, startPos,endPos,realityFa
 
     return (
         <ErrorBoundary>
-            <Dialog id='RouteDetails' log={{title:route?.title}} title={route?.title} /*onOutsideClicked={onUserCancel}*/ width="60vw" height="70vh" zIndex={100} onESC={onCancelClicked}>
+            <Dialog id='RouteDetails' log={{title:route?.title}} title={routeListLayout ? undefined : route?.title} fullsize={routeListLayout} width={routeListLayout ? 'min(940px, 94vw)' : '60vw'} height={routeListLayout ? 'min(860px, 90vh)' : '70vh'} zIndex={100} onESC={onCancelClicked}>
             {hasVideo && videoUrl && !videoMissing && videoFormat!=='avi' ? <VideoProbe url={videoUrl} routeId={routeDescr?.id} extension={videoFormat}/> : null}
-            <ContentArea>
+            <ContentArea $routeListLayout={routeListLayout}>
+                {DetailsHeader ? <DetailsHeader route={route} totalDistance={totalDistance} totalElevation={totalElevation}
+                    routeType={getRouteType()} isNew={isNew} isDemo={isDemo} cntActive={cntActive}
+                    previewAvailable={previewAvailable} onPreviewError={() => setPreviewFailed(true)} /> : null}
 
-                <PreviewRow>
-                <Preview position='left'>
+                <PreviewRow $routeListLayout={routeListLayout}>
+                <Preview position='left' $routeListLayout={routeListLayout}>
                     {!isOnline ? <div style={{zIndex:1000}}>{offlineWarning}</div>:null}
                     {points && isOnline && routeDescr?.hasGpx ? <FreeMap  zoomControl={true} points={points} startPos={0} draggable={canChangeStartpos} marker={startMarker} onPositionChanged={onStartPosChanged}/>
                     : null}
@@ -505,11 +534,11 @@ export const RouteDetails = ( {route, markers,segment, startPos,endPos,realityFa
                     : null}
 
                 </Preview>
-                <Preview position='right'>
-                        {previewUrl&&!videoMissing&&hasVideo  ? <Image width='100%' height={points  ? 'calc(100% - 3vh)' : '100%'} src={previewUrl}/>
+                <Preview position='right' $routeListLayout={routeListLayout}>
+                        {(routeListLayout ? previewAvailable : previewUrl&&!videoMissing)&&hasVideo  ? <Image width='100%' height={points  ? 'calc(100% - 3vh)' : '100%'} src={previewUrl} onError={routeListLayout ? () => setPreviewFailed(true) : undefined}/>
                         : null}
 
-                        {!previewUrl&&videoUrl&&!videoChecking&&!videoMissing ? <VideoPreview url={videoUrl} background='none' autoPlay={false}/>
+                        {(routeListLayout ? !previewAvailable : !previewUrl)&&videoUrl&&!videoChecking&&!videoMissing ? <VideoPreview url={videoUrl} background='none' autoPlay={false}/>
                         : null}
 
                         {videoChecking ? <Center><Loader/></Center> : null}     
@@ -547,7 +576,7 @@ export const RouteDetails = ( {route, markers,segment, startPos,endPos,realityFa
                             // route keeps its still and its strip; a GPX route gets the panel's
                             // otherwise-empty space, in every state, Off included (never both 30%
                             // and 100% for the same route - that was the resize this replaces)
-                            <ElevationContainer height={hasVideo ? '30%' : '100%'} dimmed={smoothingComputing}>
+                            <ElevationContainer height={hasVideo && (!routeListLayout || previewAvailable) ? '30%' : '100%'} dimmed={smoothingComputing}>
                                 <GraphSlot>
                                     <ElevationGraph zoneCalc={{speed:20,weight:85,ftp:226,realityFactor:data?.realityFactor}} position={data.startPos}
                                                     routeData={profileRouteData} dataVersion={profileVersion}
@@ -560,7 +589,7 @@ export const RouteDetails = ( {route, markers,segment, startPos,endPos,realityFa
 
                 </Preview>
                 </PreviewRow>
-                <Row>
+                {!routeListLayout ? <Row>
                     <Column width='50%'>
                         <Text {...common} label='Distance' text={totalDistance?.value??distance} unit={totalDistance?.unit??'km'} />
                         <Text {...common} noPadding label='Elevation' text={totalElevation?.value??elevation} unit={totalElevation?.unit??'m'} />
@@ -577,8 +606,8 @@ export const RouteDetails = ( {route, markers,segment, startPos,endPos,realityFa
                         <Text {...common} label='Route Type' text={getRouteType()}  /> 
                     </Column>
 
-                </Row>
-                <Divider width='90%' />
+                </Row> : null}
+                {!routeListLayout ? <Divider width='90%' /> : null}
                 
                 {showSettings && routeDescr?.segments?.length ? 
                     <SingleSelect label='Segment' disabled={videoFormat==='avi'} selected={data.segment??null} options={segments} 

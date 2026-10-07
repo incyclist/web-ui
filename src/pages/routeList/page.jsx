@@ -5,6 +5,7 @@ import { RouteListScreen } from "./screen";
 import { usePageLogger, useUnmountEffect } from "../../hooks";
 import { DialogLauncher } from "../../components/molecules";
 import { RouteDetailsDialog } from "../../components/modules/routeSelection/RouteDetails";
+import { RouteListDetailsHeader } from "./RouteListDetailsHeader";
 import { FreeRideSettingsDialog } from "../../components/modules/routeSelection/FreeRideSettings";
 import { ImportRoutesDialog } from "../../components/modules/routeSelection/ImportRoutesDialog";
 import { ErrorBoundary } from "../../components/atoms/ErrorBoundary";
@@ -173,7 +174,7 @@ export const RouteListPage =  () => {
             return
 
         logger.logEvent({message:'item seleced', title:card.getDisplayProperties()?.title, type:card.getCardType(), eventSource:'user' })
-        openDialog (RouteDetailsDialog, {onStart,onAddWorkout,card})
+        openDialog (RouteDetailsDialog, {onStart,onAddWorkout,card,DetailsHeader:RouteListDetailsHeader})
     }
 
     // single entry point for deleting a route from the list (hover delete icon)
