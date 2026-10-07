@@ -6,7 +6,6 @@ import { EventLogger } from 'gd-eventlog';
 import { SearchingDevice, SelectedDevice } from '../../components/modules/PairingInfo';
 import {InterfaceInfo}  from '../../components/modules/PairingInfo/InterfaceSettings/interface-info';
 import { Button } from '../../components/atoms/Buttons/Button';
-import { useAppState, getCapabilityHelpText, getEmptyTileFooterText, getPairingGuidanceText, getPairingRowLabelId, getPairingStatusDisplay, toPairingInterfaceStates } from 'incyclist-services';
 
 const StatusLine = styled.div`
     display: flex;
@@ -92,20 +91,20 @@ const Interfaces = styled.div`
     position: absolute;
     bottom:1vh;
     left:1vw;
-    
+
 `
 
-export const PairingScreen = ( {onOK,onSkip,onSimulate, onCapabilityClick,onCapabilityUnselect,onCapabilityUse,onInterfaceClick,capabilities,interfaces,connectRetry, readyToStart,initialized,rideMode=false,showSimulate=false, title, labelOK, labelSkip}) => {
+// Purely a renderer of the page service's display props: tile order/role, row labels, status and
+// button layout all come from `capabilities`/`status`/`buttons` - nothing is derived here beyond
+// what depends on the page's own size (the resize listener) and the "waiting" ring, which mirrors
+// mobile's CapabilityGrid (computed from role/readyToStart/noSearch, not sent over the wire).
+export const PairingScreen = ( {onCapabilityClick,onInterfaceClick,capabilities,interfaces,connectRetry, readyToStart,status, buttons}) => {
 
     const ref = useRef(null);
-    const logger = new EventLogger('PairingPage') 
+    const logger = new EventLogger('PairingPage')
 
     const [,setWidth] = useState()
     const [,setHeight] = useState()
-    const appState = useAppState()
-
-    const top = []
-    const bottom = []
 
     useEffect(() => {
         const div = ref.current;
@@ -115,52 +114,10 @@ export const PairingScreen = ( {onOK,onSkip,onSimulate, onCapabilityClick,onCapa
         onResize()
     })
 
-    const TILES = [
-        { title:'Resistance', key:'control',    row:'top',    role:'required' },
-        { title:'Power',      key:'power',      row:'top',    role:'required' },
-        { title:'Speed',      key:'speed',      row:'top',    role:'required' },
-        { title:'Heartrate',  key:'heartrate',  row:'bottom', role:'optional' },
-        { title:'Cadence',    key:'cadence',    row:'bottom', role:'optional' },
-        { title:'Controller', key:'app_control', row:'bottom', role:'optional' },
-    ]
-
-    const status = getPairingStatusDisplay({
-        platform: 'desktop',
-        interfaces: toPairingInterfaceStates(interfaces ?? []),
-        capabilities: capabilities ?? [],
-        canStartRide: readyToStart,
-        loading: !initialized,
-        rideMode,
-    })
-    const noSearch = status.id === 'S1'
-
-    const initCapability = ( target, tile)=> {
-        const info = capabilities?.find( c=> c.capability.toLowerCase()===tile.key)
-        // switched off (disabled) by the rider: T16 keeps the device name (dimmed, shown via
-        // SelectedDevice), T16b has nothing remembered. Takes priority over "not searching"/role.
-        const switchedOff = Boolean(info?.disabled)
-        const hasRememberedDevice = switchedOff && Boolean(info?.deviceName)
-        const props = {
-            title: tile.title,
-            capability: tile.key,
-            waiting: tile.role==='required' && !readyToStart && !noSearch && !switchedOff,
-            helpText: getCapabilityHelpText(tile.key, 'full'),
-            emptyFooter: switchedOff
-                ? (hasRememberedDevice ? 'Not used' : 'Not used · tap to search')
-                : (noSearch ? 'Not searching' : getEmptyTileFooterText(tile.role)),
-            disabled: switchedOff,
-        }
-        target.push( info ? {...info, ...props} : props)
-    }
-
-    const initCapabilites = () => {
-        TILES.filter( t=>t.row==='top').forEach( t=>initCapability(top,t))
-        TILES.filter( t=>t.row==='bottom').forEach( t=>initCapability(bottom,t))
-    }
-
-    const trainerSelected = Boolean(capabilities?.find( c=>c.capability.toLowerCase()==='control')?.deviceName)
-    const topLabel = getPairingGuidanceText(getPairingRowLabelId(trainerSelected))
-    const bottomLabel = getPairingGuidanceText('row-optional')
+    const top = capabilities?.top ?? []
+    const bottom = capabilities?.bottom ?? []
+    const rowLabels = capabilities?.rowLabels
+    const noSearch = status?.id === 'S1'
 
     const onCapabilityClicked = (capability) =>{
         logger.logEvent( {message:'capability clicked',capability, eventSource:'user'})
@@ -168,35 +125,6 @@ export const PairingScreen = ( {onOK,onSkip,onSimulate, onCapabilityClick,onCapa
         if (onCapabilityClick)
             onCapabilityClick(capability)
 
-    }
-
-    const onUnselect = (capability) => {
-        logger.logEvent( {message:'capability unselect clicked',capability, eventSource:'user'})
-        if (onCapabilityUnselect)
-            onCapabilityUnselect(capability)
-
-
-    }
-
-    const onUse = (capability) => {
-        logger.logEvent( {message:'capability use clicked',capability, eventSource:'user'})
-        if (onCapabilityUse)
-            onCapabilityUse(capability)
-    }
-
-    const onOKClicked = ()=>{
-        if (onOK)
-            onOK()
-    }
-
-    const onSkipClicked = ()=>{
-        if (onSkip)
-            onSkip()
-    }
-
-    const onSimulateClicked = ()=>{
-        if (onSimulate)
-            onSimulate()
     }
 
     const onInterfaceClicked = (name)=>{
@@ -209,72 +137,56 @@ export const PairingScreen = ( {onOK,onSkip,onSimulate, onCapabilityClick,onCapa
     const onResize = () =>  {
         setWidth(window.innerWidth)
         setHeight(window.innerHeight)
-        
-    }
-
-    const showButtons = (readyToStart) => { 
-        if (readyToStart) {
-            const ok  = labelOK ?? 'OK'
-            return (
-            <Buttons>
-                <Button height={'6vh'} width={'8vw'} primary={true} text={ok} onClick={onOKClicked} />                
-            </Buttons>
-        )}
-
-        const skip  = labelSkip ?? 'Skip'
-        const isSkipPrimary = showSimulate ? false : true
-        return (
-            <Buttons>
-                {showSimulate ? <Button height={'6vh'} width={'8vw'} primary={true} text='Simulate' onClick={onSimulateClicked} /> : null}
-                <Button height={'6vh'} width={'8vw'} primary={isSkipPrimary} text={skip} onClick={onSkipClicked} />
-            </Buttons>
-        )
 
     }
 
-    initCapabilites()
+    const renderTile = (c,idx) => {
+        const waiting = c.role==='required' && !readyToStart && !noSearch && !c.disabled
+        return c.deviceName ?
+            <SelectedDevice key={idx} title={c.title} capability={c.capability} deviceName={c.deviceName} connectState={c.connectState} value={c.value} unit={c.unit} disabled={c.disabled} footer={c.emptyFooter}  onClick={ ()=>onCapabilityClicked(c.capability)} onUnselect={c.onUnselect} onUse={c.onUse} /> :
+            <SearchingDevice key={idx} title={c.title} capability={c.capability} waiting={waiting} helpText={c.helpText?.full} footer={c.emptyFooter}  onClick={ ()=>onCapabilityClicked(c.capability)} />
+    }
 
     return (
         <MainPage className='main'>
             <PageTitle>Devices</PageTitle>
-            <StatusLine>
-                <StatusDot $color={statusDotColors[status.dot]} />
-                <span>{status.text}</span>
-            </StatusLine>
+            {status ?
+                <StatusLine>
+                    <StatusDot $color={statusDotColors[status.dot]} />
+                    <span>{status.text}</span>
+                </StatusLine>
+            : null}
             <TopRow className='top'>
                 <RowLabel>
-                    <div>{topLabel.text}</div>
-                    {topLabel.subtext ? <div>{topLabel.subtext}</div> : null}
+                    <div>{rowLabels?.top?.text}</div>
+                    {rowLabels?.top?.subtext ? <div>{rowLabels.top.subtext}</div> : null}
                 </RowLabel>
-                {top.map( (c,idx) => c.deviceName?
-                    <SelectedDevice key={idx} title={c.title} capability={c.capability} deviceName={c.deviceName} connectState={c.connectState} value={c.value} unit={c.unit} disabled={c.disabled} footer={c.emptyFooter}  onClick={ onCapabilityClicked } onUnselect={onUnselect} onUse={onUse} /> :
-                    <SearchingDevice key={idx} title={c.title} capability={c.capability} waiting={c.waiting} helpText={c.helpText} footer={c.emptyFooter}  onClick={ onCapabilityClicked } />
-                    )}
+                {top.map(renderTile)}
             </TopRow>
             <BottomRow className='bottom'>
                 <RowLabel>
-                    <div>{bottomLabel.text}</div>
-                    {bottomLabel.subtext ? <div>{bottomLabel.subtext}</div> : null}
+                    <div>{rowLabels?.bottom?.text}</div>
+                    {rowLabels?.bottom?.subtext ? <div>{rowLabels.bottom.subtext}</div> : null}
                 </RowLabel>
-                {bottom.map( (c,idx) => c.deviceName?
-                    <SelectedDevice key={idx} title={c.title} capability={c.capability} deviceName={c.deviceName} connectState={c.connectState} value={c.value} unit={c.unit} disabled={c.disabled} footer={c.emptyFooter}  onClick={ onCapabilityClicked } onUnselect={onUnselect} onUse={onUse} /> :
-                    <SearchingDevice key={idx} title={c.title} capability={c.capability} waiting={c.waiting} helpText={c.helpText} footer={c.emptyFooter}  onClick={ onCapabilityClicked } />
-                        )}
+                {bottom.map(renderTile)}
             </BottomRow>
-            {showButtons(readyToStart)}
-            {interfaces?
+            {buttons?.length ?
+                <Buttons>
+                    {buttons.map( (b,idx)=> <Button key={idx} height={'6vh'} width={'8vw'} primary={b.primary} text={b.label} onClick={b.onClick} />)}
+                </Buttons>
+            : null}
+            {interfaces?.length ?
                 <Interfaces>
-                    { interfaces.map( (info,idx)=> 
-                        <InterfaceInfo 
-                            name={info.name} connectRetry={connectRetry} isScanning={info.isScanning} enabled={info.enabled} protocol={info.protocol} ifState={info.state} key={idx} size='5vh' 
+                    { interfaces.map( (info,idx)=>
+                        <InterfaceInfo
+                            name={info.name} connectRetry={connectRetry} isScanning={info.isScanning} enabled={info.enabled} protocol={info.protocol} ifState={info.state} key={idx} size='5vh'
                                         onClick={()=>onInterfaceClicked(info.name)}
                                     />
                                 )}
                 </Interfaces>
                 :null}
 
-        </MainPage>    
+        </MainPage>
     )
 
 }
-
