@@ -42,4 +42,12 @@ describe('Card', () => {
         screen.getByTestId('card-skeleton').click()
         expect(onClick).toHaveBeenCalled()
     })
+
+    test('renders single card without flip when Details is not provided', () => {
+        render(<Card id='1' visible={true} width={200} height={112} Summary={Summary} />)
+
+        expect(screen.getByTestId('summary')).toBeInTheDocument()
+        expect(screen.queryByTestId('details')).toBeNull()
+        expect(screen.queryByTestId('card-skeleton')).toBeNull()
+    })
 })

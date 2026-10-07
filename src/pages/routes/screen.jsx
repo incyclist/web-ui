@@ -1,6 +1,6 @@
 import React, {useCallback, useEffect, useRef, useState } from "react"
 import MainPage from "../../components/molecules/MainPage"
-import { PageTitle,GroupTitle, Loader, Center } from "../../components/atoms"
+import { Loader, Center } from "../../components/atoms"
 import styled from "styled-components"
 import { VideoCard } from "../../components/modules/routeSelection/VideoCard"
 import { Column, Row } from "../../components/atoms/layout/View"
@@ -14,6 +14,7 @@ import { AppThemeProvider } from "../../theme"
 import { ActiveImportCard } from "../../components/modules/routeSelection/ActiveImportCard"
 import { valid } from "../../utils/coding"
 import { useUnmountEffect } from "../../hooks"
+import { useRouteFavorites } from '../../components/modules/routeSelection/VideoCard/usePersonalRoutes'
 
 const UP = 'ArrowUp'
 const DOWN = 'ArrowDown'
@@ -21,6 +22,26 @@ const PAGE_UP = 'PageUp'
 const PAGE_DOWN = 'PageDown'
 
 let uniqCnt = 0;
+
+const RoutePageTitle = styled.h1`
+    color: white; font-size: 30px; line-height: 1.2; margin: 20px 6px 12px; font-weight: 650;
+`
+const RouteGroupTitle = styled.h2`
+    color: white; font-size: 22px; line-height: 1.25; margin: 16px 0 6px; font-weight: 600;
+`
+const Toolbar = styled.div`
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    button { color: #f1cf98; background: #28212f; border: 1px solid #806441; border-radius: 7px;
+        padding: 10px 12px; cursor: pointer; font: inherit; font-size: 13px; }
+    button[aria-pressed='true'] { background: #55412c; }
+    button:focus-visible { outline: 2px solid #efc580; outline-offset: 2px; }
+`
+const FavoritesGrid = styled.div`
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr));
+    gap: 16px; padding: 10px 6px 20px;
+    > div { max-width: 332px; }
+    p { color: #dad1e4; font-size: 15px; }
+`
 
 const View = styled(Row)`
    
@@ -37,6 +58,10 @@ const ContentArea = styled(Column)`
     padding-left:40px;
     padding-right: 40px;
     overflow-y: hidden;
+    min-width: 0;
+    box-sizing: border-box;
+    background: rgba(13, 10, 22, .58);
+    @media (max-width: 700px) { padding-left: 16px; padding-right: 16px; }
    
 `
 
@@ -82,6 +107,11 @@ export const RoutesScreen =  /*forwardRef(*/
     ({ loading, cardSize,offset=0, top=0, responsive, itemsFit, width,height, data,key, onInitialized,onUpdated, 
         onSlideChange, onSlideChanged, onOK, closePage, onDelete,onRetry, onPageSelected, onScrollUpDown}) => {
     const swipeDisabled = useRef(false);
+    const { favorites } = useRouteFavorites()
+    const [favoritesOnly, setFavoritesOnly] = useState(false)
+    const favoriteCards = [...new Map((data || []).flatMap(list => list.getCards())
+        .filter(card => card.getCardType() === 'Route' && favorites.includes(String(card.getId())))
+        .map(card => [card.getId(), card])).values()]
     //const [data,setData] = useState(dataProp)
 
     const refDiv = useRef(null);
@@ -204,12 +234,13 @@ export const RoutesScreen =  /*forwardRef(*/
         fn(list,e)
     }
 
-    const getCard = (routeCard) => {
+    const getCard = (routeCard, compact) => {
 
         const hidden = !routeCard.isVisible()
         const innerSize = {...cardSize||{}}
         innerSize.width = cardSize?.width-cardSize?.padding
         innerSize.padding=0;
+        if (compact) innerSize.height = 210
 
         const stdProps = {hidden,...innerSize,card:routeCard}
 
@@ -241,11 +272,12 @@ export const RoutesScreen =  /*forwardRef(*/
 
     const getCards =(list) => {
         const routeCards = list.getCards() || []
+        const compact = !routeCards.some(card => card.getCardType() === 'Route')
 
 
         const cards = routeCards?.map( (routeCard,idx) => { 
 
-            const {Card,props: cardProps} = getCard(routeCard)
+            const {Card,props: cardProps} = getCard(routeCard, compact)
             if (!Card)
                 return null;
             
@@ -274,6 +306,7 @@ export const RoutesScreen =  /*forwardRef(*/
     
     const RouteList = ({ list}) => {
         const header = list?.getTitle()
+        const compact = !list.getCards().some(card => card.getCardType() === 'Route')
         const [state,setState] = useState( {cards:getCards(list), updated:Date.now()})
         
         const refInitialized = useRef(false)
@@ -316,9 +349,9 @@ export const RoutesScreen =  /*forwardRef(*/
             <Column className={`list_${list.getId()}_${updated}`}  >
                 { header?
                     <Row>
-                        <Column width='50px'/>
+                        <Column width='6px'/>
                         <Column>
-                            <GroupTitle>{header}</GroupTitle>    
+                            <RouteGroupTitle>{header}</RouteGroupTitle>
                         </Column> 
             
                     </Row>
@@ -329,7 +362,7 @@ export const RoutesScreen =  /*forwardRef(*/
                 <Row width='100%'>
                     <Carousel  cards={cards} 
                             width='100%'
-                            height={`${cardSize.height}px`}  renderKey={itemsFit} responsive={responsive}    
+                            height={`${compact ? 210 : cardSize.height}px`}  renderKey={itemsFit} responsive={responsive}
                             autoWidth={true}                         
                             onInitialized={ (e)=> {callback(onInitialized,list,e); } }
                             onSlideChange={ (e)=> {callback(onSlideChange,list,e); setScrolling(true) } }
@@ -354,11 +387,18 @@ export const RoutesScreen =  /*forwardRef(*/
                 <NavigationBar closePage={closePage} selected='routes' />
 
                 <ContentArea width={'100%'} >
-                    <PageTitle>Routes</PageTitle>   
+                    <Toolbar><RoutePageTitle>Routes</RoutePageTitle>
+                        <button type='button' aria-pressed={favoritesOnly} onClick={() => setFavoritesOnly(value => !value)}>★ Favorites ({favoriteCards.length})</button>
+                    </Toolbar>
 
                     <AppThemeProvider>                    
                         <ListContainer className='routes' width='100%' height='100%' ref={refDiv}>
-                        {  !loading && cardSize && data    ?
+                        {favoritesOnly ? <FavoritesGrid>
+                            {favoriteCards.length ? favoriteCards.map(card => <VideoCard key={card.getId()}
+                                {...card.getDisplayProperties()} observer={undefined} visible={true} width='100%' height={530}
+                                onOK={() => onOK?.(card)} onDelete={() => onDelete?.(card)} />) :
+                                <p>Star a route to find it here for your next ride.</p>}
+                        </FavoritesGrid> : !loading && cardSize && data ?
                             data.map( (list,idx) => <RouteList list={list} key={idx} />)
                             :
                             null
@@ -380,5 +420,3 @@ export const RoutesScreen =  /*forwardRef(*/
         </MainPage>
     )
 }
-
-

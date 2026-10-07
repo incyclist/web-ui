@@ -31,6 +31,7 @@ export const RoutesPage =  () => {
     const refStateUpdates = useRef(null)
     const refSyncBusy = useRef(0)
     const refStarting = useRef(false)
+    const refDimensions = useRef(null)
 
     const [logger,closePageLogger] = usePageLogger(PAGE_ID,pageState)
 
@@ -38,7 +39,7 @@ export const RoutesPage =  () => {
     const updateScreenProps = useCallback((w,h)=> {
         const prev = -1;
 
-        let respList = getResponsiveHorizontal(w,h,{offset:210,padding:0})
+        let respList = getResponsiveHorizontal(w,h,{offset:210,padding:12})
 
         const {cardSize} = respList
         delete respList.cardSize
@@ -57,7 +58,7 @@ export const RoutesPage =  () => {
             updated = -1
         }
 
-        const cardsCnt = Math.floor((w-210)/cardSize.width)
+        const cardsCnt = Math.max(1, Math.floor((w-210)/cardSize.width))
 
         // list has been updated or is opened for the first time
         if (prev!==updated ) {
@@ -248,9 +249,9 @@ export const RoutesPage =  () => {
 
 
     useEffect( ()=>{
-        if (screenProps)
+        if (refDimensions.current?.width === width && refDimensions.current?.height === height)
             return;
-
+        refDimensions.current = {width, height}
         updateScreenProps(width,height)
 
     },[screenProps, updateScreenProps,width,height])

@@ -33,6 +33,25 @@ const OutsideFold = styled(Row)`
 
 
 */
+const SingleCardWrapper = styled.div`
+    position: relative;
+    background-color: transparent;
+    width: ${props => props.width};
+    height: ${props => props.height};
+    visibility: ${props => props.hidden ? 'hidden' : undefined};
+    padding: ${props => props.padding || '0'};
+    box-sizing: border-box;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+
+    &:hover, &:focus-within {
+        transform: translateY(-3px);
+        box-shadow: 0 10px 24px rgba(0, 0, 0, 0.42);
+    }
+    @media (prefers-reduced-motion: reduce) { transition: none; }
+`
+
 export const Card = (props) => {
     const {observer,Summary, Details,card } = props
 
@@ -77,18 +96,18 @@ export const Card = (props) => {
         refInitialized.current = false
     })
 
-    let {width, height,padding} = props;
+    let {width, height,padding=0} = props;
 
     if ( height && !width && typeof height==='number') {
         width =  235 / 132 *height/2
     }
-    if (width && !height && typeof height==='number') {
+    if (width && !height && typeof width==='number') {
         height = width *132/235 *2;
     }
 
     const widthStr = typeof width ==='string' ? width : `${width}px`
     const heightStr = typeof height ==='string' ? height : `${height}px`
-    const paddingStr = `${padding}px`
+    const paddingStr = typeof padding === 'string' ? padding : `${padding}px`
 
     const stateProps = state||{}
     const hidden = !stateProps.visible
@@ -102,9 +121,24 @@ export const Card = (props) => {
         return <OutsideFold width={widthStr} height={heightStr} >X</OutsideFold>
     }
  
+    const summaryWidth = typeof width === 'number' && typeof padding === 'number' ? width - padding : width
+
+    if (!Details) {
+        return (
+            <SingleCardWrapper
+                hidden={hidden}
+                width={widthStr}
+                height={heightStr}
+                padding={paddingStr}
+                className="route-card-wrapper"
+            >
+                {Summary ? <Summary {...stateProps} width={summaryWidth} height={height} /> : null}
+            </SingleCardWrapper>
+        )
+    }
 
     return <FlipCard  hidden={hidden} width={widthStr} height={heightStr} padding={paddingStr} background='linear-gradient(darkred,#180457)' delay='1s' >
-        {Summary ? <Summary {...stateProps} width={width-padding} height={height} />:null}
-        {Details ? <Details {...stateProps} width={width-padding} height={height} />:null}
+        {Summary ? <Summary {...stateProps} width={summaryWidth} height={height} />:null}
+        {Details ? <Details {...stateProps} width={summaryWidth} height={height} />:null}
     </FlipCard>
 }

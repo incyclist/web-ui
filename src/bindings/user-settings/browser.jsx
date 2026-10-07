@@ -1,6 +1,6 @@
 import { UserSettingsBinding } from "incyclist-services";
 
-
+const ROUTE_FAVORITES_KEY = 'incyclist.routeFavorites'
 
 export default class UserSettingsWebBinding extends UserSettingsBinding {
     static _instance;
@@ -26,6 +26,14 @@ export default class UserSettingsWebBinding extends UserSettingsBinding {
             try { data=JSON.parse(sessionStorage.getItem(key))} catch { data=sessionStorage.getItem(key) }            
             this.settings[key]= data
         }
+        // Keep route bookmarks across browser sessions without changing the lifetime
+        // of other settings (which may contain account/session information).
+        try {
+            const favorites = JSON.parse(window.localStorage.getItem(ROUTE_FAVORITES_KEY))
+            if (Array.isArray(favorites) && favorites.every(id => typeof id === 'string')) {
+                this.settings.routes = { ...this.settings.routes, favorites }
+            }
+        } catch { /* Storage may be disabled or contain malformed data. */ }
         return this.settings
     }
 
@@ -70,6 +78,9 @@ export default class UserSettingsWebBinding extends UserSettingsBinding {
                     window.sessionStorage.setItem(key,data)
                 else 
                     window.sessionStorage.setItem(key,JSON.stringify(data))
+            }
+            if (Array.isArray(settings.routes?.favorites)) {
+                window.localStorage.setItem(ROUTE_FAVORITES_KEY, JSON.stringify(settings.routes.favorites))
             }
                 
             return true

@@ -1,21 +1,8 @@
-export const getCardSize = (w,h,padding,offs) => {
-    let height = Math.round( 0.3*h/10)*10
-    let width = 235 / 132 *height/2+padding
-    const offset = offs ||210
-
-    try {
-
-        const cards = Math.floor(w/width)
-        const usedSpace = Math.floor(w/width)*width+offset+cards*1
-        if (usedSpace >= w) {
-            width = Math.floor((w-offset-cards*5)/cards)
-            height = width/235*132*2
-        }
-    }
-    catch(err) {
-        console.log(err)
-    }
-
+export const getCardSize = (w,h,padding = 12,offs = 210) => {
+    const available = Math.max(220, w - offs)
+    const cards = Math.max(1, Math.floor(available / 280))
+    const width = Math.min(332, Math.floor(available / cards))
+    const height = Math.max(510, Math.ceil((width - padding) * 9 / 16 + 332))
     return {
         height,
         width,
