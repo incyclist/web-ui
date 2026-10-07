@@ -27,13 +27,13 @@ describe('PairingScreen', () => {
         expect(screen.getByText('Tacx Neo')).toBeTruthy()
     })
 
-    test('clicking a tile calls onCapabilityClick with its capability', () => {
-        const onCapabilityClick = vi.fn()
-        render(<PairingScreen capabilities={{ top: [tile()], bottom: [] }} onCapabilityClick={onCapabilityClick} />)
+    test('clicking a tile calls its own bound onClick, not a page-level handler', () => {
+        const onClick = vi.fn()
+        render(<PairingScreen capabilities={{ top: [tile({ onClick })], bottom: [] }} />)
 
         fireEvent.click(screen.getByText('Resistance'))
 
-        expect(onCapabilityClick).toHaveBeenCalledWith('control')
+        expect(onClick).toHaveBeenCalled()
     })
 
     test('a selected tile\'s onUnselect/onUse come straight from its own props, not from the page', () => {
@@ -75,12 +75,12 @@ describe('PairingScreen', () => {
         expect(screen.getByText('Skip')).toBeTruthy()
     })
 
-    test('clicking an interface calls onInterfaceClick with its name', () => {
-        const onInterfaceClick = vi.fn()
-        render(<PairingScreen capabilities={{ top: [], bottom: [] }} interfaces={[{ name: 'ant', enabled: true, state: 'idle' }]} onInterfaceClick={onInterfaceClick} />)
+    test('clicking an interface calls its own bound onClick, not a page-level handler', () => {
+        const onClick = vi.fn()
+        render(<PairingScreen capabilities={{ top: [], bottom: [] }} interfaces={[{ name: 'ant', enabled: true, state: 'idle', onClick }]} />)
 
         fireEvent.click(screen.getByText('Ant+'))
 
-        expect(onInterfaceClick).toHaveBeenCalledWith('ant')
+        expect(onClick).toHaveBeenCalled()
     })
 })

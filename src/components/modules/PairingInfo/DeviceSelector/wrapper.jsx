@@ -1,73 +1,35 @@
-import React, { useEffect, useState } from "react"
+import React, { useState } from "react"
 import { DeviceSelector } from "./component"
-import { useDevicePairing } from "incyclist-services";
-import { IncyclistCapability } from "incyclist-devices";
 
-export const Wrapper = ( props)=> {
+// Purely a renderer of the pairing page service's `deviceSelection` props - it no longer talks to
+// DevicePairingService itself. Each entry in `devices` already carries its own bound
+// onClick(addAll?)/onDelete() from the page service; this wrapper only owns the "for all
+// capabilities" checkbox, which is pure UI state until Wave 4.
+export const Wrapper = ({capability, devices, isScanning, changeForAll:defaultChangeForAll, canSelectAll, onClose}) => {
 
-    const {capability, onOK, onCancel} = props;
-    const pairing = useDevicePairing()
+    const [changeForAll, setChangeForAll] = useState(Boolean(defaultChangeForAll))
 
-    const [initialized,setInitialized] = useState(false)
-    const [state,setState] = useState(null)
-    const [changeForAll,setChangeForAll] = useState( props.capability===IncyclistCapability.Control)
+    const items = devices ?? []
 
-    useEffect( ()=> {
-        if (initialized)
-            return;
-        setInitialized(true)
-        const initialState = pairing.startDeviceSelection(capability,(data)=> {
-            
-            process.nextTick( ()=> {
-                setState(data)
-            })
-            
-        })
-        setState(initialState)
-    },[capability, initialized, pairing])
+    // component.jsx (unchanged) expects a flat {name,value,connectState,interface,udid} row per
+    // device and selects/deletes by `devices[i].udid` - `udid` here is just that index, so the
+    // original (unmapped) `items` array can be looked back up by it.
+    const mapped = items.map( (d,i) => ({ udid:i, name:d.deviceName, value:d.value, connectState:d.connectState, interface:d.interface }))
 
+    const onSelected = (idx) => { items[idx]?.onClick?.(changeForAll) }
+    const onDeleteClicked = (idx) => { items[idx]?.onDelete?.() }
+    const onUserCancel = () => { if (onClose) onClose() }
+    const onAll = (checked) => { setChangeForAll(checked) }
 
-    const onDeleteClicked = (udid) => {
-        pairing.deleteDevice(capability,udid)
-
-    }
-
-    const onSearchClicked = (udid) => {
-
-    }
-
-    const onUserCancel = () => {
-        pairing.stopDeviceSelection()
-        if (onCancel)
-            onCancel()
-    }
-
-    const onSelected = (udid) => {
-        pairing.selectDevice(capability,udid,changeForAll)
-        if (onOK)
-            onOK()
-    }
-
-    const onAll = (checked) => {
-        setChangeForAll(checked)
-    }
-    
-
-    const getChildProps = () => {
-
-        const canSelectAll = capability===IncyclistCapability.Control
-        
-         if (!state) {
-            return ( {loading:true, capability, canSelectAll, devices:[], changeForAll, onOK:onSelected, onCancel:onUserCancel, onAll, onSearch:onSearchClicked, onDelete:onDeleteClicked})
-        }
-        else {
-            const {isScanning} = state
-            return ( {isScanning,capability, canSelectAll, devices:state.devices,changeForAll, onOK:onSelected, onCancel:onUserCancel, onAll, onSearch:onSearchClicked, onDelete:onDeleteClicked})
-        }
-
-    }
-    if (!state)
-        return null
-
-    return <DeviceSelector {...getChildProps()} />
+    return <DeviceSelector
+        isScanning={Boolean(isScanning)}
+        capability={capability}
+        canSelectAll={canSelectAll}
+        changeForAll={changeForAll}
+        devices={mapped}
+        onOK={onSelected}
+        onCancel={onUserCancel}
+        onAll={onAll}
+        onDelete={onDeleteClicked}
+    />
 }

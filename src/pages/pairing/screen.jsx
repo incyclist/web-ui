@@ -2,7 +2,6 @@ import React, { useEffect, useRef, useState } from 'react';
 import MainPage from '../../components/molecules/MainPage';
 import {PageTitle} from '../../components/atoms/Title';
 import styled from 'styled-components';
-import { EventLogger } from 'gd-eventlog';
 import { SearchingDevice, SelectedDevice } from '../../components/modules/PairingInfo';
 import {InterfaceInfo}  from '../../components/modules/PairingInfo/InterfaceSettings/interface-info';
 import { Button } from '../../components/atoms/Buttons/Button';
@@ -97,11 +96,12 @@ const Interfaces = styled.div`
 // Purely a renderer of the page service's display props: tile order/role, row labels, status and
 // button layout all come from `capabilities`/`status`/`buttons` - nothing is derived here beyond
 // what depends on the page's own size (the resize listener) and the "waiting" ring, which mirrors
-// mobile's CapabilityGrid (computed from role/readyToStart/noSearch, not sent over the wire).
-export const PairingScreen = ( {onCapabilityClick,onInterfaceClick,capabilities,interfaces,connectRetry, readyToStart,status, buttons}) => {
+// mobile's CapabilityGrid (computed from role/readyToStart/noSearch, not sent over the wire). Tile
+// and interface clicks call each item's own bound `onClick` (the service already logs them), the
+// same way a selected tile's onUnselect/onUse come straight from its own props.
+export const PairingScreen = ( {capabilities,interfaces,connectRetry, readyToStart,status, buttons}) => {
 
     const ref = useRef(null);
-    const logger = new EventLogger('PairingPage')
 
     const [,setWidth] = useState()
     const [,setHeight] = useState()
@@ -119,21 +119,6 @@ export const PairingScreen = ( {onCapabilityClick,onInterfaceClick,capabilities,
     const rowLabels = capabilities?.rowLabels
     const noSearch = status?.id === 'S1'
 
-    const onCapabilityClicked = (capability) =>{
-        logger.logEvent( {message:'capability clicked',capability, eventSource:'user'})
-
-        if (onCapabilityClick)
-            onCapabilityClick(capability)
-
-    }
-
-    const onInterfaceClicked = (name)=>{
-        logger.logEvent( {message:'interface clicked',interface:name, eventSource:'user'})
-
-        if (onInterfaceClick)
-            onInterfaceClick(name)
-    }
-
     const onResize = () =>  {
         setWidth(window.innerWidth)
         setHeight(window.innerHeight)
@@ -143,8 +128,8 @@ export const PairingScreen = ( {onCapabilityClick,onInterfaceClick,capabilities,
     const renderTile = (c,idx) => {
         const waiting = c.role==='required' && !readyToStart && !noSearch && !c.disabled
         return c.deviceName ?
-            <SelectedDevice key={idx} title={c.title} capability={c.capability} deviceName={c.deviceName} connectState={c.connectState} value={c.value} unit={c.unit} disabled={c.disabled} footer={c.emptyFooter}  onClick={ ()=>onCapabilityClicked(c.capability)} onUnselect={c.onUnselect} onUse={c.onUse} /> :
-            <SearchingDevice key={idx} title={c.title} capability={c.capability} waiting={waiting} helpText={c.helpText?.full} footer={c.emptyFooter}  onClick={ ()=>onCapabilityClicked(c.capability)} />
+            <SelectedDevice key={idx} title={c.title} capability={c.capability} deviceName={c.deviceName} connectState={c.connectState} value={c.value} unit={c.unit} disabled={c.disabled} footer={c.emptyFooter}  onClick={c.onClick} onUnselect={c.onUnselect} onUse={c.onUse} /> :
+            <SearchingDevice key={idx} title={c.title} capability={c.capability} waiting={waiting} helpText={c.helpText?.full} footer={c.emptyFooter}  onClick={c.onClick} />
     }
 
     return (
@@ -180,7 +165,7 @@ export const PairingScreen = ( {onCapabilityClick,onInterfaceClick,capabilities,
                     { interfaces.map( (info,idx)=>
                         <InterfaceInfo
                             name={info.name} connectRetry={connectRetry} isScanning={info.isScanning} enabled={info.enabled} protocol={info.protocol} ifState={info.state} key={idx} size='5vh'
-                                        onClick={()=>onInterfaceClicked(info.name)}
+                                        onClick={info.onClick}
                                     />
                                 )}
                 </Interfaces>

@@ -1,10 +1,10 @@
 import React from 'react'
 import { describe, test, expect, vi, beforeEach } from 'vitest'
-import { render, screen, fireEvent, act } from '@testing-library/react'
+import { render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router'
 import { PairingPage } from './page'
 
-const { service, ui, deviceAccess, devicePairing, useKeyCalls } = vi.hoisted(() => ({
+const { service, ui, useKeyCalls } = vi.hoisted(() => ({
     service: {
         openPage: vi.fn(() => ({ on: vi.fn(), off: vi.fn() })),
         closePage: vi.fn(),
@@ -12,15 +12,11 @@ const { service, ui, deviceAccess, devicePairing, useKeyCalls } = vi.hoisted(() 
         addSimulator: vi.fn(),
     },
     ui: { toggleFullscreen: vi.fn() },
-    deviceAccess: { getProtocols: vi.fn(() => ['ant', 'ble']) },
-    devicePairing: { changeInterfaceSettings: vi.fn(), getState: vi.fn(() => ({ interfaces: [{ name: 'ant', enabled: true }] })) },
     useKeyCalls: [],
 }))
 
 vi.mock('incyclist-services', () => ({
     getDevicesPageService: () => service,
-    useDeviceAccess: () => deviceAccess,
-    useDevicePairing: () => devicePairing,
 }))
 
 vi.mock('../../bindings/native-ui', () => ({ useAppUI: () => ui }))
@@ -32,24 +28,11 @@ vi.mock('../../hooks/ui/useKey', () => ({
     },
 }))
 
-const { openDialogMock, closeDialogMock } = vi.hoisted(() => ({ openDialogMock: vi.fn(), closeDialogMock: vi.fn() }))
-
-vi.mock('../../components/molecules', () => ({ DialogLauncher: React.forwardRef((props, ref) => {
-    React.useImperativeHandle(ref, () => ({ openDialog: openDialogMock, closeDialog: closeDialogMock }))
-    return null
-}) }))
-
-vi.mock('../../components/modules/PairingInfo/InterfaceSettings', () => ({ default: () => null }))
-vi.mock('../../components/modules/PairingInfo/DeviceSelector', () => ({ default: () => null }))
+vi.mock('../../components/modules/PairingInfo/InterfaceSettings', () => ({ default: (props) => <div>interface-settings:{props.name}</div> }))
+vi.mock('../../components/modules/PairingInfo/DeviceSelector', () => ({ default: (props) => <div>device-selector:{props.capability}</div> }))
 
 vi.mock('./screen', () => ({
-    PairingScreen: ({ onCapabilityClick, onInterfaceClick, title }) => (
-        <div>
-            <span>{title}</span>
-            <button onClick={() => onCapabilityClick('power')}>capability</button>
-            <button onClick={() => onInterfaceClick('ant')}>interface</button>
-        </div>
-    ),
+    PairingScreen: ({ title }) => <span>{title}</span>,
 }))
 
 const renderPage = (mode) => render(<MemoryRouter><PairingPage mode={mode} /></MemoryRouter>)
@@ -58,6 +41,7 @@ describe('PairingPage', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         useKeyCalls.length = 0
+        service.getPageDisplayProperties.mockReturnValue({ title: 'Paired Devices', capabilities: { top: [], bottom: [] }, interfaces: [], buttons: [] })
     })
 
     test('opens the desktop pairing page service with forRide and the navigation source', () => {
@@ -78,38 +62,32 @@ describe('PairingPage', () => {
         expect(screen.getByText('Paired Devices')).toBeTruthy()
     })
 
-    test('clicking a capability tile opens the device selector dialog', () => {
+    test('renders the device selector when the service sets deviceSelection', () => {
+        service.getPageDisplayProperties.mockReturnValue({ title: 'Paired Devices', capabilities: { top: [], bottom: [] }, interfaces: [], buttons: [], deviceSelection: { capability: 'power' } })
+
         renderPage(undefined)
 
-        fireEvent.click(screen.getByText('capability'))
-
-        expect(openDialogMock).toHaveBeenCalled()
-        const [, dialogProps] = openDialogMock.mock.calls[0]
-        expect(dialogProps.capability).toBe('power')
+        expect(screen.getByText('device-selector:power')).toBeTruthy()
     })
 
-    test('clicking an interface opens the interface settings dialog with its protocols and current settings', () => {
+    test('renders no device selector when the service has none open', () => {
         renderPage(undefined)
 
-        fireEvent.click(screen.getByText('interface'))
-
-        expect(deviceAccess.getProtocols).toHaveBeenCalledWith('ant')
-        const [, dialogProps] = openDialogMock.mock.calls[0]
-        expect(dialogProps.name).toBe('ant')
-        expect(dialogProps.protocols).toEqual(['ant', 'ble'])
-        expect(dialogProps.enabled).toBe(true)
+        expect(screen.queryByText(/device-selector:/)).toBeNull()
     })
 
-    test('confirming interface settings applies them and closes the dialog', () => {
+    test('renders the interface settings dialog when the service sets showInterfaceSettings', () => {
+        service.getPageDisplayProperties.mockReturnValue({ title: 'Paired Devices', capabilities: { top: [], bottom: [] }, interfaces: [], buttons: [], showInterfaceSettings: { name: 'ant' } })
+
         renderPage(undefined)
 
-        fireEvent.click(screen.getByText('interface'))
-        const [, dialogProps] = openDialogMock.mock.calls[0]
+        expect(screen.getByText('interface-settings:ant')).toBeTruthy()
+    })
 
-        act(() => { dialogProps.onOK({ enabled: false }) })
+    test('renders no interface settings dialog when the service has none open', () => {
+        renderPage(undefined)
 
-        expect(devicePairing.changeInterfaceSettings).toHaveBeenCalledWith('ant', { enabled: false })
-        expect(closeDialogMock).toHaveBeenCalled()
+        expect(screen.queryByText(/interface-settings:/)).toBeNull()
     })
 
     test('registers "f" for fullscreen and Shift+S to add the simulator', () => {

@@ -4,10 +4,6 @@ import { PairingScreen } from './screen';
 export default {
     component: PairingScreen,
     title: 'Pages/Pairing',
-    argTypes: {
-        onInterfaceClick: {action: 'Interface Clicked'},
-        onCapabilityClick: {action: 'Capability Clicked'}
-    },
   };
 
 const Template = args => <PairingScreen {...args} />;
