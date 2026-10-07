@@ -1,12 +1,23 @@
 import React, { useEffect, useId, useMemo, useRef, useState } from 'react'
 import styled from 'styled-components'
 import Flag from 'react-world-flags'
-import { StarIcon, StarFillIcon, KebabHorizontalIcon, ArrowRightIcon, TrashIcon, PeopleIcon, DownloadIcon, PlayIcon } from '@primer/octicons-react'
+import { KebabHorizontalIcon, ArrowRightIcon, TrashIcon, PeopleIcon, PlayIcon } from '@primer/octicons-react'
 import { useRouteList } from 'incyclist-services'
 import { FreeMap } from '../../../molecules/Maps'
 import { ErrorBoundary, Loader } from '../../../atoms'
-import { countryLabel, profilePoints, routeEffort, validCoordinates, videoAvailability } from './insights'
-import { usePersonalRoutes } from './usePersonalRoutes'
+import { CardSkeleton } from '../base/skeleton'
+
+const finite = value => value !== null && value !== undefined && value !== '' && Number.isFinite(Number(value))
+const validCoordinates = points => (points || []).filter(point =>
+    finite(point.lat) && finite(point.lng) && Math.abs(Number(point.lat)) <= 90 && Math.abs(Number(point.lng)) <= 180)
+const profilePoints = points => (points || []).filter(point => finite(point.routeDistance) && finite(point.elevation))
+const countryLabel = country => {
+    if (!country) return undefined
+    const code = country.toUpperCase() === 'UK' ? 'GB' : country.toUpperCase()
+    try { return { code, name: new Intl.DisplayNames(['en'], { type: 'region' }).of(code) } }
+    catch { return { code, name: country } }
+}
+const videoPillLabels = { 'in-icloud': 'In iCloud', downloading: 'Downloading…' }
 
 const Surface = styled.article`
     position: relative; display: flex; flex-direction: column; box-sizing: border-box;
@@ -44,10 +55,6 @@ const IconButton = styled.button`
     background: #272031; color: #ede8f4;
     &:hover { background: #3b3048; }
 `
-const Favorite = styled(IconButton)`
-    position: absolute; z-index: 1001; top: 8px; right: 8px;
-    background: rgba(19,16,27,.88); color: ${p => p.$active ? '#f1c57d' : '#fff'};
-`
 const Body = styled.div`
     display: flex; flex: 1; flex-direction: column; padding: 14px; gap: 12px; min-height: 0;
 `
@@ -78,10 +85,6 @@ const Badge = styled.span`
     display: inline-flex; align-items: center; gap: 4px; padding: 4px 7px; border-radius: 5px;
     color: ${p => p.$live ? '#a5e1bf' : '#efd09b'};
     background: ${p => p.$live ? '#203a32' : '#3a3028'}; font-weight: 600;
-`
-const Insights = styled.div`
-    display: flex; gap: 8px; justify-content: space-between; font-size: 11px; min-height: 16px;
-    color: #bfb6ce;
 `
 const Actions = styled.div`
     display: flex; gap: 8px; margin-top: auto; padding-top: 2px;
@@ -136,7 +139,7 @@ const formatMetric = (formatted, value, divisor, unit, digits) => {
 
 export const VideoSummary = (props) => {
     const { id, title = 'Untitled route', country, distance, elevation, totalDistance, totalElevation,
-        previewUrl, videoUrl, visible, hasVideo, isDemo, isNew, cntActive, cntOwnRides, ownRideCount,
+        previewUrl, videoUrl, visible, hasVideo, isDemo, isNew, cntActive, videoPill,
         shape, canDelete = false, buttonText = 'View details', onClick, onOK, onDelete } = props
     const service = useRouteList()
     const [details, setDetails] = useState({})
@@ -148,7 +151,6 @@ export const VideoSummary = (props) => {
     const cancelRef = useRef(null)
     const confirmRef = useRef(null)
     const menuId = useId()
-    const personal = usePersonalRoutes(props)
     const hasShape = Array.isArray(shape) && shape.length > 0
 
     useEffect(() => {
@@ -169,13 +171,10 @@ export const VideoSummary = (props) => {
 
     const points = hasShape ? shape : (details.points ?? props.points ?? [])
     const coordinates = useMemo(() => validCoordinates(points), [points])
-    const effort = useMemo(() => routeEffort(distance, elevation, points), [distance, elevation, points])
     const isVideo = hasVideo ?? Boolean(videoUrl || previewUrl)
     const renderImage = isVideo && previewUrl && !imageFailed
     const renderMap = !renderImage && coordinates.length >= 2
     const location = countryLabel(country)
-    const availability = videoAvailability({ ...props, hasVideo: isVideo })
-    const rides = cntOwnRides ?? ownRideCount ?? personal.history?.count
     const closeOptions = () => { setMenuOpen(false); setConfirmDelete(false); optionsRef.current?.focus() }
     const open = e => {
         if (confirmDelete || menuOpen) return
@@ -192,7 +191,7 @@ export const VideoSummary = (props) => {
             else cancelRef.current?.focus()
         }
     }
-    if (!visible) return null
+    if (visible === false) return <div style={{ width: props.width, height: props.height }}><CardSkeleton /></div>
 
     return <ErrorBoundary hideOnError>
         <Surface className='route-summary' aria-label={`Route ${title}`} tabIndex={0} onClick={open}
@@ -202,11 +201,6 @@ export const VideoSummary = (props) => {
                     renderMap ? <MapPreview><FreeMap noAttribution scrollWheelZoom={false} zoomControl={false} points={coordinates} startPos={0} draggable={false} /></MapPreview> :
                         <Placeholder>{details.loading ? <Loader size={26} /> : <><img src='images/route.svg' alt='' width='28' height='28' /><span>{isVideo ? 'Video Route' : 'Map unavailable'}</span></>}</Placeholder>}
                 <MediaBadge>{isVideo ? <><PlayIcon size={12} /> VIDEO</> : 'GPX'}</MediaBadge>
-                <Favorite type='button' $active={personal.isFavorite} aria-pressed={personal.isFavorite} disabled={id == null}
-                    aria-label={`${personal.isFavorite ? 'Remove' : 'Add'} ${title} ${personal.isFavorite ? 'from' : 'to'} favorites`}
-                    onClick={e => { stop(e); personal.toggleFavorite() }}>
-                    {personal.isFavorite ? <StarFillIcon size={19} /> : <StarIcon size={19} />}
-                </Favorite>
             </Preview>
             <Body inert={confirmDelete}>
                 <div><Heading title={title}>{title}</Heading><Location>{location ? <><Flag code={location.code} height='13' alt='' />{location.name}</> : 'Location unavailable'}</Location></div>
@@ -215,29 +209,21 @@ export const VideoSummary = (props) => {
                     <div><strong>{formatMetric(totalElevation, elevation, 1, 'm', 0)}</strong><small>Total ascent</small></div>
                 </Stats>
                 <RouteProfile points={points} />
-                <Insights>
-                    <span title={effort?.explanation}>{effort ? `${effort.label} · est.` : ''}</span>
-                    {availability ? <span>{availability}</span> : null}
-                </Insights>
                 <StatusRow>
-                    {personal.history?.estimatedMinutes != null ? <span title={`Median of ${personal.history.sampleCount} completed full rides at 100% reality, without smoothing.`}>~{personal.history.estimatedMinutes} min</span> : null}
                     {isNew ? <Badge>New</Badge> : null}{isDemo ? <Badge>Demo</Badge> : null}
-                    {rides > 0 ? <span>{rides} {rides === 1 ? 'ride' : 'rides'}</span> : null}
+                    {videoPillLabels[videoPill] ? <Badge>{videoPillLabels[videoPill]}</Badge> : null}
                     {cntActive > 0 ? <Badge $live style={{ marginLeft: 'auto' }}><PeopleIcon size={12} />{cntActive} live</Badge> : null}
                 </StatusRow>
-                {personal.error ? <span role='alert'>{personal.error}</span> : null}
                 <Actions>
                     {onOK || onClick ? <OpenButton type='button' onClick={e => { stop(e); open(e) }} aria-label={`View details for ${title}`}>{buttonText}<ArrowRightIcon size={16} /></OpenButton> : null}
-                    <IconButton ref={optionsRef} type='button' aria-label={`Options for ${title}`} aria-expanded={menuOpen} aria-controls={menuId}
+                    {canDelete && onDelete ? <IconButton ref={optionsRef} type='button' aria-label={`Options for ${title}`} aria-expanded={menuOpen} aria-controls={menuId}
                         onClick={e => { stop(e); setMenuOpen(v => !v) }}><KebabHorizontalIcon size={19} /></IconButton>
+                    : null}
                 </Actions>
             </Body>
             {menuOpen && !confirmDelete ? <Panel ref={menuRef} id={menuId} tabIndex={-1} role='region' aria-label={`Options for ${title}`}
                 onClick={stop} onKeyDown={onDialogKey}
                 onBlur={e => { if (!e.currentTarget.contains(e.relatedTarget) && e.relatedTarget !== optionsRef.current) setMenuOpen(false) }}>
-                {availability ? <p><DownloadIcon size={14} /> {availability}</p> : null}
-                {effort ? <p>{effort.explanation}</p> : <p>Effort estimate unavailable without distance, ascent and elevation data.</p>}
-                {personal.history?.estimatedMinutes != null ? <p>Time estimate: median of {personal.history.sampleCount} completed full rides at 100% reality and no smoothing.</p> : <p>A time estimate appears after 3 comparable full rides.</p>}
                 {canDelete && onDelete ? <button type='button' aria-label={`Delete ${title}`} onClick={() => setConfirmDelete(true)}><TrashIcon size={14} /> Delete route…</button> : null}
                 <button type='button' style={{ marginTop: 8 }} onClick={closeOptions}>Close</button>
             </Panel> : null}

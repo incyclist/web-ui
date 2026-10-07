@@ -6,14 +6,11 @@ import { useUnmountEffect } from '../../../../hooks'
 import { CardSkeleton } from './skeleton'
 
 const OutsideFold = styled(Row)`
-    opacity: 0.1;
     display: block;
-    min-width: ${props => `${props.width}px`};
-    min-height: ${props => `${props.height}px`};
-    height: ${props => `${props.height}px`};
-    width: ${props => `${props.width}px`};
-    background: lightgray;
-    color: white
+    min-width: ${props => props.width};
+    min-height: ${props => props.height};
+    height: ${props => props.height};
+    width: ${props => props.width};
 
 `
 
@@ -118,7 +115,7 @@ export const Card = (props) => {
     }
 
     if (hidden) {
-        return <OutsideFold width={widthStr} height={heightStr} >X</OutsideFold>
+        return <OutsideFold width={widthStr} height={heightStr}><CardSkeleton onClick={props.onClick} /></OutsideFold>
     }
  
     const summaryWidth = typeof width === 'number' && typeof padding === 'number' ? width - padding : width

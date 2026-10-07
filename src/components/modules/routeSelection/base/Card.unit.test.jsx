@@ -50,4 +50,12 @@ describe('Card', () => {
         expect(screen.queryByTestId('details')).toBeNull()
         expect(screen.queryByTestId('card-skeleton')).toBeNull()
     })
+
+    test('keeps a sized placeholder when a card is not visible', () => {
+        const { container } = render(<Card id='1' visible={false} width={280} height={520} Summary={Summary} />)
+
+        expect(screen.getByTestId('card-skeleton')).toBeInTheDocument()
+        expect(screen.queryByTestId('summary')).toBeNull()
+        expect(container.firstChild).toHaveStyle({ width: '280px', height: '520px' })
+    })
 })

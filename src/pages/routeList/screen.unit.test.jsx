@@ -14,8 +14,8 @@ vi.mock('../../components/modules/Search/RoutesTable', () => ({
     RoutesTable: ({routes}) => <div data-testid='routes-table' className='routes' data-count={routes?.length} />
 }))
 
-vi.mock('../../components/modules/Search/RoutesGrid', () => ({
-    RoutesGrid: ({cards}) => <div data-testid='routes-grid' data-count={cards?.length} />
+vi.mock('./RouteTiles', () => ({
+    RouteTiles: ({cards}) => <div data-testid='routes-grid' data-count={cards?.length} />
 }))
 
 // Dropzone talks to the native file dialog and native drag/drop internals, neither of which

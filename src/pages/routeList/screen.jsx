@@ -8,7 +8,7 @@ import { ImportIcon } from "../../components/atoms/Icons/ImportIcon"
 import { NavigationBar } from "../../components/molecules/NavigationBar"
 import { Dropzone } from "../../components/molecules"
 import { RoutesTable } from "../../components/modules/Search/RoutesTable"
-import { RoutesGrid } from "../../components/modules/Search/RoutesGrid"
+import { RouteTiles } from "./RouteTiles"
 import { RouteListToolbar } from "../../components/modules/Search/Toolbar"
 import { RouteFilterPanel } from "../../components/modules/Search/FilterPanel"
 import { ActiveImportRow } from "../../components/modules/Search/ActiveImportRow"
@@ -328,7 +328,7 @@ export const RouteListScreen = ({
 
     // --- keyboard ---
 
-    // RoutesTable/RoutesGrid render their scroll container as the list area's only child
+    // RoutesTable/RouteTiles render their scroll container as the list area's only child
     const getScrollContainer = () => listRef.current?.firstElementChild ?? null
 
     const scroll = (direction, page) => {
@@ -406,7 +406,7 @@ export const RouteListScreen = ({
         }
 
         if (displayType==='tiles') {
-            return <RoutesGrid key={`tiles-${listKey}`} cards={cards} onSelect={onSelect} onDelete={onDelete}/>
+            return <RouteTiles key={`tiles-${listKey}`} cards={cards} onSelect={onSelect} onDelete={onDelete}/>
         }
         return <RoutesTable key={`list-${listKey}`} routes={routes} onSelect={onSelect} onDelete={onDelete}/>
     }

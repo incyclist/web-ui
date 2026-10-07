@@ -24,8 +24,6 @@ vi.mock('../../elevation/ElevationPreview', () => ({
 }))
 vi.mock('react-world-flags', () => ({ default: () => null }))
 
-vi.mock('./usePersonalRoutes', () => ({ usePersonalRoutes: () => ({ isFavorite: false, toggleFavorite: vi.fn() }) }))
-
 import { VideoSummary } from './summary'
 import { VideoDetails } from './details'
 
@@ -235,15 +233,15 @@ describe('VideoCard - Single-Surface Architecture & Features', () => {
         })
     })
 
-    describe('Pills & Telemetry', () => {
-        test('renders Demo, New, Active riders and Own rides pills', () => {
+    describe('Pills from route properties', () => {
+        test('renders Demo, New, live riders and the existing video pill', () => {
             render(
                 <VideoSummary
                     {...baseProps}
                     isDemo={true}
                     isNew={true}
                     cntActive={5}
-                    cntOwnRides={2}
+                    videoPill='in-icloud'
                     totalDistance={{ value: 25.4, unit: 'km' }}
                     totalElevation={{ value: 450, unit: 'm' }}
                 />
@@ -252,9 +250,15 @@ describe('VideoCard - Single-Surface Architecture & Features', () => {
             expect(screen.getByText('Demo')).toBeInTheDocument()
             expect(screen.getByText('New')).toBeInTheDocument()
             expect(screen.getByText('5 live')).toBeInTheDocument()
-            expect(screen.getByText('2 rides')).toBeInTheDocument()
+            expect(screen.getByText('In iCloud')).toBeInTheDocument()
             expect(screen.getByText('25.4 km')).toBeInTheDocument()
             expect(screen.getByText('450 m')).toBeInTheDocument()
+        })
+
+        test('renders a placeholder for a non-visible summary', () => {
+            render(<VideoSummary {...baseProps} visible={false} width={280} height={520} />)
+            expect(screen.getByTestId('card-skeleton')).toBeInTheDocument()
+            expect(screen.queryByText('Col de la Madone')).toBeNull()
         })
     })
 })

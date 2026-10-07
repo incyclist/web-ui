@@ -14,7 +14,6 @@ import { VideoCard } from '../../routeSelection/VideoCard'
 export const CardItem = styled(Autosize)`
     z-index: 0;
     position: relative;
-    &:hover, &:focus-within { z-index: 1; }
 
 `
 
@@ -99,8 +98,8 @@ export const RoutesGrid = ({cards,onSelect,onDelete}) => {
     const visible = (cards??[]).map( card => getCard(card) )
 
     const padding = 0.1
-    const height = 520
-    const width = 280
+    const height = 25
+    const width  = 235 / 132 *height/2+padding
 
     return (
         <AppThemeProvider>
@@ -110,7 +109,7 @@ export const RoutesGrid = ({cards,onSelect,onDelete}) => {
                     return (
                         <Dynamic observer={observer} key={key} event={getFoldEvent(key)} prop='outsideFold' >                 
                             
-                            <CardItem className='card' height={`${height}px`} width={`min(${width}px, 100%)`}>
+                            <CardItem className='card' height={`${height}vh`} width={`${width}vh`}>
                                 <Card outsideFold={isOutsideFold(key)}  key={props?.id} {...props} onClick={()=>{onItemSelected(props?.id)}}/>
                             </CardItem>
 
