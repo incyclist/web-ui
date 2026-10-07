@@ -50,19 +50,31 @@ const Status = styled.div`
 
 
 
-export const SearchingDevice = ( {title, capability, onClick }) => {
-   
+const HelpText = styled.div`
+    position: absolute;
+    top: 40%;
+    left: 0;
+    width: 100%;
+    text-align: center;
+    color: white;
+    font-size: 2vh;
+`
+
+export const SearchingDevice = ( {title, capability, waiting, helpText, footer, onClick }) => {
+
     const onContainerClicked = () =>{
         if (onClick)
             onClick(capability)
     }
-    
-    
+
+    const outline = waiting ? '#f5a623' : undefined
+
     return (
-        <Container onClick={ onContainerClicked}>
+        <Container onClick={ onContainerClicked} style={outline ? { outline: `4px solid ${outline}`, outlineOffset: '-4px' } : undefined}>
             <ContainerTitle size='2.5vh' bold={true}>{title ?? capability} </ContainerTitle>
-            
-            <Status>Click To Search</Status>
+
+            <HelpText>{helpText}</HelpText>
+            <Status>{footer}</Status>
         </Container>
     )
 }

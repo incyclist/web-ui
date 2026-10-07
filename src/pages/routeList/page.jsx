@@ -69,37 +69,14 @@ export const RouteListPage =  () => {
     const [initialized,setInitialized] = useState(false)
 
     const ref = useRef()
-    const refStateUpdates = useRef(null)
-    const refSyncBusy = useRef(0)
     const refObserver = useRef(null)
     const refStarting = useRef(false)
 
+    // Every update is applied as it arrives. An earlier version held updates back while a route sync
+    // was running (sync-start/sync-done counted); a sync-start without its sync-done then froze the
+    // page until it was left and re-entered, so there is no gate here.
     const updateState = useCallback( (displayProps)=> {
-        if (refSyncBusy.current) {
-            refStateUpdates.current = {data:displayProps}
-            return;
-        }
         setState( current => ({...current,data:{...displayProps}}))
-    },[])
-
-    const onSyncStart = useCallback( ()=> {
-        refSyncBusy.current = (refSyncBusy.current??0)+1
-    },[])
-
-    const onSyncDone = useCallback( ()=> {
-        refSyncBusy.current = Math.max(0,(refSyncBusy.current??0)-1)
-
-        // still syncing ... nothing to do
-        if (refSyncBusy.current) {
-            return
-        }
-
-        const interim = refStateUpdates.current
-        refStateUpdates.current = null
-        if (!interim) {
-            return;
-        }
-        setState( current => ({...current,...interim}))
     },[])
 
     // the service returns the same observer for every search - subscribe only once
@@ -110,15 +87,11 @@ export const RouteListPage =  () => {
         const prev = refObserver.current
         if (prev) {
             prev.off('updated', updateState)
-            prev.off('sync-start', onSyncStart)
-            prev.off('sync-done', onSyncDone)
         }
 
         refObserver.current = observer
         observer.on('updated', updateState)
-        observer.on('sync-start', onSyncStart)
-        observer.on('sync-done', onSyncDone)
-    },[updateState, onSyncStart, onSyncDone])
+    },[updateState])
 
     const runSearch = useCallback( (filters)=>{
         const update = service.search(filters)
@@ -161,8 +134,6 @@ export const RouteListPage =  () => {
         const observer = refObserver.current
         if (observer) {
             observer.off('updated', updateState)
-            observer.off('sync-start', onSyncStart)
-            observer.off('sync-done', onSyncDone)
         }
         refObserver.current = null
     })

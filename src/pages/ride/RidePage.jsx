@@ -97,6 +97,10 @@ export const RidePage = ({simulate}) => {
         ride.startWithMissingSensors();
     };
 
+    const onStartWithMap = () => {
+        ride.startWithMapFallback();
+    };
+
     const onNewRide = useCallback(async () => {
         // stop listening to state updates (which could trigger re-render)
         try {
@@ -443,6 +447,7 @@ export const RidePage = ({simulate}) => {
             onStartCancel={onStartCancel}
             onStartRetry={onStartRetry}
             onStartIgnore={onStartIgnore}
+            onStartWithMap={onStartWithMap}
             onSettings={openSettings}
             onScreenshot={onTakeScreenShot} 
             onFreeRideOptionSelected={onFreeRideOptionSelected}    

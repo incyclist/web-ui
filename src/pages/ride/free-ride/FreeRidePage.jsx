@@ -1,7 +1,8 @@
-import React  from "react"
+import React, { useEffect, useState }  from "react"
 import { DynamicRideDashboard, MapOverlay, StartRideOverlay, SideViewOverlay, RouteOptions,RidePageItems } from "../../../components/modules/Ride";
 import { DynamicWorkoutDashboard } from "../../../components/modules/workout/dashboard/wrapper";
 import { Center, ErrorBoundary, Loader } from "../../../components/atoms";
+import { InfoText } from "../../../components/molecules";
 import { MainArea } from "../atoms/MainArea";
 import { WorkoutControl } from "../../../components/modules/workout/control";
 import { GpxRideView } from "../../../components/modules/Ride/views/gpx/GpxRideView";
@@ -15,11 +16,11 @@ export const cameraSound = new Audio(CAMERA_SOUND);
 
 export const FreeRideRidePage = ( { workout, activity, route, state,initialized,startOverlayProps= {},
                                        position, markers, options, hideAll,rideView,
-                                       displayObserver, onDisplayEvent,displayPosition, sideViews,
+                                       displayObserver, onDisplayEvent,displayPosition, sideViews, svInitAllowed, rideViewNotice, svCoverageNotice, svHasCoverage,
                                        showShiftingButtons, showDashboard, showWorkout,
                                        map,optionProps,dbColumns,
                                        screenshotRequested, onScreenshot, onSettings, onFreeRideOptionSelected,
-                                       onStartRetry, onStartIgnore, onStartCancel, onToggleCyclingMode
+                                       onStartRetry, onStartIgnore, onStartCancel, onStartWithMap, onToggleCyclingMode
                                     } ) => { 
 
 
@@ -30,6 +31,11 @@ export const FreeRideRidePage = ( { workout, activity, route, state,initialized,
 
 
     const opacity = rideView==='map' ? 1 : 0.6
+
+    const [fallbackNoticeKey, setFallbackNoticeKey] = useState(undefined)
+    useEffect( ()=> { if (rideViewNotice) setFallbackNoticeKey(Date.now()) }, [rideViewNotice])
+    const [coverageNoticeKey, setCoverageNoticeKey] = useState(undefined)
+    useEffect( ()=> { if (svCoverageNotice) setCoverageNoticeKey(svCoverageNotice.ts) }, [svCoverageNotice])
 
     const svl = {
         top: '53vh' ,
@@ -45,7 +51,7 @@ export const FreeRideRidePage = ( { workout, activity, route, state,initialized,
 
     let View = ()=><Center><Loader/></Center>
     if (initialized && isStarting) {
-        const childProps = {...startOverlayProps, onRetry:onStartRetry, onIgnore:onStartIgnore, onCancel:onStartCancel}
+        const childProps = {...startOverlayProps, onRetry:onStartRetry, onIgnore:onStartIgnore, onCancel:onStartCancel, onStartWithMap:onStartWithMap}
         View = ()=><StartRideOverlay {...childProps} />
     }
 
@@ -57,9 +63,12 @@ export const FreeRideRidePage = ( { workout, activity, route, state,initialized,
                 <ErrorBoundary hideOnError>
                         {!isReady ? <View/> : null}
 
+                        {fallbackNoticeKey ? <InfoText text="Street View isn't available right now. Showing the Map instead." routeDistance={fallbackNoticeKey} timeout={8000} /> : null}
+                        {coverageNoticeKey && svHasCoverage!==true ? <InfoText text="No Street View imagery at this location." routeDistance={coverageNoticeKey} timeout={8000} /> : null}
+
                         <RidePageItems visible={true} width='100%' height='100%' zIndex={1}  >
                             {/* ride view */}
-                            <GpxRideView visible={true} options={options} isMain={true} position={displayPosition} route={route} rideView={rideView} onEvent={onDisplayEvent} observer={displayObserver} />                           
+                            <GpxRideView visible={true} options={options} isMain={true} position={displayPosition} route={route} rideView={rideView} svInitAllowed={svInitAllowed} onEvent={onDisplayEvent} observer={displayObserver} />
 
                             {/* dashboards and controls */}
                             <DynamicRideDashboard visible={showDashboard} scheme='light'fold='top-right' foldId='gpx-ride-dashboard' opacity={1.0}  height={'10vh'} top={0} left={`${(100-dbWidth)/2}vw`} width={`${dbWidth}vw`}  />
@@ -85,14 +94,14 @@ export const FreeRideRidePage = ( { workout, activity, route, state,initialized,
                             {sideViews?.enabled ? 
                                 <SideViewOverlay {...sideViewProps} {...svl} foldId='sv-left' hidden={sideViews.hide}
                                 useMinimizeProp
-                                direction='left'  position={displayPosition}  observer={displayObserver}
+                                direction='left'  position={displayPosition}  observer={displayObserver} svInitAllowed={svInitAllowed}
                                 minimized={!sideViews?.left} transparent={false} opacity={1}
                                 />                            
                             : null}
                             {sideViews?.enabled ? 
                                 <SideViewOverlay {...sideViewProps} {...svr} foldId='sv-right'  hidden={sideViews.hide}
                                 useMinimizeProp
-                                direction='right' position={displayPosition} observer={displayObserver}
+                                direction='right' position={displayPosition} observer={displayObserver} svInitAllowed={svInitAllowed}
                                 minimized={!sideViews?.right} transparent={false} opacity={1}
                                 />                            
                             : null}

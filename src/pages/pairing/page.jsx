@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from "react"
 import { PairingScreen } from "./screen"
 import { useLocation, useNavigate} from "react-router";
-import { getRouteList, useAppState, useDeviceAccess, useDeviceConfiguration, useDevicePairing, useDeviceRide, useWorkoutList  } from "incyclist-services";
+import { getRouteList, useAppState, useDeviceAccess, useDeviceConfiguration, useDevicePairing, useDeviceRide, usePairingVisitTracker as getPairingVisitTracker, useWorkoutList  } from "incyclist-services";
 import InterfaceSettings from "../../components/modules/PairingInfo/InterfaceSettings";
 import { clone } from "../../utils/coding";
 import DeviceSelector from "../../components/modules/PairingInfo/DeviceSelector";
@@ -46,6 +46,28 @@ export const PairingPage =  ({mode}) =>{
 
 
     const [logger,closePage] = usePageLogger('Pairing',pageState)
+
+    const visitOpened = useRef(false)
+
+    const trackVisit = (fn) => {
+        try {
+            fn(getPairingVisitTracker())
+        }
+        catch(err) {
+            logger.logEvent({message:'Error', fn:'trackVisit',error:err.message,stack:err.stack})
+        }
+    }
+
+    useEffect( ()=>{
+        if (visitOpened.current)
+            return
+        visitOpened.current = true
+        trackVisit( t=>t.openVisit({forRide: mode==='start'}))
+    },[])
+
+    const closeVisit = (via) => {
+        trackVisit( t=>t.closeVisit(via,{canStartRide}))
+    }
 
 
     // const wasPaired = ()=> {
@@ -152,6 +174,7 @@ export const PairingPage =  ({mode}) =>{
 
 
     const onSkipClicked = ()=>{
+        closeVisit(mode==='start' ? 'cancel' : 'skip')
         devicePairing.stop()
         const pathname =  location?.state?.source ?? getNextPage()
 
@@ -161,8 +184,7 @@ export const PairingPage =  ({mode}) =>{
     }
 
     const onOKClicked = ()=>{
-
-        
+        closeVisit('ok')
         devicePairing.prepareStart()
         devicePairing.setReadyToStart()
 
@@ -186,7 +208,8 @@ export const PairingPage =  ({mode}) =>{
         closePage()
     }
 
-    const onSimulateClicked = () => { 
+    const onSimulateClicked = () => {
+        closeVisit('simulate')
         const simulator = deviceConfig.getSimulatorAdapterId()
         devicePairing.prepareStart([simulator])
 
@@ -237,7 +260,7 @@ export const PairingPage =  ({mode}) =>{
     const showSimulate = simRef.current
     return (
         <div >
-            <PairingScreen  zIndex={1} initialized={initialized.current} interfaces={interfaces} capabilities={capabilities} readyToStart={canStartRide}
+            <PairingScreen  zIndex={1} initialized={initialized.current} interfaces={interfaces} capabilities={capabilities} readyToStart={canStartRide} rideMode={mode==='start'}
                 onSkip = {onSkipClicked}
                 onOK = {onOKClicked}
                 onSimulate = {onSimulateClicked}

@@ -69,7 +69,8 @@ const formatDistance = (distance) => {
  */
 const ImportRowCells = ({ item, selected, onToggle }) => {
     const isParsed = item.parseState === 'parsed';
-    const isProblem = item.errorReason != null;
+    const isDuplicate = item.duplicateOf != null;
+    const isProblem = item.errorReason != null && !isDuplicate;
 
     return (
         <RowContainer data-testid={`import-row-${item.id}`}>
@@ -92,12 +93,13 @@ const ImportRowCells = ({ item, selected, onToggle }) => {
             <Cell width="14vw" data-testid={`import-row-${item.id}-distance`}>
                 {!isParsed
                     ? <SkeletonBlock width="6vw" height="1.4vh" />
-                    : (isProblem ? <ReasonText>{item.errorReason}</ReasonText> : formatDistance(item.distance))}
+                    : (item.errorReason != null ? <ReasonText>{item.errorReason}</ReasonText> : formatDistance(item.distance))}
             </Cell>
 
             <Cell width="10vw" data-testid={`import-row-${item.id}-status`}>
                 {isProblem && <Pill text="Can't import" color="orange" textColor="black" size="small" />}
-                {!isProblem && item.alreadyImported && <Pill text="Already in library" size="small" />}
+                {isDuplicate && <Pill text="Duplicate" size="small" />}
+                {!isProblem && !isDuplicate && item.alreadyImported && <Pill text="Already in library" size="small" />}
             </Cell>
         </RowContainer>
     );
