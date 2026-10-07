@@ -223,7 +223,7 @@ export const PairingScreen = ( {onOK,onSkip,onSimulate, onCapabilityClick,onCapa
 
     return (
         <MainPage className='main'>
-            <PageTitle>{title??'Paired Devices'}</PageTitle>
+            <PageTitle>Devices</PageTitle>
             <StatusLine>
                 <StatusDot $color={statusDotColors[status.dot]} />
                 <span>{status.text}</span>
