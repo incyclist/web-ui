@@ -1,5 +1,4 @@
 
-import { useNavigate } from "react-router";
 import { isReactNative } from "../../utils";
 import { api,hasFeature } from "../../utils/electron/integration";
 import LanguageDetector from "./i18n";
@@ -30,6 +29,22 @@ export default class NativeUiService   {
             NativeUiService._instance = new NativeUiService();
         }
         return NativeUiService._instance;
+    }
+
+    // react-router's navigate() only exists once a component using useNavigate() has rendered
+    // inside the Router - see NavigationBridge. Calls that arrive first are queued and flushed
+    // once it registers, rather than silently dropped (today's bug: openPage() used to call
+    // useNavigate() itself, outside a component, which throws and is swallowed below).
+    navigate = null
+    pendingNavigations = []
+
+    registerNavigate(navigate) {
+        this.navigate = navigate
+        if (this.pendingNavigations.length) {
+            const pending = this.pendingNavigations
+            this.pendingNavigations = []
+            pending.forEach( ({route,state}) => this.navigate(route, state!==undefined ? {state} : undefined))
+        }
     }
 
 
@@ -148,15 +163,13 @@ export default class NativeUiService   {
         return ['en']
     }
 
-    openPage(route) {
-        try {
-            useNavigate().navigate(route)
-
+    openPage(route, state) {
+        if (this.navigate) {
+            this.navigate(route, state!==undefined ? {state} : undefined)
         }
-        catch(er) {
-            
+        else {
+            this.pendingNavigations.push({route,state})
         }
-
     }
 
 
