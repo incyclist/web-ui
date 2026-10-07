@@ -1,14 +1,15 @@
 import React, { useCallback } from 'react'
 import styled from 'styled-components'
 import { Dynamic, View } from '../../components/atoms'
-import { VideoCard } from '../../components/modules/routeSelection/VideoCard'
+import { Card } from '../../components/modules/routeSelection/base/Card'
+import { RouteTileSummary } from './RouteTileSummary'
 import { useFoldWindow } from '../../hooks'
 import { useRouteList } from 'incyclist-services'
 import { AppThemeProvider } from '../../theme'
 import { scrollbar } from '../../utils/scrollbar'
 
 const TILE_WIDTH = 280
-const TILE_HEIGHT = 520
+const TILE_HEIGHT = 460
 
 const Container = styled(View)`
     box-sizing: border-box;
@@ -54,7 +55,8 @@ export const RouteTiles = ({ cards, onSelect, onDelete }) => {
                 const props = card.getDisplayProperties() ?? {}
                 return <Dynamic observer={observer} key={id} event={getFoldEvent(id)} prop='outsideFold'>
                     <Tile className='route-tile'>
-                        <VideoCard {...props} id={id} width={TILE_WIDTH} height={TILE_HEIGHT}
+                        <Card {...props} card={card} id={id} width={TILE_WIDTH} height={TILE_HEIGHT}
+                            Summary={RouteTileSummary}
                             outsideFold={isOutsideFold(id)} onOK={() => select(id)}
                             onDelete={event => { event?.stopPropagation?.(); onDelete?.(id) }} />
                     </Tile>

@@ -26,8 +26,7 @@ PreviewImg.args = {
     videoUrl:"https://www.reallifevideo.eu/stream/DE_Arnbach.mp4",
     previewUrl: 'https://videos.incyclist.com/previews/DE_Arnbach_preview.png',
     routeData:sydney,
-    height: 225,
-    onOK: () => {},
+    height: 500,
     loaded:true,
     visible:true,
     ready :true
@@ -191,39 +190,4 @@ WithActiveRides.args = {
     ready :true,
     cntActive:10
 
-};
-
-export const GPXRoute = Template.bind({});
-GPXRoute.args = {
-    id: 'gpx-1',
-    title: 'Sydney Harbor Loop',
-    country: 'au',
-    distance: 24500,
-    elevation: 340,
-    category: 'GPX',
-    hasVideo: false,
-    shape: sydney?.decoded || [],
-    height: 500,
-    loaded: true,
-    visible: true,
-    ready: true,
-    initialized: true
-};
-
-export const WithDeleteOption = Template.bind({});
-WithDeleteOption.args = {
-    id: 'del-1',
-    title: 'Custom GPX Workout',
-    country: 'fr',
-    distance: 18400,
-    elevation: 410,
-    hasVideo: false,
-    shape: sydney?.decoded || [],
-    canDelete: true,
-    onDelete: () => alert('Delete clicked'),
-    height: 225,
-    loaded: true,
-    visible: true,
-    ready: true,
-    initialized: true
 };

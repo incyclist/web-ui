@@ -20,8 +20,8 @@ vi.mock('../../hooks', async importOriginal => ({
 vi.mock('../../components/atoms', async importOriginal => ({
     ...await importOriginal(), Dynamic: ({ children }) => children
 }))
-vi.mock('../../components/modules/routeSelection/VideoCard', () => ({
-    VideoCard: ({ id, visible, onOK, onDelete }) => <div data-testid={`tile-${id}`} data-visible={String(visible)}>
+vi.mock('../../components/modules/routeSelection/base/Card', () => ({
+    Card: ({ id, visible, onOK, onDelete }) => <div data-testid={`tile-${id}`} data-visible={String(visible)}>
         <button onClick={onOK}>Open {id}</button><button onClick={onDelete}>Delete {id}</button>
     </div>
 }))
@@ -29,7 +29,8 @@ vi.mock('../../components/modules/routeSelection/VideoCard', () => ({
 import { RouteTiles } from './RouteTiles'
 
 const cards = ['route-1', 'route-2'].map(id => ({
-    id, getDisplayProperties: () => ({ title: id, visible: true })
+    id, isVisible: () => true, setInitialized: vi.fn(),
+    getDisplayProperties: () => ({ title: id, visible: true })
 }))
 
 describe('RouteTiles', () => {
