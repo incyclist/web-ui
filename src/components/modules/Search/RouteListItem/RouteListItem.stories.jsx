@@ -1,7 +1,12 @@
 import React from 'react'
+import { ThemeProvider } from 'styled-components'
+import { newUITheme } from '../../../../theme'
 import { RouteListItemView } from './component'
 
-export default { title: 'Components/Modules/Search/RouteListItem', component: RouteListItemView }
+export default {
+    title: 'Components/Modules/Search/RouteListItem', component: RouteListItemView,
+    decorators: [Story => <ThemeProvider theme={newUITheme}><div style={{ width: 'min(1400px, 100%)', padding: 8, background: '#100b19' }}><Story /></div></ThemeProvider>],
+}
 
 const points = [
     { lat: 48.3, lng: 10.3, routeDistance: 0, elevation: 209 },
@@ -22,4 +27,8 @@ export const GPX = {
         ...Video.args, id: 'gpx', title: 'Mountain GPX Route', hasVideo: false,
         previewUrl: undefined, isNew: false, canDelete: false,
     },
+}
+
+export const WithoutDelete = {
+    args: { ...Video.args, canDelete: false },
 }

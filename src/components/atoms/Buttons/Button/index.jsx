@@ -7,25 +7,30 @@ import {copyPropsExcluding} from "../../../../utils/props"
 const buttonTheme  = AppTheme.get().button;
 
 const getButtonColor = ( props) => {
+    const theme = props.theme?.button ?? buttonTheme
     //if (props.disabled) 
     //    return buttonTheme.disabled.background;
     if (props.background)
         return props.background
 
-    if (props.primary==='true') return buttonTheme.primary.background
-    if (props.secondary==='true') return buttonTheme.secondary.background
-    return buttonTheme.normal.background;
+    if (props.primary==='true') return theme.primary.background
+    if (props.secondary==='true') return theme.secondary.background
+    return theme.normal.background;
 }
 
 const getTextColor = ( props) => {
+    const theme = props.theme?.button ?? buttonTheme
     //if (props.disabled) 
     //    return buttonTheme.disabled.background;
     if (props.textColor)
         return props.textColor
 
-    if (props.primary==='true') return buttonTheme.primary.text
-    if (props.secondary==='true') return buttonTheme.secondary.text
-    return buttonTheme.normal.text;
+    if (props.$responsive && props.primary==='true')
+        return props.theme?.colors?.text ?? AppTheme.get().colors?.text ?? theme.primary.text
+
+    if (props.primary==='true') return theme.primary.text
+    if (props.secondary==='true') return theme.secondary.text
+    return theme.normal.text;
 }
 
 const getVerticalMargin =( props) => {
@@ -106,7 +111,7 @@ const Btn = styled.button`
     transition: all 0.2s;
 
     &:hover {
-        background: ${props => (props.disabled ? getButtonColor(props) : buttonTheme.hover.background)};
+        background: ${props => (props.disabled ? getButtonColor(props) : props.theme?.button?.hover?.background ?? buttonTheme.hover.background)};
         border-style: ${props => !props.no3D ? 'solid':undefined};
         border-width: ${props => !props.no3D ? '3px':undefined};
         border-color: ${props => !props.no3D ? 'white':undefined};
@@ -116,6 +121,24 @@ const Btn = styled.button`
     }
 
     ${props => props.outline ? outlineStyle : ''}
+    ${props => props.$responsive && css`
+        display: inline-flex;
+        float: none;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        box-sizing: border-box;
+        height: ${props.size === 'small' ? '32px' : '38px'};
+        min-height: ${props.size === 'small' ? '32px' : '38px'};
+        margin: 0;
+        padding: 0 12px;
+        border-radius: ${props.$shape === 'pill' ? '999px' : props.$shape === 'rounded' ? '8px' : '4px'};
+        font-size: ${props.size === 'small' ? '12px' : '13px'};
+        font-weight: 650;
+        line-height: 1;
+        &:hover { border-width: 1px; border-color: transparent; box-shadow: none; }
+        &:focus-visible { outline: 3px solid ${props.theme?.button?.hover?.background ?? buttonTheme.hover.background}; outline-offset: 2px; }
+    `}
 `
 
 export const Button = ( props )=>{ 
@@ -199,7 +222,7 @@ export const Button = ( props )=>{
     },[])
     
     
-    const reserved = ['type','className','style','onClick','text','children','longPressDelay','primary','secondary'];
+    const reserved = ['type','className','style','onClick','text','children','longPressDelay','primary','secondary','responsive','shape'];
     const filtered = copyPropsExcluding( props, reserved)
 
     const primary = (props.primary??false).toString()
@@ -215,6 +238,8 @@ export const Button = ( props )=>{
             onMouseUp={ onMouseUp}
             onMouseLeave={ onMouseLeave}
             no3D={no3D}
+            $responsive={props.responsive}
+            $shape={props.shape}
             {...elementProps}
             >
             {text}
@@ -223,4 +248,3 @@ export const Button = ( props )=>{
 
     );
 }
-

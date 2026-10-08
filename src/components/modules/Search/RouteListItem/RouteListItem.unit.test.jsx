@@ -52,16 +52,11 @@ describe('RouteListItem', () => {
         expect(screen.getByText('Source catalog')).toBeInTheDocument()
     })
 
-    test('requires confirmation before deleting and allows cancellation', () => {
+    test('deletes directly without opening details or a confirmation dialog', () => {
         const onDelete = vi.fn(), onClick = vi.fn()
         render(<RouteListItem {...route} shape={points} canDelete onDelete={onDelete} onClick={onClick} outsideFold={false} />)
         fireEvent.click(screen.getByRole('button', { name: 'Delete Passo Pordoi' }))
-        expect(screen.getByRole('alertdialog', { name: 'Delete Passo Pordoi?' })).toBeInTheDocument()
-        expect(onDelete).not.toHaveBeenCalled()
-        fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
         expect(screen.queryByRole('alertdialog')).toBeNull()
-        fireEvent.click(screen.getByRole('button', { name: 'Delete Passo Pordoi' }))
-        fireEvent.click(screen.getByRole('button', { name: 'Delete', exact: true }))
         expect(onDelete).toHaveBeenCalledOnce()
         expect(onClick).not.toHaveBeenCalled()
     })

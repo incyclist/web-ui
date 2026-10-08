@@ -1,9 +1,11 @@
 import React from 'react'
+import { ThemeProvider } from 'styled-components'
+import { newUITheme } from '../../../../theme'
 import { RouteTileSummaryView } from './component'
 
 export default { title: 'Components/Modules/Search/RouteTileSummary', component: RouteTileSummaryView }
 
-const Template = args => <div style={{ width: 280, height: 388 }}><RouteTileSummaryView {...args} /></div>
+const Template = args => <ThemeProvider theme={newUITheme}><div style={{ width: 296, height: 404, boxSizing: 'border-box', padding: 8, background: '#100b19' }}><RouteTileSummaryView {...args} /></div></ThemeProvider>
 
 export const Video = Template.bind({})
 Video.args = {

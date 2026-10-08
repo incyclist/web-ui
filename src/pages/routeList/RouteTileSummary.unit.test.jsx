@@ -1,6 +1,6 @@
 import React from 'react'
 import { describe, test, expect, vi, beforeEach } from 'vitest'
-import { render, screen, fireEvent, act } from '@testing-library/react'
+import { render, screen, fireEvent } from '@testing-library/react'
 
 const { routeList } = vi.hoisted(() => ({ routeList: { requestRouteDetails: vi.fn() } }))
 vi.mock('incyclist-services', async importOriginal => ({
@@ -54,7 +54,7 @@ describe('RouteTileSummary', () => {
         expect(screen.queryByText(/ride[s]?$/)).toBeNull()
     })
 
-    test('opens details and requires confirmation before deleting an eligible route', async () => {
+    test('opens details and directly deletes an eligible route', () => {
         const onOK = vi.fn(), onDelete = vi.fn()
         const { rerender } = render(<RouteTileSummary {...props} onOK={onOK} onDelete={onDelete} canDelete={false} />)
         expect(screen.queryByRole('button', { name: 'Delete Col de la Madone' })).toBeNull()
@@ -63,9 +63,9 @@ describe('RouteTileSummary', () => {
         fireEvent.click(screen.getByRole('button', { name: 'View details for Col de la Madone' }))
         expect(onOK).toHaveBeenCalledOnce()
         fireEvent.click(screen.getByRole('button', { name: 'Delete Col de la Madone' }))
-        expect(onDelete).not.toHaveBeenCalled()
-        await act(async () => fireEvent.click(screen.getByRole('button', { name: 'Delete', exact: true })))
         expect(onDelete).toHaveBeenCalledOnce()
+        expect(screen.queryByRole('alertdialog')).toBeNull()
+        expect(onOK).toHaveBeenCalledOnce()
     })
 
     test('keeps a sized placeholder for an invisible route', () => {
