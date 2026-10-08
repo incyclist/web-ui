@@ -8,7 +8,6 @@ import { RoutesTable } from "../../components/modules/Search/RoutesTable"
 import { SearchFilter } from "../../components/modules/Search/Filter"
 import { DisplayTypeSelection } from "../../components/molecules/Lists/DisplayTypeSelection"
 import { RoutesGrid } from "../../components/modules/Search/RoutesGrid"
-import { useAppState } from "incyclist-services"
 
 
 const View = styled(Row)`
@@ -46,10 +45,8 @@ export const SearchScreen =
     }) => {
 
 
-    const appState = useAppState()
     const filterProps = {routes,countries,filters,contentTypes,routeTypes,routeSources,onChangeFilter,units}
-    const newUI = appState.hasFeature('NEW_SEARCH_UI')
-    const displayType = newUI ? propDisplayType : null
+    const displayType = propDisplayType
 
     return (
         

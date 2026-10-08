@@ -42,7 +42,7 @@ const countRoutes = (service, filters) => {
  * The merged Routes page: one flat, searchable and sortable list (or tile grid) of all routes,
  * with Free Ride and Import as page actions.
  *
- * Reached via `/routes` and via `/search` (permanent alias) while the NEW_SEARCH_UI feature is enabled.
+ * Reached via `/routes` and via `/search` (permanent alias).
  */
 export const RouteListPage =  () => {
 

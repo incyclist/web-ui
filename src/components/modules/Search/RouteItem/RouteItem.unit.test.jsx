@@ -147,15 +147,6 @@ describe('RouteItem', () => {
 
     describe('hover-delete confirmation', () => {
 
-        // the hover-delete icon only exists on the merged page (behind NEW_SEARCH_UI)
-        beforeEach(() => {
-            mockAppState.hasFeature.mockImplementation((feature) => feature === 'NEW_SEARCH_UI')
-        })
-
-        afterEach(() => {
-            mockAppState.hasFeature.mockImplementation(() => false)
-        })
-
         const revealDeleteIcon = (container) => {
             fireEvent.mouseEnter(container.firstChild)
             return container.querySelector('#delete')

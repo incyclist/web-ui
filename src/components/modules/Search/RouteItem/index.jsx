@@ -9,7 +9,7 @@ import { RouteItemSkeleton } from './skeleton';
 import {useWindowDimensions, useUnmountEffect } from '../../../../hooks';
 import {AppThemeProvider } from '../../../../theme';
 import Flag from 'react-world-flags';
-import { useAppState, useRouteList, useAppsService } from 'incyclist-services';
+import { useRouteList, useAppsService } from 'incyclist-services';
 import { useHoverObserver } from '../../../../hooks/ui/useHover';
 import { DeleteIcon } from '../../../molecules/Activity/ActivityListItem/atoms';
 
@@ -32,11 +32,8 @@ export const RouteItem = ( props) => {
     const [loadedPoints,setLoadedPoints] = useState(undefined)
     const service = useRouteList()
     const apps = useAppsService()
-    const appState = useAppState()
     const containerRef = useRef()
     const [hoverObserverRef,setHoverObserver] = useHoverObserver(containerRef)
-
-    const newSearchUI = appState.hasFeature('NEW_SEARCH_UI')
 
 
     // removing a route is immediate, like deleting an activity or a workout - no confirmation
@@ -90,9 +87,7 @@ export const RouteItem = ( props) => {
         if (initialized.current)
             return
 
-        if (newSearchUI) {
-            setHoverObserver(containerRef)
-        }
+        setHoverObserver(containerRef)
 
         const hasShape = Array.isArray(shape) && shape.length>0
         if (!hasShape && (!loaded || !points) && id!==undefined) {
@@ -100,7 +95,7 @@ export const RouteItem = ( props) => {
         }
 
         initialized.current = true
-    },[loadDetails, newSearchUI, props, setHoverObserver])
+    },[loadDetails, props, setHoverObserver])
 
     // safety net for the (today theoretical) case of a full unmount while still inside the fold
     useUnmountEffect( ()=>{
@@ -228,7 +223,7 @@ export const RouteItem = ( props) => {
                 </DataContainer>
 
                 <DetailsContainer>
-                    {newSearchUI && canDelete?
+                    {canDelete?
                     <DataContainer width='3vw' justify='end'    align='center' >
                             <Dynamic observer={hoverObserverRef.current} event='hovered' prop='visible'>
                                 <DeleteIcon onClick={onDeleteHandler} logContext={{id,title}} />
