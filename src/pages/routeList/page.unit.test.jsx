@@ -49,7 +49,6 @@ vi.mock('../../components/modules/routeSelection/ImportRoutesDialog', () => ({
 
 import { RouteListPage } from './page'
 import { RouteDetailsDialog } from '../../components/modules/routeSelection/RouteDetails'
-import { RouteListDetailsHeader } from '../../components/molecules/RouteListDetailsHeader'
 import { FreeRideSettingsDialog } from '../../components/modules/routeSelection/FreeRideSettings'
 
 const makeRoutes = (n, prefix='r') => Array.from({length:n}, (_,i) => ({id:`${prefix}${i}`, title:`Route ${i}`}))
@@ -313,7 +312,6 @@ describe('RouteListPage', () => {
             const [Dialog, props] = mockOpenDialog.mock.calls[0]
             expect(Dialog).toBe(RouteDetailsDialog)
             expect(props.card).toBe(routeCard)
-            expect(props.DetailsHeader).toBe(RouteListDetailsHeader)
         })
 
         test('deleting a route deletes its card', () => {

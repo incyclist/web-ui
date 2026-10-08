@@ -8,7 +8,7 @@ import { EventLogger } from "gd-eventlog"
 import { useUnmountEffect } from "../../../../hooks"
 
 export const RouteDetailsDialog = (props) => {
-    const {onStart,onCancel,onAddWorkout,card,DetailsHeader} = props
+    const {onStart,onCancel,onAddWorkout,card} = props
 
     const [prevRides,setPrevRides] = useState(false)
 
@@ -366,10 +366,8 @@ export const RouteDetailsDialog = (props) => {
     const showWorkout = !hasWorkout
     const showPrev = getShowPrev()
     const videoDir = card.getVideoDir()
-    const {isNew,isDemo,cntActive} = DetailsHeader ? card.getDisplayProperties?.() ?? {} : {}
 
     const args = {route,totalDistance,totalElevation,xScale,yScale,markers,showLoopOverwrite,showNextOverwrite, ...settings,...convertState,...downloadState, requestVideoDir, convertOngoing:valid(convert), downloadOngoing:valid(download),  convertSupported, ...videoState, isOnline, showWorkout,
-                  isNew,isDemo,cntActive,DetailsHeader,
                   showPrev,prevRides,loading,videoDir,onChangeVideoDir,
                   smoothingAvailable, smoothingMaxLevel, smoothedElevation, smoothedPoints, smoothedGradient,
                  onVideoSelected,videoSelectedError}
