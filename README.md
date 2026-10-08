@@ -37,6 +37,18 @@ The changes to logRest are made to disable server logging during debugging. It s
 
 If you want to test in the browser, just open [http://localhost:3000](http://localhost:3000) to view it in the browser. The UI in the browser however has limited support for app features ( local file access, BLE, ANT, ....)
 
+### Previewing the combined Routes page
+
+The redesigned route cards and route details are behind the `NEW_SEARCH_UI` feature toggle. A fresh browser session shows the classic Routes page until the toggle is enabled. In the developer console of the **same tab** running the app, enter:
+
+```js
+sessionStorage.setItem('NEW_SEARCH_UI', 'true')
+```
+
+Reload the page so the app reads the setting. Open **Routes**, then select the **Tiles** icon (the four-square icon beside the list icon). The saved display preference defaults to **List**, which does not show the redesigned cards. Click **View details** on a tile to see the redesigned route dialog.
+
+When testing through the desktop app, add `"NEW_SEARCH_UI": true` as a top-level property in its `settings.json` and restart the app. This file is part of the local app configuration, not this repository.
+
 
 ### `npm run storybook`
 
