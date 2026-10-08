@@ -326,6 +326,26 @@ interaction tests.
 `sydney.json`) imported by unit tests across the codebase — add new shared fixtures
 there rather than duplicating sample data per test file.
 
+## Reuse existing components — don't reach for native elements
+
+For anything user-facing, and especially for user input, **reuse the existing atoms
+(`Button`, `EditText`, `EditNumber`, `Checkbox`, `SingleSelect`, ...) instead of native
+HTML elements** (`<input>`, `<button>`, `<select>`) **or a new one-off local
+component.** Before building a new input/control, check `src/components/atoms/` (and
+`molecules/`) for something that already does it — most input patterns already exist
+there. Reasons this matters, beyond just avoiding duplication:
+
+- the existing atoms already handle styling/theming consistently with the rest of the
+  app
+- several of them already log user interaction for free (see Logging below) — a native
+  `<input>` or a hand-rolled component won't, and you'd have to add that logging
+  yourself and likely get the shape wrong
+- a new local component fragments the atomic-design layering this repo relies on
+
+If no existing atom fits, the new control belongs in `atoms/` (or `molecules/` if it
+composes several atoms) so the rest of the app can reuse it too — not inlined as a
+one-off inside the page/component that happens to need it first.
+
 ## Other conventions worth knowing
 
 - **Functional components only** — no class components in new code.
