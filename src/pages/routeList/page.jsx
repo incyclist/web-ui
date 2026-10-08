@@ -5,7 +5,7 @@ import { RouteListScreen } from "./screen";
 import { usePageLogger, useUnmountEffect } from "../../hooks";
 import { DialogLauncher } from "../../components/molecules";
 import { RouteDetailsDialog } from "../../components/modules/routeSelection/RouteDetails";
-import { RouteListDetailsHeader } from "./RouteListDetailsHeader";
+import { RouteListDetailsHeader } from "../../components/molecules/RouteListDetailsHeader";
 import { FreeRideSettingsDialog } from "../../components/modules/routeSelection/FreeRideSettings";
 import { ImportRoutesDialog } from "../../components/modules/routeSelection/ImportRoutesDialog";
 import { ErrorBoundary } from "../../components/atoms/ErrorBoundary";

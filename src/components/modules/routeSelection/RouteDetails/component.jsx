@@ -16,14 +16,50 @@ const ContentArea = styled(Column)`
     padding-left:0.4vw;
     padding-right:0.4vw;
     ${props => props.$routeListLayout && css`
+        flex: 1 1 auto;
+        min-height: 0;
+        height: auto;
         width: 100%;
         box-sizing: border-box;
-        padding: 0 1.5rem 1.25rem;
+        padding: .75rem 1rem 1rem;
         overflow-y: auto;
         background: #130b24;
         color: #f8f6ff;
     `}
     ${scrollbar}
+`
+
+const RouteListLayout = styled.div`
+    display: ${p => p.$routeListLayout ? 'flex' : 'contents'};
+    ${p => p.$routeListLayout && css`
+        flex-direction: column;
+        height: 100%;
+        min-height: 0;
+        overflow: hidden;
+    `}
+`
+
+const DetailsBody = styled.div`
+    display: ${p => p.$routeListLayout ? 'grid' : 'contents'};
+    ${p => p.$routeListLayout && css`
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
+        gap: 1rem;
+        align-items: stretch;
+        min-height: 100%;
+        @media (max-width: 650px) { grid-template-columns: 1fr; min-height: 0; }
+    `}
+`
+
+const SettingsColumn = styled.div`
+    display: ${p => p.$routeListLayout ? 'flex' : 'contents'};
+    ${p => p.$routeListLayout && css`
+        grid-column: 1;
+        grid-row: 1;
+        flex-direction: column;
+        min-width: 0;
+        min-height: 0;
+        @media (max-width: 650px) { grid-row: 1; }
+    `}
 `
 
 // never yields its height to the rows the smoothing control adds below it - those absorb their
@@ -32,7 +68,13 @@ const PreviewRow = styled(Row)`
     width: 100%;
     flex-shrink: 0;
     ${props => props.$routeListLayout && css`
-        @media (max-width: 650px) { flex-direction: column; }
+        grid-column: 2;
+        grid-row: 1;
+        flex-direction: column;
+        gap: .6rem;
+        height: 100%;
+        min-height: 0;
+        @media (max-width: 650px) { grid-column: 1; grid-row: 2; }
     `}
 `
 
@@ -45,13 +87,22 @@ const Preview = styled(Column)`
     padding-left: ${props => props?.position==='right'? '0.25vw' :undefined};
     margin-bottom: 1vh;
     ${props => props.$routeListLayout && css`
+        width: 100%;
+        height: auto;
+        flex: 1 1 0;
+        min-height: 160px;
+        box-sizing: border-box;
+        padding: 0;
+        margin: 0;
         overflow: hidden;
         border: 1px solid rgba(255, 255, 255, .12);
         border-radius: 9px;
         background: #1a1229;
+        ${props.$empty && 'display: none;'}
         @media (max-width: 650px) {
             width: 100%;
-            height: 200px;
+            height: 190px;
+            flex: none;
             box-sizing: border-box;
             padding: 0;
         }
@@ -78,10 +129,39 @@ const GraphSlot = styled.div`
     position: relative;
 `
 
+const ProfilePanel = styled.div`
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    min-height: 180px;
+    margin-top: .75rem;
+    overflow: hidden;
+    border: 1px solid rgba(255,255,255,.12);
+    border-radius: 9px;
+    background: #1a1229;
+    color: #eee8f7;
+`
+
+const ProfileHeading = styled.div`
+    flex: none;
+    padding: .45rem .7rem;
+    border-bottom: 1px solid rgba(255,255,255,.1);
+    font-size: .75rem;
+    font-weight: 700;
+    letter-spacing: .04em;
+`
+
 // aligns the copy with the chips rather than with the label column (10vw label + 0.4vw margin)
 const SmoothingCopy = styled.div`
-    padding: 0 0 1vh 10.4vw;
+    padding: ${props => props.$routeListLayout ? '.2rem 0 .5rem' : '0 0 1vh 10.4vw'};
     opacity: ${props => props.dimmed ? 0.6 : 1};
+`
+
+const SmoothingControls = styled(Row)`
+    ${props => props.$routeListLayout && css`
+        flex-direction: column;
+        gap: .25rem;
+    `}
 `
 
 const SmoothingNote = styled.div`
@@ -456,6 +536,7 @@ export const RouteDetails = ( {route, markers,segment, startPos,endPos,realityFa
 
     const {previewUrl,videoUrl,videoFormat,isLocal,requiresDownload,isDownloaded, hasVideo}   = routeDescr||{}
     const routeListLayout = Boolean(DetailsHeader)
+    const routeListButtonProps = routeListLayout ? {height:'36px', fontSize:'14px', margin:'0 6px', no3D:true} : {}
     const previewAvailable = Boolean(previewUrl && !previewFailed && !videoMissing)
     const localVideoFile = hasVideo && ( isLocal  && !videoUrl?.startsWith('http'))
 
@@ -499,8 +580,8 @@ export const RouteDetails = ( {route, markers,segment, startPos,endPos,realityFa
                 </Row>
                 
             </ContentArea>
-            <ButtonBar justify='center'>
-                <Button text='Cancel' primary={!canStart && !isOnline} onClick = { onCancelClicked}/>
+            <ButtonBar justify='center' height={routeListLayout ? '52px' : undefined}>
+                <Button {...routeListButtonProps} text='Cancel' primary={!canStart && !isOnline} onClick = { onCancelClicked}/>
             </ButtonBar>
 
         </Dialog>
@@ -512,17 +593,18 @@ export const RouteDetails = ( {route, markers,segment, startPos,endPos,realityFa
         <ErrorBoundary>
             <Dialog id='RouteDetails' log={{title:route?.title}} title={routeListLayout ? undefined : route?.title} fullsize={routeListLayout} width={routeListLayout ? 'min(940px, 94vw)' : '60vw'} height={routeListLayout ? 'min(860px, 90vh)' : '70vh'} zIndex={100} onESC={onCancelClicked}>
             {hasVideo && videoUrl && !videoMissing && videoFormat!=='avi' ? <VideoProbe url={videoUrl} routeId={routeDescr?.id} extension={videoFormat}/> : null}
+            <RouteListLayout $routeListLayout={routeListLayout}>
+            {DetailsHeader ? <DetailsHeader route={route} totalDistance={totalDistance} totalElevation={totalElevation}
+                    routeType={getRouteType()} isNew={isNew} isDemo={isDemo} cntActive={cntActive} /> : null}
             <ContentArea $routeListLayout={routeListLayout}>
-                {DetailsHeader ? <DetailsHeader route={route} totalDistance={totalDistance} totalElevation={totalElevation}
-                    routeType={getRouteType()} isNew={isNew} isDemo={isDemo} cntActive={cntActive}
-                    previewAvailable={previewAvailable} onPreviewError={() => setPreviewFailed(true)} /> : null}
-
+                <DetailsBody $routeListLayout={routeListLayout}>
                 <PreviewRow $routeListLayout={routeListLayout}>
-                <Preview position='left' $routeListLayout={routeListLayout}>
+                <Preview position='left' $routeListLayout={routeListLayout} $empty={routeListLayout && !routeDescr?.hasGpx}>
                     {!isOnline ? <div style={{zIndex:1000}}>{offlineWarning}</div>:null}
-                    {points && isOnline && routeDescr?.hasGpx ? <FreeMap  zoomControl={true} points={points} startPos={0} draggable={canChangeStartpos} marker={startMarker} onPositionChanged={onStartPosChanged}/>
+                    {routeListLayout && !points?.length && isOnline ? <Center>Map unavailable</Center> : null}
+                    {points?.length && isOnline && routeDescr?.hasGpx ? <FreeMap  zoomControl={true} points={points} startPos={0} draggable={canChangeStartpos} marker={startMarker} onPositionChanged={onStartPosChanged}/>
                     : null}
-                    {points && !routeDescr?.hasGpx ?
+                    {points && !routeDescr?.hasGpx && !routeListLayout ?
                         <ElevationContainer height='50%' dimmed={smoothingComputing}>
                             <GraphSlot>
                                 <ElevationGraph zoneCalc={{speed:20,weight:85,ftp:226,realityFactor:data.realityFactor}}  position={data.startPos}
@@ -534,8 +616,8 @@ export const RouteDetails = ( {route, markers,segment, startPos,endPos,realityFa
                     : null}
 
                 </Preview>
-                <Preview position='right' $routeListLayout={routeListLayout}>
-                        {(routeListLayout ? previewAvailable : previewUrl&&!videoMissing)&&hasVideo  ? <Image width='100%' height={points  ? 'calc(100% - 3vh)' : '100%'} src={previewUrl} onError={routeListLayout ? () => setPreviewFailed(true) : undefined}/>
+                <Preview position='right' $routeListLayout={routeListLayout} $empty={routeListLayout && !hasVideo}>
+                        {(routeListLayout ? previewAvailable : previewUrl&&!videoMissing)&&hasVideo  ? <Image width='100%' height={points && !routeListLayout ? 'calc(100% - 3vh)' : '100%'} src={previewUrl} onError={routeListLayout ? () => setPreviewFailed(true) : undefined}/>
                         : null}
 
                         {(routeListLayout ? !previewAvailable : !previewUrl)&&videoUrl&&!videoChecking&&!videoMissing ? <VideoPreview url={videoUrl} background='none' autoPlay={false}/>
@@ -571,7 +653,7 @@ export const RouteDetails = ( {route, markers,segment, startPos,endPos,realityFa
                             </Overlay>
                                 : null }
 
-                        {points && routeDescr?.hasGpx ?
+                        {points && routeDescr?.hasGpx && !routeListLayout ?
                             // fixed permanently by route type, not by the smoothing level: a video
                             // route keeps its still and its strip; a GPX route gets the panel's
                             // otherwise-empty space, in every state, Off included (never both 30%
@@ -589,6 +671,7 @@ export const RouteDetails = ( {route, markers,segment, startPos,endPos,realityFa
 
                 </Preview>
                 </PreviewRow>
+                <SettingsColumn $routeListLayout={routeListLayout}>
                 {!routeListLayout ? <Row>
                     <Column width='50%'>
                         <Text {...common} label='Distance' text={totalDistance?.value??distance} unit={totalDistance?.unit??'km'} />
@@ -621,31 +704,29 @@ export const RouteDetails = ( {route, markers,segment, startPos,endPos,realityFa
                         onValueChange={onRealityFactorChanged} {...common} />
                 : null}
 
-                {/* Reality Factor and Terrain Smoothing share a row when both are on offer - two
-                    ride-difficulty controls belong together, and it buys back the vertical space
-                    the smoothing copy below needs, keeping the checkboxes after it clear of the
-                    fold instead of pushed past it. */}
+                {/* Keep the legacy controls side by side; give each its own line in the narrower
+                    settings column of the combined route list. */}
                 {showSettings && smoothingAvailable ?
-                    <Row>
-                        <Column width='50%'>
+                    <SmoothingControls $routeListLayout={routeListLayout}>
+                        <Column width={routeListLayout ? '100%' : '50%'}>
                             <EditNumber unit='%' label='Reality Factor' min={0} max={100} digits={0} value={data.realityFactor} maxLength={5}
                                 onValueChange={onRealityFactorChanged} {...common} />
                         </Column>
-                        <Column width='50%'>
+                        <Column width={routeListLayout ? '100%' : '50%'}>
                             <SegmentedControl label='Terrain Smoothing' options={smoothingOptions} value={selectedSmoothingLevel}
                                 onValueChange={onSmoothingLevelChanged} {...common} />
                             {/* both lines are always rendered, sized to the tallest (two-line)
                                 state, so the block occupies the same height whether it is Off, On,
                                 or On but barely doing anything on this route - nothing below it
                                 reflows */}
-                            <SmoothingCopy dimmed={smoothingComputing}>
+                            <SmoothingCopy $routeListLayout={routeListLayout} dimmed={smoothingComputing}>
                                 {smoothingOn ?
                                     <SmoothingNote>Riding a smoothed profile. Your saved route is unchanged.</SmoothingNote>
                                 :   <SmoothingNote>Softens sharp gradient changes for steadier trainer resistance.</SmoothingNote>}
                                 <SmoothingDetail>{buildSmoothingDetail()}</SmoothingDetail>
                             </SmoothingCopy>
                         </Column>
-                    </Row>
+                    </SmoothingControls>
                 : null}
 
                 {showLoopOverwrite ?
@@ -694,16 +775,27 @@ export const RouteDetails = ( {route, markers,segment, startPos,endPos,realityFa
                     <Button size='small' text='Retry' secondary={true} onClick={onDownloadClicked}/>
                 </Row> :null}
 
-    
-                
+                {routeListLayout && points?.length ?
+                    <ProfilePanel aria-label='Elevation profile'>
+                        <ProfileHeading>Elevation profile</ProfileHeading>
+                        <GraphSlot>
+                            <ElevationGraph zoneCalc={{speed:20,weight:85,ftp:226,realityFactor:data.realityFactor}} position={data.startPos}
+                                routeData={profileRouteData} dataVersion={profileVersion}
+                                xScale={xScale} yScale={yScale} line={PROFILE_LINE} showYAxis={false} showXAxis={true}
+                                backgroundColor='white' pctReality={data.realityFactor} />
+                        </GraphSlot>
+                    </ProfilePanel> : null}
+                </SettingsColumn>
+                </DetailsBody>
             </ContentArea>
-            <ButtonBar justify='center'>
-                {showStart ? <Button primary={canStart} text='Start' disabled={!canStart} onClick = { onStartClicked}/> : null}
-                <Button text='Cancel' primary={!canStart && !isOnline} onClick = { onCancelClicked}/>
-                {showStart && showWorkout ? <Button primary={false} disabled={!canStart} secondary={true} text='Start With Workout' onClick = { onAddWorkoutClicked}/>: null} 
-                {showDownloadButton ? <Button primary={!showStart && isOnline} disabled={!isOnline} secondary={showStart} text='Download' onClick = { onDownloadClicked}/> : null}
-                {showConvert ? <Button primary={false} secondary={true} text='Convert' onClick = { onConvertClicked}/> : null}            
+            <ButtonBar justify='center' height={routeListLayout ? '52px' : undefined}>
+                {showStart ? <Button {...routeListButtonProps} primary={canStart} text='Start' disabled={!canStart} onClick = { onStartClicked}/> : null}
+                <Button {...routeListButtonProps} text='Cancel' primary={!canStart && !isOnline} onClick = { onCancelClicked}/>
+                {showStart && showWorkout ? <Button {...routeListButtonProps} primary={false} disabled={!canStart} secondary={true} text='Start With Workout' onClick = { onAddWorkoutClicked}/>: null}
+                {showDownloadButton ? <Button {...routeListButtonProps} primary={!showStart && isOnline} disabled={!isOnline} secondary={showStart} text='Download' onClick = { onDownloadClicked}/> : null}
+                {showConvert ? <Button {...routeListButtonProps} primary={false} secondary={true} text='Convert' onClick = { onConvertClicked}/> : null}
             </ButtonBar>
+            </RouteListLayout>
             
         </Dialog>
         </ErrorBoundary>

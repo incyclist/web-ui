@@ -15,7 +15,7 @@ vi.mock('../../components/modules/video', async importOriginal => ({
 }))
 
 import { RouteDetails } from '../../components/modules/routeSelection/RouteDetails/component'
-import { RouteListDetailsHeader } from './RouteListDetailsHeader'
+import { RouteListDetailsHeader } from '../../components/molecules/RouteListDetailsHeader'
 
 const points = Array.from({ length: 10 }, (_, index) => ({
     lat: 46 + index / 1000, lng: 11, routeDistance: index * 100, elevation: 500 + index,
@@ -51,6 +51,7 @@ describe('RouteList details presentation', () => {
         expect(container.querySelector('img[src="/pordoi.jpg"]')).toBeInTheDocument()
         expect(screen.getByTestId('route-map')).toBeInTheDocument()
         expect(screen.getByTestId('elevation-profile')).toBeInTheDocument()
+        expect(screen.getByLabelText('Elevation profile')).toContainElement(screen.getByTestId('elevation-profile'))
         expect(screen.getByText('Start at')).toBeInTheDocument()
         expect(screen.getByText('Cancel')).toBeInTheDocument()
     })
@@ -62,6 +63,14 @@ describe('RouteList details presentation', () => {
         expect(container.querySelector('img[src="/pordoi.jpg"]')).not.toBeInTheDocument()
         expect(screen.getByTestId('video-preview')).toBeInTheDocument()
         expect(screen.getByTestId('elevation-profile')).toBeInTheDocument()
+    })
+
+    test('does not reserve an empty map panel for a video without GPX', () => {
+        const videoOnly = { ...route, description: { ...route.description, hasGpx: false } }
+        const { container } = render(<RouteDetails {...props} route={videoOnly} />)
+        expect(screen.queryByTestId('route-map')).toBeNull()
+        expect(container.querySelector('img[src="/pordoi.jpg"]')).toBeInTheDocument()
+        expect(screen.getByLabelText('Elevation profile')).toBeInTheDocument()
     })
 
     test('leaves the classic dialog unchanged without the NEW_SEARCH_UI header', () => {

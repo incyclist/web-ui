@@ -14,7 +14,7 @@ vi.mock('../../components/modules/Search/RoutesTable', () => ({
     RoutesTable: ({routes}) => <div data-testid='routes-table' className='routes' data-count={routes?.length} />
 }))
 
-vi.mock('./RouteTiles', () => ({
+vi.mock('../../components/modules/Search/RouteTiles', () => ({
     RouteTiles: ({cards}) => <div data-testid='routes-grid' data-count={cards?.length} />
 }))
 

@@ -4,7 +4,7 @@ import { render, screen, fireEvent } from '@testing-library/react'
 
 const { routeList, fold } = vi.hoisted(() => ({
     routeList: { getListTop: vi.fn(() => 0), setListTop: vi.fn() },
-    fold: { swipedRecently: vi.fn(() => false) }
+    fold: { swipedRecently: vi.fn(() => false), outsideFold: {} }
 }))
 
 vi.mock('incyclist-services', async importOriginal => ({
@@ -13,7 +13,7 @@ vi.mock('incyclist-services', async importOriginal => ({
 vi.mock('../../hooks', async importOriginal => ({
     ...await importOriginal(),
     useFoldWindow: () => ({
-        ref: null, observer: {}, isOutsideFold: () => false,
+        ref: null, observer: {}, initialized: true, isOutsideFold: id => fold.outsideFold[id] ?? false,
         getFoldEvent: id => id, swipedRecently: fold.swipedRecently
     })
 }))
@@ -26,7 +26,7 @@ vi.mock('../../components/modules/routeSelection/base/Card', () => ({
     </div>
 }))
 
-import { RouteTiles } from './RouteTiles'
+import { RouteTiles } from '../../components/modules/Search/RouteTiles'
 
 const cards = ['route-1', 'route-2'].map(id => ({
     id, isVisible: () => true, setInitialized: vi.fn(),
@@ -34,7 +34,7 @@ const cards = ['route-1', 'route-2'].map(id => ({
 }))
 
 describe('RouteTiles', () => {
-    beforeEach(() => vi.clearAllMocks())
+    beforeEach(() => { vi.clearAllMocks(); fold.outsideFold = {} })
 
     test('renders route cards from the combined list and keeps its scroll position', () => {
         render(<RouteTiles cards={cards} />)
@@ -51,5 +51,20 @@ describe('RouteTiles', () => {
         fireEvent.click(screen.getByRole('button', { name: 'Delete route-1' }))
         expect(onSelect).toHaveBeenCalledWith('route-2')
         expect(onDelete).toHaveBeenCalledWith('route-1')
+    })
+
+    test('activates a service card when it enters the fold', () => {
+        const card = {
+            id: 'below-fold', isVisible: vi.fn(() => false), setVisible: vi.fn(), setInitialized: vi.fn(),
+            getDisplayProperties: () => ({ title: 'Below fold', visible: false })
+        }
+        fold.outsideFold['below-fold'] = true
+        const { rerender } = render(<RouteTiles cards={[card]} />)
+        expect(card.setVisible).not.toHaveBeenCalled()
+
+        fold.outsideFold['below-fold'] = false
+        rerender(<RouteTiles cards={[card]} />)
+        expect(card.setVisible).toHaveBeenCalledWith(true)
+        expect(card.setInitialized).toHaveBeenCalledWith(true)
     })
 })

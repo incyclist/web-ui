@@ -8,7 +8,7 @@ import { ImportIcon } from "../../components/atoms/Icons/ImportIcon"
 import { NavigationBar } from "../../components/molecules/NavigationBar"
 import { Dropzone } from "../../components/molecules"
 import { RoutesTable } from "../../components/modules/Search/RoutesTable"
-import { RouteTiles } from "./RouteTiles"
+import { RouteTiles } from "../../components/modules/Search/RouteTiles"
 import { RouteListToolbar } from "../../components/modules/Search/Toolbar"
 import { RouteFilterPanel } from "../../components/modules/Search/FilterPanel"
 import { ActiveImportRow } from "../../components/modules/Search/ActiveImportRow"
@@ -408,7 +408,7 @@ export const RouteListScreen = ({
         if (displayType==='tiles') {
             return <RouteTiles key={`tiles-${listKey}`} cards={cards} onSelect={onSelect} onDelete={onDelete}/>
         }
-        return <RoutesTable key={`list-${listKey}`} routes={routes} onSelect={onSelect} onDelete={onDelete}/>
+        return <RoutesTable key={`list-${listKey}`} variant='routeList' routes={routes} onSelect={onSelect} onDelete={onDelete}/>
     }
 
     return (

@@ -9,27 +9,11 @@ const Hero = styled.header`
     flex-direction: column;
     justify-content: flex-end;
     gap: .5rem;
-    min-height: 150px;
-    margin: 0 -1.5rem 1rem;
-    padding: 1.25rem 1.5rem;
+    min-height: 64px;
+    padding: .65rem 1.2rem;
     overflow: hidden;
     border-bottom: 1px solid rgba(255, 255, 255, .12);
     background: linear-gradient(135deg, #35224d, #142c38);
-    &::after {
-        content: '';
-        position: absolute;
-        inset: 0;
-        background: linear-gradient(0deg, rgba(19, 11, 36, .96), rgba(19, 11, 36, .14));
-        pointer-events: none;
-    }
-`
-
-const HeroImage = styled.img`
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
 `
 
 const Eyebrow = styled.div`
@@ -40,7 +24,7 @@ const Eyebrow = styled.div`
     flex-wrap: wrap;
     gap: .5rem;
     color: #d5ccdf;
-    font-size: .9rem;
+    font-size: .76rem;
     font-weight: 600;
 `
 
@@ -49,7 +33,7 @@ const Title = styled.h2`
     z-index: 1;
     margin: 0;
     color: white;
-    font-size: clamp(1.5rem, 3vw, 2.4rem);
+    font-size: clamp(1.2rem, 2.2vw, 1.8rem);
     line-height: 1.15;
     text-shadow: 0 2px 12px rgba(0, 0, 0, .65);
 `
@@ -59,7 +43,7 @@ const Facts = styled.div`
     flex: none;
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 1px;
-    margin-bottom: 1.2rem;
+    margin: 0;
     overflow: hidden;
     border: 1px solid rgba(255, 255, 255, .12);
     border-radius: 10px;
@@ -70,22 +54,12 @@ const Facts = styled.div`
 const Fact = styled.div`
     display: flex;
     flex-direction: column;
-    gap: .25rem;
-    padding: .8rem 1rem;
+    gap: .1rem;
+    padding: .45rem .8rem;
     background: #201431;
     color: #bbb1c9;
-    font-size: .8rem;
-    strong { color: white; font-size: 1.2rem; }
-`
-
-const SectionHeading = styled.h3`
-    flex: none;
-    margin: .25rem 0 .75rem;
-    color: #eee8f7;
-    font-size: .85rem;
-    font-weight: 700;
-    letter-spacing: .07em;
-    text-transform: uppercase;
+    font-size: .72rem;
+    strong { color: white; font-size: 1rem; }
 `
 
 const formatMetric = (formatted, raw, divisor, unit, digits) => {
@@ -98,7 +72,7 @@ const formatMetric = (formatted, raw, divisor, unit, digits) => {
 
 /** Only the NEW_SEARCH_UI routeList page supplies this presentation to the shared details dialog. */
 export const RouteListDetailsHeader = ({ route, totalDistance, totalElevation, routeType,
-    isNew, isDemo, cntActive, previewAvailable, onPreviewError }) => {
+    isNew, isDemo, cntActive }) => {
     const description = route?.description ?? {}
     const country = description.country?.toUpperCase() === 'UK' ? 'GB' : description.country?.toUpperCase()
     let countryName = country
@@ -107,8 +81,6 @@ export const RouteListDetailsHeader = ({ route, totalDistance, totalElevation, r
 
     return <>
         <Hero>
-            {description.hasVideo && previewAvailable ?
-                <HeroImage src={description.previewUrl} alt='' onError={onPreviewError} /> : null}
             <Eyebrow>
                 {country ? <Flag code={country} height='18' alt={countryName} /> : null}
                 <span>{countryName || (description.hasVideo ? 'Video route' : 'GPX route')}</span>
@@ -123,6 +95,5 @@ export const RouteListDetailsHeader = ({ route, totalDistance, totalElevation, r
             <Fact><span>Total elevation</span><strong id='Elevation'>{formatMetric(totalElevation, description.elevation, 1, 'm', 0)}</strong></Fact>
             <Fact><span>Route type</span><strong>{routeType}</strong></Fact>
         </Facts>
-        <SectionHeading>Route preview and elevation</SectionHeading>
     </>
 }

@@ -49,7 +49,7 @@ vi.mock('../../components/modules/routeSelection/ImportRoutesDialog', () => ({
 
 import { RouteListPage } from './page'
 import { RouteDetailsDialog } from '../../components/modules/routeSelection/RouteDetails'
-import { RouteListDetailsHeader } from './RouteListDetailsHeader'
+import { RouteListDetailsHeader } from '../../components/molecules/RouteListDetailsHeader'
 import { FreeRideSettingsDialog } from '../../components/modules/routeSelection/FreeRideSettings'
 
 const makeRoutes = (n, prefix='r') => Array.from({length:n}, (_,i) => ({id:`${prefix}${i}`, title:`Route ${i}`}))

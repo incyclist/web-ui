@@ -1,9 +1,9 @@
 import React from 'react'
-import { RouteTileSummary } from './RouteTileSummary'
+import { RouteTileSummaryView } from './component'
 
-export default { title: 'Pages/RouteList/RouteTileSummary', component: RouteTileSummary }
+export default { title: 'Components/Modules/Search/RouteTileSummary', component: RouteTileSummaryView }
 
-const Template = args => <div style={{ width: 280, height: 460 }}><RouteTileSummary {...args} /></div>
+const Template = args => <div style={{ width: 280, height: 388 }}><RouteTileSummaryView {...args} /></div>
 
 export const Video = Template.bind({})
 Video.args = {
@@ -26,4 +26,4 @@ GPX.args = {
 }
 
 export const OutsideFold = Template.bind({})
-OutsideFold.args = { ...GPX.args, visible: false, width: 280, height: 460 }
+OutsideFold.args = { ...GPX.args, visible: false, width: 280, height: 388 }

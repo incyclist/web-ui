@@ -11,7 +11,7 @@ vi.mock('../../components/molecules/Maps', () => ({
 }))
 vi.mock('react-world-flags', () => ({ default: () => null }))
 
-import { RouteTileSummary } from './RouteTileSummary'
+import { RouteTileSummary } from '../../components/modules/Search/RouteTileSummary'
 
 const points = [
     { lat: 1, lng: 2, routeDistance: 0, elevation: 10 },
@@ -57,12 +57,11 @@ describe('RouteTileSummary', () => {
     test('opens details and requires confirmation before deleting an eligible route', async () => {
         const onOK = vi.fn(), onDelete = vi.fn()
         const { rerender } = render(<RouteTileSummary {...props} onOK={onOK} onDelete={onDelete} canDelete={false} />)
-        expect(screen.queryByRole('button', { name: 'Options for Col de la Madone' })).toBeNull()
+        expect(screen.queryByRole('button', { name: 'Delete Col de la Madone' })).toBeNull()
 
         rerender(<RouteTileSummary {...props} onOK={onOK} onDelete={onDelete} canDelete />)
         fireEvent.click(screen.getByRole('button', { name: 'View details for Col de la Madone' }))
         expect(onOK).toHaveBeenCalledOnce()
-        fireEvent.click(screen.getByRole('button', { name: 'Options for Col de la Madone' }))
         fireEvent.click(screen.getByRole('button', { name: 'Delete Col de la Madone' }))
         expect(onDelete).not.toHaveBeenCalled()
         await act(async () => fireEvent.click(screen.getByRole('button', { name: 'Delete', exact: true })))
