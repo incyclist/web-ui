@@ -1,6 +1,7 @@
 export * from './activities'
 export * from './Coaches'
 export * from './elevation'
+export * from './NavigationBridge'
 export * from './Overlays'
 export * from './PairingInfo'
 export * from './Ride'

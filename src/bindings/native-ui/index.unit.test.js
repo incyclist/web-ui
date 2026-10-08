@@ -73,6 +73,55 @@ describe('NativeUiService.selectDirectory()', () => {
     })
 })
 
+describe('NativeUiService.openPage() / registerNavigate()', () => {
+
+    let service
+
+    beforeEach(() => {
+        service = NativeUiService.getInstance()
+        service.navigate = null
+        service.pendingNavigations = []
+    })
+
+    test('navigates immediately once a navigate function is registered', () => {
+        const navigate = vi.fn()
+        service.registerNavigate(navigate)
+
+        service.openPage('/routes')
+
+        expect(navigate).toHaveBeenCalledWith('/routes', undefined)
+    })
+
+    test('passes state through as {state}, react-router\'s own navigate() option shape', () => {
+        const navigate = vi.fn()
+        service.registerNavigate(navigate)
+
+        service.openPage('/devices', { source: '/routes' })
+
+        expect(navigate).toHaveBeenCalledWith('/devices', { state: { source: '/routes' } })
+    })
+
+    test('queues a call made before registration, instead of dropping it', () => {
+        service.openPage('/devices', { source: '/routes' })
+
+        const navigate = vi.fn()
+        service.registerNavigate(navigate)
+
+        expect(navigate).toHaveBeenCalledWith('/devices', { state: { source: '/routes' } })
+    })
+
+    test('queues several calls in order and flushes them all on registration', () => {
+        service.openPage('/routes')
+        service.openPage('/workouts')
+
+        const navigate = vi.fn()
+        service.registerNavigate(navigate)
+
+        expect(navigate).toHaveBeenNthCalledWith(1, '/routes', undefined)
+        expect(navigate).toHaveBeenNthCalledWith(2, '/workouts', undefined)
+    })
+})
+
 describe('getDirectoryDisplayName()', () => {
 
     test('derives the basename from a posix path', () => {

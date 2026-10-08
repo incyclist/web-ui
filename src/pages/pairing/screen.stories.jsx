@@ -1,71 +1,86 @@
 import React from 'react';
 import { PairingScreen } from './screen';
-import { clone } from '../../utils/coding';
 
 export default {
     component: PairingScreen,
-    title: 'Pages/Pairing',   
-    argTypes: { 
-        onOK: { action: 'OK' },
-        onInterfaceClick: {action: 'Interface Clicked'},
-        onCapabilityClick: {action: 'Capability Clicked'}
-    },
+    title: 'Pages/Pairing',
   };
-  
+
 const Template = args => <PairingScreen {...args} />;
 
-const interfaces = [ 
-    {name:'Ant', enabled:true},
-    {name:'BLE', enabled:true},
-    {name:'serial', enabled:true},
-    {name:'TCPIP',enabled:false},
+const interfaces = [
+    {name:'ant', enabled:true, state:'connected', isScanning:true},
+    {name:'ble', enabled:true, state:'idle'},
+    {name:'serial', enabled:true, state:'idle'},
+    {name:'tcpip',enabled:false, state:'disabled'},
 ]
 
-const capabilities = [
-    {capability:'Control', deviceName:'Volt', connectState:'connecting' },
-    {capability:'Power', deviceName:'Ant+ PWR 2606', connectState:'connected', unit:'W', value:25 },
-    {capability:'Heartrate', deviceName:'Ant+ HR 2630', connectState:'connected', unit:'bpm', value:65 },
-    {capability:'Speed', deviceName:'Ant+ SC 111', connectState:'failed' }
-]
+const rowLabels = {
+    top: { text:'TO RIDE', subtext:'connect any one' },
+    bottom: { text:'OPTIONAL', subtext:'extras, not needed' },
+}
+
+const tile = (overrides) => ({
+    title: overrides.title,
+    capability: overrides.capability,
+    role: overrides.role ?? 'required',
+    helpText: { full: overrides.helpText ?? '', short: overrides.helpText ?? '' },
+    emptyFooter: overrides.emptyFooter,
+    ...overrides,
+})
+
+const paired = {
+    top: [
+        tile({ title:'Resistance', capability:'control', deviceName:'Volt', connectState:'connecting' }),
+        tile({ title:'Power', capability:'power', deviceName:'Ant+ PWR 2606', connectState:'connected', unit:'W', value:25 }),
+        tile({ title:'Speed', capability:'speed', emptyFooter:'Searching...' }),
+    ],
+    bottom: [
+        tile({ title:'Heartrate', capability:'heartrate', deviceName:'Ant+ HR 2630', connectState:'connected', unit:'bpm', value:65, role:'optional' }),
+        tile({ title:'Cadence', capability:'cadence', emptyFooter:'Optional', role:'optional' }),
+        tile({ title:'Controller', capability:'app_control', connectState:'failed', deviceName:'Zwift Play', role:'optional' }),
+    ],
+    rowLabels,
+}
 
 export const PairReady = Template.bind({});
 PairReady.args = {
-    capabilities,
+    capabilities: paired,
     interfaces,
     readyToStart:true,
+    status: { id:'S2', dot:'green', text:'Ready to ride' },
+    buttons: [ { label:'OK', primary:true } ],
 };
 
-
-export const pairNotReady = Template.bind({});
-pairNotReady.args = {
-    capabilities,
-    interfaces
+export const PairNotReady = Template.bind({});
+PairNotReady.args = {
+    capabilities: paired,
+    interfaces,
+    status: { id:'S3', dot:'amber', text:'Connect a trainer, power or speed sensor' },
+    buttons: [ { label:'Simulate', primary:true }, { label:'Skip', primary:false } ],
 };
 
 export const StartReady = Template.bind({});
 StartReady.args = {
-    capabilities,
+    capabilities: paired,
     interfaces,
-    showSimulate:true,
     readyToStart:true,
-    labelOK: 'Start',
-    labelSkip: 'Cancel'
+    status: { id:'S2', dot:'green', text:'Ready to ride' },
+    buttons: [ { label:'Start', primary:true } ],
 };
 
 export const StartNotReady = Template.bind({});
 StartNotReady.args = {
-    capabilities,
+    capabilities: paired,
     interfaces,
-    showSimulate:true,
-    labelOK: 'Start',
-    labelSkip: 'Cancel'
+    status: { id:'S3', dot:'amber', text:'Connect a trainer, power or speed sensor' },
+    buttons: [ { label:'Simulate', primary:true }, { label:'Cancel', primary:false } ],
 };
 
-export const ValueIs0 = Template.bind({});
-const caps = clone(capabilities)
-caps.forEach(c => { if(c.unit) c.value=0})
-ValueIs0.args = {
-    capabilities:caps,
-    interfaces,
-    readyToStart:true,
+export const NoneSearching = Template.bind({});
+NoneSearching.args = {
+    capabilities: paired,
+    interfaces: interfaces.map(i => ({...i, enabled:false})),
+    status: { id:'S1', dot:'red', text:'No interfaces enabled - enable ANT+ or Bluetooth' },
+    buttons: [ { label:'Simulate', primary:true }, { label:'Skip', primary:false } ],
 };

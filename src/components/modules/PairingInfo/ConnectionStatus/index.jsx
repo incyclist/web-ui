@@ -3,24 +3,38 @@ import styled from "styled-components";
 
 import Loader from "react-spinners/BounceLoader";
 import { CheckIcon, XCircleFillIcon } from "@primer/octicons-react";
-import { Button } from "../../../atoms";
 
-const IconButton = styled(Button)`
-    justify-content:center;
-    align-items: center;
+// on/off colours match the mobile toggle
+const Toggle = styled.button`
     position: absolute;
-    right:0;
-    color:white;
-    font-size:1.3vw;
-    font-weight: bold;
-    background: none;    
-    height:${props => props.size};
-    aspect-ratio : 1 / 1;
-    margin-right: 1vw;   
+    right: 1vw;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 3.9vh;
+    height: 2.2vh;
+    padding: 0;
+    border: none;
+    border-radius: 1.1vh;
+    cursor: pointer;
+    background: ${props => props.$on ? 'lightgreen' : '#767577'};
+    &::after {
+        content: '';
+        position: absolute;
+        top: 0.25vh;
+        left: ${props => props.$on ? 'calc(100% - 1.95vh)' : '0.25vh'};
+        width: 1.7vh;
+        height: 1.7vh;
+        border-radius: 50%;
+        background: ${props => props.$on ? 'green' : '#f4f3f4'};
+        transition: left 0.15s;
+    }
 `
 
+// the right padding keeps the centred icon and state text clear of the toggle on narrow tiles
 const Status = styled.div`
     position: absolute;
+    box-sizing: border-box;
+    padding-right: calc(3.9vh + 2vw);
     background: black;
     height: 20%;
     min-heigt: 20%;
@@ -56,19 +70,35 @@ export const LaunchStatusIcon = ( {status}) => {
 }
 
 
-export const ConnectionStatus = ({state,onUnselect})=>{
-    
-    const onUnselectClicked = (e) => {
+export const ConnectionStatus = ({state,disabled,footer,onUnselect,onUse})=>{
+
+    // the toggle is on while the capability is used; switching it off unselects the capability.
+    // On a switched-off (T16) tile the toggle is off; switching it on restores the remembered
+    // device with no new scan (onUse). stopPropagation keeps the click from also opening the
+    // device list on the tile.
+    const onToggleClicked = (e) => {
         e.preventDefault()
-        if (onUnselect)
+        e.stopPropagation()
+        if (disabled) {
+            if (onUse)
+                onUse()
+        }
+        else if (onUnselect)
             onUnselect()
     }
 
     return (
         <Status>
-            <LaunchStatusIcon status={state}/>
-            <Text>{state}</Text>
-            <IconButton size='4vh' onClick={onUnselectClicked}>x</IconButton>
+            {!disabled && <LaunchStatusIcon status={state}/>}
+            <Text>{disabled ? (footer ?? 'Not used') : state}</Text>
+            <Toggle
+                type="button"
+                role="switch"
+                aria-checked={disabled ? "false" : "true"}
+                aria-label="Use device"
+                $on={!disabled}
+                onClick={onToggleClicked}
+            />
 
         </Status>
     )
