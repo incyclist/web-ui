@@ -100,8 +100,13 @@ const Warning = styled.div`
 
 export const StartRideOverlay = (props) => {
     const {mode,rideState,devices,videoState,mapType, mapState,mapStateError, videoStateError,
+        viewState,
         visible=true,width=DEFAULT_WIDTH,height=DEFAULT_HEIGHT,top=DEFAULT_TOP,left=DEFAULT_LEFT,videoProgress={}
     } = props;
+
+    // Street View-specific content only - gated on viewState so Video, Workout-only and
+    // Map/Satellite starts render exactly as today.
+    const isStreetViewStart = viewState !== undefined
 
     const bikeError = devices?.find( d=>(d.isControl||d.isMandatory) && (d.state===GEAR_STATES.START_FAILURE || d.status==='Error') )!==undefined
     const sensorError = devices?.find( d=>!(d.isControl||d.isMandatory) && (d.state===GEAR_STATES.START_FAILURE || d.status==='Error')) !==undefined
@@ -114,8 +119,12 @@ export const StartRideOverlay = (props) => {
         if (props.onRetry) props.onRetry();    
     }
 
-    const onIgnore = () => { 
-        if (props.onIgnore) props.onIgnore();    
+    const onIgnore = () => {
+        if (props.onIgnore) props.onIgnore();
+    }
+
+    const onStartWithMap = () => {
+        if (props.onStartWithMap) props.onStartWithMap();
     }
 
     const isDeviceError = ()=>{
@@ -141,6 +150,18 @@ export const StartRideOverlay = (props) => {
             return 'Loading ...'
 
         return mapState
+    }
+
+    // Street View row text - only used when isStreetViewStart
+    const viewStateText = ()=> {
+        switch (viewState) {
+            case 'loaded': return <Success>Loaded</Success>
+            case 'unavailable': return <Warning>Unavailable – using Map</Warning>
+            case 'loading': return 'Loading ...'
+            case 'slow': return 'Still loading ...'
+            case 'waiting':
+            default: return 'Waiting'
+        }
     }
 
     const videoStateText = ()=> {
@@ -179,30 +200,37 @@ export const StartRideOverlay = (props) => {
     }
     
     const OverlayStarting = (props) => {
+        // "Preparing Street View ..." only while it's actually loading.
+        // Every other case - including every non-Street-View start - keeps today's heading.
+        const heading = isStreetViewStart && (viewState==='loading' || viewState==='slow')
+            ? 'Preparing Street View ...'
+            : 'Starting activity ...'
+
         return (
             <OverlayView visible={true}  width={width} left={left} height={height} top={top}>
                 <OverlayText >
-                    <b>Starting activity ...</b>
+                    <b>{heading}</b>
                 </OverlayText>
                 <OverlayDetails className='startoverlay-details'>
 
-                    { devices ? devices.map( (device,idx) => 
-                        <OverlayDetailsItem key={idx}> 
-                            <Label>{device.name}</Label> 
+                    { devices ? devices.map( (device,idx) =>
+                        <OverlayDetailsItem key={idx}>
+                            <Label>{device.name}</Label>
                             <Status>{deviceStateText(device)}</Status>
-                        </OverlayDetailsItem>       
+                        </OverlayDetailsItem>
                         ) : null}
-                    { (mode===RIDE_MODES.VIDEO || mode==='Video') ? <OverlayDetailsItem> 
-                        <Label>Video</Label> 
+                    { (mode===RIDE_MODES.VIDEO || mode==='Video') ? <OverlayDetailsItem>
+                        <Label>Video</Label>
                         <Status>{videoStateText()}</Status>
                     </OverlayDetailsItem> : null}
-                    { mapType ? <OverlayDetailsItem> 
-                        <Label>{mapType}</Label> 
-                        <Status>{mapStateText()}</Status>
+                    { mapType ? <OverlayDetailsItem>
+                        <Label>{mapType}</Label>
+                        <Status>{isStreetViewStart ? viewStateText() : mapStateText()}</Status>
                     </OverlayDetailsItem> : null}
                 </OverlayDetails>
                 <OverlayButtons >
                     {props.readyToStart ? <Button margin={'1.2vh 1.1vw'} onClick={()=>onIgnore()}>Start </Button> : null}
+                    {isStreetViewStart && viewState==='slow' ? <Button margin={'1.2vh 1.1vw'} onClick={()=>onStartWithMap()}>Start with Map </Button> : null}
                     <Button margin={'1.2vh 1.1vw'} onClick={()=>onCancel()}>Cancel </Button>
                 </OverlayButtons>
             </OverlayView>

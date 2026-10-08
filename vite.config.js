@@ -11,7 +11,7 @@ const dirname = typeof __dirname !== 'undefined' ? __dirname : path.dirname(file
 
 
 export default defineConfig(({ command}) => {
-  const isDev = !process.env.PROD && command ==='serve';
+  const isDev = !process.env.PROD && command ==='serve' && !process.env.CI;
 
   console.log(' DevMode: ', isDev)
 

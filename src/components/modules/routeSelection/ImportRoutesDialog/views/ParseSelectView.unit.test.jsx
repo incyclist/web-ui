@@ -1,5 +1,5 @@
 import React from 'react'
-import { describe, test, expect, vi } from 'vitest'
+import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { Observer } from 'incyclist-services'
 
@@ -124,6 +124,20 @@ describe('ParseSelectView', () => {
         expect(props.toggleSelected).not.toHaveBeenCalled()
     })
 
+    test('"only show problems" leaves out duplicates of a route in the same import', () => {
+        const routes = [
+            buildRoute('r1', { importable: false, errorReason: "couldn't read" }),
+            buildRoute('r2', { importable: false, errorReason: 'Duplicate of Alpe', duplicateOf: 'Alpe' }),
+        ]
+        const displayProps = { phase: 'selecting', routes, scanProgress: { scannedFolders: 1, failedFolders: 0 } }
+        render(<ParseSelectView displayProps={displayProps} {...baseProps()} />)
+
+        expect(screen.getByLabelText('Only show problems (1)')).toBeInTheDocument()
+        screen.getByLabelText(/Only show problems/).click()
+        expect(screen.getByTestId('row-r1')).toBeInTheDocument()
+        expect(screen.queryByTestId('row-r2')).not.toBeInTheDocument()
+    })
+
     test('select all / deselect all wire directly to the hook', () => {
         const displayProps = { phase: 'selecting', routes: [buildRoute('r1')], scanProgress: { scannedFolders: 1, failedFolders: 0 } }
         const props = baseProps()
@@ -145,5 +159,75 @@ describe('ParseSelectView', () => {
         expect(importButton).toBeEnabled()
         importButton.click()
         expect(props.importSelected).toHaveBeenCalled()
+    })
+
+    // Failed rows are keyed by their file name (the parsed route is missing), so two same-named files
+    // from different folders collide. React reports that as a duplicate-key warning and may drop rows.
+    describe('rows that share a file name', () => {
+        let consoleError
+
+        beforeEach(() => {
+            consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+        })
+
+        afterEach(() => {
+            consoleError.mockRestore()
+        })
+
+        const duplicateKeyWarnings = () => consoleError.mock.calls.filter(
+            args => args.some(arg => typeof arg === 'string' && /same key/i.test(arg))
+        )
+
+        // as the service builds it: the id is the bare file name, the fileUri is unique per file
+        const failedRow = (id, folder) => buildRoute(id, {
+            folder,
+            fileUri: `file:///${folder}/${id}`,
+            importable: false,
+            errorReason: 'Duplicate of Marburg',
+            duplicateOf: 'Marburg',
+        })
+
+        test('two failed files with the same name each keep their own row', () => {
+            const routes = [
+                buildRoute('r1'),
+                failedRow('DE_Marburg-Lahntal.xml', 'Folder A'),
+                failedRow('DE_Marburg-Lahntal.xml', 'Folder B'),
+            ]
+            const displayProps = { phase: 'selecting', routes, scanProgress: { scannedFolders: 2, failedFolders: 0 } }
+            const props = baseProps()
+            render(<ParseSelectView displayProps={displayProps} {...props} />)
+
+            expect(screen.getAllByTestId('row-DE_Marburg-Lahntal.xml')).toHaveLength(2)
+            expect(duplicateKeyWarnings()).toHaveLength(0)
+        })
+
+        test('rows streamed in after a same-named failed row are all rendered', () => {
+            const parsing = (routes) => ({
+                phase: 'parsing',
+                routes,
+                scanProgress: { scannedFolders: 2, failedFolders: 0 },
+                parseProgress: { parsed: routes.length, total: 5 },
+            })
+            const props = baseProps()
+            const { rerender } = render(
+                <ParseSelectView displayProps={parsing([
+                    buildRoute('r1'),
+                    failedRow('DE_Marburg-Lahntal.xml', 'Folder A'),
+                ])} {...props} />
+            )
+
+            rerender(
+                <ParseSelectView displayProps={parsing([
+                    buildRoute('r1'),
+                    failedRow('DE_Marburg-Lahntal.xml', 'Folder A'),
+                    failedRow('DE_Marburg-Lahntal.xml', 'Folder B'),
+                    buildRoute('r4'),
+                ])} {...props} />
+            )
+
+            expect(screen.getAllByTestId('row-DE_Marburg-Lahntal.xml')).toHaveLength(2)
+            expect(screen.getByTestId('row-r4')).toBeInTheDocument()
+            expect(duplicateKeyWarnings()).toHaveLength(0)
+        })
     })
 })

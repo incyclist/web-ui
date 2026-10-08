@@ -151,14 +151,11 @@ describe('RouteListPage', () => {
         expect(last().listKey).toBe(key)
     })
 
-    test('updates during a sync are applied once the sync is done', () => {
+    test('updates are applied even after a sync-start that never got its sync-done', () => {
         renderPage()
 
         act(() => { observer.emit('sync-start') })
         act(() => { observer.emit('updated', { routes:makeRoutes(7), cards:[], filters:{}, observer }) })
-        expect(last().routes).toHaveLength(5)
-
-        act(() => { observer.emit('sync-done') })
         expect(last().routes).toHaveLength(7)
     })
 

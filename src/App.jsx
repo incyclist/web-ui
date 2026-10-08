@@ -6,6 +6,7 @@ import {version} from '../package.json'
 import {AppLoadingPage,ActivitiesPage,RidePage, PairingPage,RoutesPageEntry,SearchPageEntry,ExitPage,WorkoutsPage} from './pages';
 import { UpdateChecker } from './components/modules';
 import { MapsApiLoader,MessageBox,MonitorOnlineStatus,MainPage } from './components/molecules';
+import { NavigationBridge } from './components/modules';
 import { ErrorBoundary } from './components/atoms';
 import { useInitAppTheme, usePlatformIntegration } from './hooks';
 import NativeUiService from './bindings/native-ui';
@@ -98,6 +99,7 @@ export const App = ()=> {
                 <MapsApiLoader/>
                 <UpdateChecker/>
                 <MemoryRouter>
+                    <NavigationBridge/>
                     <Routes>
 
                         <Route path="/rideDeviceOK" element={<RidePage rideOnly={true} />} />
