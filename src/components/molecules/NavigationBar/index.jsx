@@ -3,11 +3,9 @@ import styled, { withTheme } from "styled-components";
 import {Icon,Column,RouteIcon,Row, WorkoutIcon,UserIcon,ExitIcon, SettingsIcon, ActivityIcon, Autosize } from '../../atoms'
 import { useKey } from "../../../hooks";
 import { AppThemeProvider } from "../../../theme";
-import { SearchIcon as SearchIconReact } from "@primer/octicons-react";
 import { DialogLauncher } from "../dialogs";
 import { UserSettingsDialog,SettingsDialog } from "../../modules/Settings";
 import { useNavigate } from "react-router";
-import { copyPropsExcluding } from "../../../utils/props";
 import { useAppUI } from "../../../bindings/native-ui";
 import { BikeIcon } from "../../atoms/Icons/BikeIcon";
 import { useAppState } from "incyclist-services";
@@ -21,13 +19,6 @@ const Container = styled(Column)`
     padding:0;
     margin:0;
 `
-
-const SearchIcon = (props) => {
-    const childProps = copyPropsExcluding(['color','width', 'height', 'size'])
-    return <SearchIconReact fill={props.color} size={50} {...childProps}/>
-}
-
-
 
 const PageIcon = withTheme((props) => {
     const childProps = {...props}
@@ -56,9 +47,6 @@ export const NavigationBarComponent = ( {hidden,height,width, selected, hotkeysD
     const appState = useAppState()
     
     const ui = useAppUI()
-
-    // with the merged Routes page, Search is no longer a page of its own
-    const searchMerged = appState.hasFeature('NEW_SEARCH_UI')
 
     const onToggleFullScreen = (key)=>{
         // only the bare letter - e.g. Ctrl+F is used by pages as a shortcut
@@ -152,14 +140,6 @@ export const NavigationBarComponent = ( {hidden,height,width, selected, hotkeysD
                                 <BikeIcon/>
                             </PageIcon>
                         </Row>
-
-                        {searchMerged ? null :
-                        <Row padding='10px 0 10px' >
-                            <PageIcon label='Search' selected={selected==='search'} width={100} height={h}  className='search'
-                                onClick={()=>{onIconSelected('search')}}>
-                                <SearchIcon/>
-                            </PageIcon>
-                        </Row>}
 
                         <Row padding='10px 0 10px' >
                            <PageIcon label='Routes' selected={selected==='routes'} width={100} height={h}  className='route'

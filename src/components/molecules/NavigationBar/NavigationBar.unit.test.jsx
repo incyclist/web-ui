@@ -1,10 +1,9 @@
 import React from 'react'
-import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest'
+import { describe, test, expect, vi, afterEach } from 'vitest'
 import { render, screen, act } from '@testing-library/react'
 import { MemoryRouter } from 'react-router'
 
-const { features, mockUI } = vi.hoisted(() => ({
-    features: {},
+const { mockUI } = vi.hoisted(() => ({
     mockUI: { toggleFullscreen: vi.fn() },
 }))
 
@@ -12,7 +11,7 @@ vi.mock('incyclist-services', async (importOriginal) => {
     const actual = await importOriginal()
     return {
         ...actual,
-        useAppState: () => ({ hasFeature: (name) => features[name] ?? false, getPersistedState: () => 'routes' }),
+        useAppState: () => ({ hasFeature: () => false, getPersistedState: () => 'routes' }),
     }
 })
 
@@ -29,22 +28,11 @@ const renderBar = (props={}) => render(
 
 describe('NavigationBar', () => {
 
-    beforeEach(() => {
-        delete features.NEW_SEARCH_UI
-    })
-
     afterEach(() => {
         vi.clearAllMocks()
     })
 
-    test('shows Search and Routes while NEW_SEARCH_UI is disabled', () => {
-        renderBar()
-        expect(screen.getByText('Search')).toBeInTheDocument()
-        expect(screen.getByText('Routes')).toBeInTheDocument()
-    })
-
-    test('shows only Routes while NEW_SEARCH_UI is enabled', () => {
-        features.NEW_SEARCH_UI = true
+    test('shows only Routes, no separate Search icon', () => {
         renderBar()
         expect(screen.queryByText('Search')).toBeNull()
         expect(screen.getByText('Routes')).toBeInTheDocument()
