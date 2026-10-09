@@ -2,16 +2,18 @@ import React from 'react'
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 
+
+
 const { routeList } = vi.hoisted(() => ({ routeList: { requestRouteDetails: vi.fn() } }))
 vi.mock('incyclist-services', async importOriginal => ({
     ...await importOriginal(), useRouteList: () => routeList
 }))
-vi.mock('../../components/molecules/Maps', () => ({
+vi.mock('../../../molecules/Maps', () => ({
     FreeMap: ({ points }) => <div data-testid='map' data-points={points?.length ?? 0} />
 }))
 vi.mock('react-world-flags', () => ({ default: () => null }))
 
-import { RouteTileSummary } from '../../components/modules/Search/RouteTileSummary'
+import { RouteTileSummary } from '.'
 
 const points = [
     { lat: 1, lng: 2, routeDistance: 0, elevation: 10 },

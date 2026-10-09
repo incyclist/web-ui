@@ -7,26 +7,28 @@ const { routeList, fold } = vi.hoisted(() => ({
     fold: { swipedRecently: vi.fn(() => false), outsideFold: {} }
 }))
 
+
+
 vi.mock('incyclist-services', async importOriginal => ({
     ...await importOriginal(), useRouteList: () => routeList
 }))
-vi.mock('../../hooks', async importOriginal => ({
+vi.mock('../../../../hooks', async importOriginal => ({
     ...await importOriginal(),
     useFoldWindow: () => ({
         ref: null, observer: {}, initialized: true, isOutsideFold: id => fold.outsideFold[id] ?? false,
         getFoldEvent: id => id, swipedRecently: fold.swipedRecently
     })
 }))
-vi.mock('../../components/atoms', async importOriginal => ({
+vi.mock('../../../atoms', async importOriginal => ({
     ...await importOriginal(), Dynamic: ({ children }) => children
 }))
-vi.mock('../../components/modules/routeSelection/base/Card', () => ({
+vi.mock('../../../modules/routeSelection/base/Card', () => ({
     Card: ({ id, visible, onOK, onDelete }) => <div data-testid={`tile-${id}`} data-visible={String(visible)}>
         <button onClick={onOK}>Open {id}</button><button onClick={onDelete}>Delete {id}</button>
     </div>
 }))
 
-import { RouteTiles } from '../../components/modules/Search/RouteTiles'
+import { RouteTiles } from '.'
 
 const cards = ['route-1', 'route-2'].map(id => ({
     id, isVisible: () => true, setInitialized: vi.fn(),
