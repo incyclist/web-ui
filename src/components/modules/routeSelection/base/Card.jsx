@@ -50,7 +50,7 @@ const SingleCardWrapper = styled.div`
 `
 
 export const Card = (props) => {
-    const {observer,Summary, Details,card } = props
+    const {observer,Summary, Details,card, singleCard=false } = props
 
     const initialState = copyPropsExcluding(props,['observer','width','height','padding','Summary','Details'])
     const [state,setState] = useState(initialState)
@@ -132,6 +132,10 @@ export const Card = (props) => {
                 {Summary ? <Summary {...stateProps} width={summaryWidth} height={height} /> : null}
             </SingleCardWrapper>
         )
+    }
+
+    if (singleCard) {
+        return <Summary hidden={hidden} {...stateProps} width={summaryWidth} height={height} />
     }
 
     return <FlipCard  hidden={hidden} width={widthStr} height={heightStr} padding={paddingStr} background='linear-gradient(darkred,#180457)' delay='1s' >
