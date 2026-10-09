@@ -37,18 +37,6 @@ The changes to logRest are made to disable server logging during debugging. It s
 
 If you want to test in the browser, just open [http://localhost:3000](http://localhost:3000) to view it in the browser. The UI in the browser however has limited support for app features ( local file access, BLE, ANT, ....)
 
-### Previewing the combined Routes page
-
-The redesigned route cards and route details are behind the `NEW_SEARCH_UI` feature toggle. A fresh browser session shows the classic Routes page until the toggle is enabled. In the developer console of the **same tab** running the app, enter:
-
-```js
-sessionStorage.setItem('NEW_SEARCH_UI', 'true')
-```
-
-Reload the page so the app reads the setting. Open **Routes**, then select the **Tiles** icon (the four-square icon beside the list icon). The saved display preference defaults to **List**, which does not show the redesigned cards. Click **View details** on a tile to see the redesigned route dialog.
-
-When testing through the desktop app, add `"NEW_SEARCH_UI": true` as a top-level property in its `settings.json` and restart the app. This file is part of the local app configuration, not this repository.
-
 
 ### `npm run storybook`
 
@@ -65,42 +53,6 @@ Currently these bundle updates are only provided by the Incyclist backend.
 Contact me if you want to setup your own bundle update server.
 
 
-## Code Structure
+## Code Structure & Design Considerations
 
-In the [src](.src) directory, you find the following main folders:
-
-- [bindings](./src/bindings) - Contains bindings to the features provided by the container that is serving the app ( desktop app, mobile app, browser). 
-
-- [components](./src/components/) - Contains the UI Components. These components are organized in three layers
-
-  1. [atoms](./src/components/atoms/) Base components that don't depend on any other component in this repo
-  2. [molecules](./src/components/atoms/) Components that aggregate atoms but don't have any dependency to other molecules or modules
-  3. [modules](./src/components/atoms/) higher level components which are aggregated from atoms, molecules and/or external components
-
-
-- [hooks](./src/hooks/) - Contains reusable React hooks 
-
-- [pages](./src/pages/) - Contains the UI of the main pages of the app ( pairing, route list, search , workouts, activities, ride). 
-
-- [utils](./src/utils/) - Generic re-usable utility functions (e.g. sleep(), clone(),...)
-
-
-## Design Considerations
-
-- Try to use functional components as much as possible. Only use class components if really necessary
-
-- Don't implement business logic in the UI. Every business logic should be implemented in incyclist-services.
-
-- If a component requires business logic (served by incyclist-services), split the component into two parts: 
-  - A Wrapper that interacts with the services and thus can update its internal state based on business logic provided by the service
-  - A View that can be inspected in all possible combinations in Storybook
-
-- If you expect a lot of updates in a component that sits deeply on the DOM of a page, use observers and the `<Dynamic>` component to enforce updates only on this component, without re-rendering the whole page/component
-
-- As the UI was originally intended to be running on TV's the CSS is currently optimized for TV and in most cases I use `vw` and `vh` to indicated sized of components or text elements. 
-
-- To avoid app crashes due to unhandled expections, use the `<ErrorBoundary>` component at least on module level. 
-
-- Any user interaction should be logged, so that problems can be easier reproduced.
-
-- Don't log any personal data (name, email, ....)
+Please read [./docs/CODEBASE_GUIDE.md](./docs/CODEBASE_GUIDE.md)
