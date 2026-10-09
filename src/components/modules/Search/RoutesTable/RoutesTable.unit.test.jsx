@@ -15,6 +15,9 @@ vi.mock('incyclist-services', async (importOriginal) => {
 vi.mock('../RouteItem', () => ({
     RouteItem: ({ id, outsideFold, onClick }) => <div data-testid={`row-${id}`} data-outside={String(outsideFold)} onClick={onClick} />,
 }))
+vi.mock('../RouteListItem', () => ({
+    RouteListItem: ({ id, outsideFold, onClick }) => <div data-testid={`modern-row-${id}`} data-outside={String(outsideFold)} onClick={onClick} />,
+}))
 
 import { RoutesTable } from './index'
 
@@ -54,5 +57,11 @@ describe('RoutesTable', () => {
 
         fireEvent.click(screen.getByTestId('row-r3'))
         expect(onSelect).toHaveBeenCalledWith('r3')
+    })
+
+    test('uses the modern row only for the combined route list', () => {
+        render(<RoutesTable routes={routes.slice(0, 2)} variant='routeList' />)
+        expect(screen.getAllByTestId(/^modern-row-/)).toHaveLength(2)
+        expect(screen.queryByTestId('row-r0')).toBeNull()
     })
 })

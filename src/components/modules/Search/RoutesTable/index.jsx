@@ -1,13 +1,23 @@
 import React,{ useCallback } from 'react'
 import { Dynamic, TableContainer } from '../../../atoms'
+import styled from 'styled-components'
 import { AppThemeProvider } from '../../../../theme'
 import { RouteItem } from '../RouteItem'
+import { RouteListItem } from '../RouteListItem'
 import { useFoldWindow } from '../../../../hooks'
 import { useRouteList } from 'incyclist-services'
 
 const getRouteKey = (route,idx) => route?.id??`route-${idx}`
 
-export const RoutesTable = ({routes,onSelect,onDelete}) => {
+const ModernTableContainer = styled(TableContainer)`
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 8px 10px;
+`
+
+export const RoutesTable = ({routes,onSelect,onDelete,variant}) => {
 
     const service = useRouteList()
 
@@ -37,14 +47,18 @@ export const RoutesTable = ({routes,onSelect,onDelete}) => {
             onDelete(id)
     }
 
+    const modern = variant === 'routeList'
+    const Container = modern ? ModernTableContainer : TableContainer
+    const Row = modern ? RouteListItem : RouteItem
+
     return (
         <AppThemeProvider>
-            <TableContainer className='routes' width='100%' height='100%' ref={ref} >
+            <Container className='routes' width='100%' height='100%' ref={ref} >
                 {visible.map( (route,idx) => {
                     const key = getRouteKey(route,idx)
                     return (
                         <Dynamic observer={observer} key={key} event={getFoldEvent(key)} prop='outsideFold' >
-                            <RouteItem outsideFold={isOutsideFold(key)}  {...route}
+                            <Row outsideFold={isOutsideFold(key)}  {...route}
                                 onClick={()=>{onItemSelected(route.id)}}
                                 onDelete={()=>{onItemDeleted(route.id)}}
                                 />
@@ -52,7 +66,7 @@ export const RoutesTable = ({routes,onSelect,onDelete}) => {
                     )
                 })}
 
-            </TableContainer>
+            </Container>
         </AppThemeProvider>
     )
 }

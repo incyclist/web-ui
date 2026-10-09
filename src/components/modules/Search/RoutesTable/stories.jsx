@@ -7,7 +7,7 @@ AppTheme.select('default')
 
 export default {
     component: RoutesTable,
-    title: 'Modules/Search/RoutesTable',   
+    title: 'Components/Modules/Search/RoutesTable',
     argTypes: { 
         onSelect: {action: 'Select'},
         onDelete: {action: 'Delete'},

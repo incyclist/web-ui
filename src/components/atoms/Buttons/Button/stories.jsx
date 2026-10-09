@@ -38,3 +38,19 @@ LongPress.args = {
     text:'OK',
     longPressDelay: 500
 };
+
+export const ResponsiveRounded = Template.bind({});
+ResponsiveRounded.args = {
+    text: 'View details',
+    primary: true,
+    responsive: true,
+    shape: 'rounded',
+    no3D: true,
+};
+
+export const ResponsiveSmallPill = Template.bind({});
+ResponsiveSmallPill.args = {
+    ...ResponsiveRounded.args,
+    size: 'small',
+    shape: 'pill',
+};

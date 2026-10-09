@@ -466,7 +466,7 @@ export const RouteDetails = ( {route, markers,segment, startPos,endPos,realityFa
 
 
     if (loading)
-        return  <Dialog id='RouteDetails' log={{title:routeDescr?.title}} title={routeDescr?.title} /*onOutsideClicked={onUserCancel}*/ width="60vw" height="70vh" zIndex={100} onESC={onCancelClicked}> 
+        return  <Dialog id='RouteDetails' log={{title:routeDescr?.title}} title={routeDescr?.title} /*onOutsideClicked={onUserCancel}*/ width="60vw" height="70vh" zIndex={100} onESC={onCancelClicked}>
             <ContentArea>
                 <Row align='center' justify='center' height='100%'>
                     <Loader/>
@@ -665,15 +665,15 @@ export const RouteDetails = ( {route, markers,segment, startPos,endPos,realityFa
                     <Button size='small' text='Retry' secondary={true} onClick={onDownloadClicked}/>
                 </Row> :null}
 
-    
-                
+
+
             </ContentArea>
             <ButtonBar justify='center'>
                 {showStart ? <Button primary={canStart} text='Start' disabled={!canStart} onClick = { onStartClicked}/> : null}
                 <Button text='Cancel' primary={!canStart && !isOnline} onClick = { onCancelClicked}/>
-                {showStart && showWorkout ? <Button primary={false} disabled={!canStart} secondary={true} text='Start With Workout' onClick = { onAddWorkoutClicked}/>: null} 
+                {showStart && showWorkout ? <Button primary={false} disabled={!canStart} secondary={true} text='Start With Workout' onClick = { onAddWorkoutClicked}/>: null}
                 {showDownloadButton ? <Button primary={!showStart && isOnline} disabled={!isOnline} secondary={showStart} text='Download' onClick = { onDownloadClicked}/> : null}
-                {showConvert ? <Button primary={false} secondary={true} text='Convert' onClick = { onConvertClicked}/> : null}            
+                {showConvert ? <Button primary={false} secondary={true} text='Convert' onClick = { onConvertClicked}/> : null}
             </ButtonBar>
             
         </Dialog>

@@ -42,4 +42,20 @@ describe('Card', () => {
         screen.getByTestId('card-skeleton').click()
         expect(onClick).toHaveBeenCalled()
     })
+
+    test('renders single card without flip when Details is not provided', () => {
+        render(<Card id='1' visible={true} width={200} height={112} Summary={Summary} />)
+
+        expect(screen.getByTestId('summary')).toBeInTheDocument()
+        expect(screen.queryByTestId('details')).toBeNull()
+        expect(screen.queryByTestId('card-skeleton')).toBeNull()
+    })
+
+    test('keeps a sized placeholder when a card is not visible', () => {
+        const { container } = render(<Card id='1' visible={false} width={280} height={520} Summary={Summary} />)
+
+        expect(screen.getByTestId('card-skeleton')).toBeInTheDocument()
+        expect(screen.queryByTestId('summary')).toBeNull()
+        expect(container.firstChild).toHaveStyle({ width: '280px', height: '520px' })
+    })
 })
