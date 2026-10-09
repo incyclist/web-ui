@@ -5,6 +5,7 @@ import { ArrowRightIcon, TrashIcon, PeopleIcon, PlayIcon } from '@primer/octicon
 import { FreeMap } from '../../../molecules/Maps'
 import { Button, ErrorBoundary, Loader } from '../../../atoms'
 import { CardSkeleton } from '../../routeSelection/base/skeleton'
+import { EventLogger } from 'gd-eventlog'
 
 const finite = value => value !== null && value !== undefined && value !== '' && Number.isFinite(Number(value))
 const validCoordinates = points => (points || []).filter(point =>
@@ -240,6 +241,8 @@ export const RouteTileSummaryView = (props) => {
     const renderImage = isVideo && previewUrl && !imageFailed
     const renderMap = !renderImage && coordinates.length >= 2
     const location = countryLabel(country)
+    const logger = new EventLogger('Incyclist')
+
     const open = e => {
         if (onOK) onOK(e)
         else onClick?.(id)
@@ -253,9 +256,28 @@ export const RouteTileSummaryView = (props) => {
     </>
     if (visible === false) return <div style={{ width: props.width, height: props.height }}><CardSkeleton /></div>
 
+    const onTileClick = e => {
+        logger.logEvent({message:'tile clicked', tile:title, eventSource:'user'})
+        open(e)
+    }
+    const onDeleteClick = e => {
+        logger.logEvent({message:'button clicked', button:'delete', tile:title, eventSource:'user'})
+        stop(e); 
+        onDelete(e)
+    }
+
+    const onTileKeyDown = e => {
+        if (e.target === e.currentTarget && ['Enter', ' '].includes(e.key)) { 
+            e.preventDefault(); 
+            logger.logEvent({message:'key pressed', key:'enter',tile:title, eventSource:'user'})
+            open(e) 
+        }         
+    }
+
     return <ErrorBoundary hideOnError>
-        <Surface $list={list} className={list ? 'route-summary route-list-item' : 'route-summary'} aria-label={`Route ${title}`} tabIndex={0} onClick={open}
-            onKeyDown={e => { if (e.target === e.currentTarget && ['Enter', ' '].includes(e.key)) { e.preventDefault(); open(e) } }}>
+        <Surface $list={list} className={list ? 'route-summary route-list-item' : 'route-summary'} aria-label={`Route ${title}`} tabIndex={0} 
+            onClick={onTileClick}
+            onKeyDown={onTileKeyDown}>
             <Preview $list={list}>
                 {renderImage ? <img src={previewUrl} alt={title} onError={() => setImageFailed(true)} draggable={false} /> :
                     renderMap ? <MapPreview><FreeMap noAttribution scrollWheelZoom={false} zoomControl={false} points={coordinates} startPos={0} draggable={false} /></MapPreview> :
@@ -275,11 +297,11 @@ export const RouteTileSummaryView = (props) => {
                     <div><strong>{formatMetric(totalDistance, distance, 1000, 'km', 1)}</strong><small>Distance</small></div>
                     <div><strong>{formatMetric(totalElevation, elevation, 1, 'm', 0)}</strong><small>Total ascent</small></div>
                 </Stats>
-                <RouteProfile points={points} list={list} />
+                <RouteProfile points={points} list={list} />        
                 <Actions $list={list}>
-                    {onOK || onClick ? <OpenButton $list={list} responsive shape='rounded' primary no3D type='button' onClick={e => { stop(e); open(e) }} aria-label={`View details for ${title}`}>{list ? 'Details' : buttonText}<ArrowRightIcon size={16} /></OpenButton> : null}
+                    {onOK || onClick ? <OpenButton $list={list} responsive shape='rounded' primary no3D type='button' id='details' logContext={ {tile:title}} onClick={e => { stop(e); open(e) }} aria-label={`View details for ${title}`}>{list ? 'Details' : buttonText}<ArrowRightIcon size={16} /></OpenButton> : null}
                     {canDelete && onDelete ? <IconButton type='button' aria-label={`Delete ${title}`}
-                        onClick={e => { stop(e); onDelete(e) }}><TrashIcon size={17} /></IconButton>
+                        onClick={onDeleteClick}><TrashIcon size={17} /></IconButton>
                     : null}
                 </Actions>
             </Body>
