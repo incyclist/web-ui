@@ -62,7 +62,6 @@ src/pages/routeList/
   page.jsx            smart container — service calls, state, handlers
   screen.jsx          presentational screen for that page
   screen.stories.jsx
-  switch.jsx
   utils.js
   index.jsx           export * from './page'
 ```

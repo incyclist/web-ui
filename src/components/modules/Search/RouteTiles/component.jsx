@@ -34,7 +34,7 @@ export const RouteTilesView = ({ tiles = [], containerRef, observer, initialized
       {tiles.map(({ id, props }) => (
         <Tile className="route-tile" key={id}>
           <Dynamic observer={observer} event={getFoldEvent(id)} prop="outsideFold">
-            <TileComponent {...props} outsideFold={initialized ? isOutsideFold(id) : true} />
+            <TileComponent {...props} singleCard outsideFold={initialized ? isOutsideFold(id) : true} />
           </Dynamic>
         </Tile>
       ))}
