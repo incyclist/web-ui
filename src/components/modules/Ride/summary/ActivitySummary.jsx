@@ -152,10 +152,10 @@ export const ActivitySummaryView = ( {activity,position,preview, units, xScale,
 
                 <ButtonBar justify='center'>
                     {showSave && <Button height={'5vh'} primary={true} text={isSaving ? '' : 'Save'} disabled={isSaving} onClick={onSave}>{isSaving && <Loader size='2.2vh'/>}</Button>}
-                    {showNew && <Button height={'5vh'} primary={true} text='New Ride' disabled={isSaving} onClick={onNew} />}
-                    {showContinue && <Button height={'5vh'} primary={false} text='Continue' onClick={onContinue} />}
-                    {showDelete && <Button height={'5vh'} primary={false} text='Delete' onClick={onDelete} />}
-                    {showExit && <Button height={'5vh'} primary={false} text='Exit App' onClick={onExit} />}
+                    {!showSave && showNew && <Button height={'5vh'} primary={true} text='New Ride' disabled={isSaving} onClick={onNew} />}
+                    {showSave && showContinue && <Button height={'5vh'} primary={false} text='Continue' onClick={onContinue} />}
+                    {showSave &&showDelete && <Button height={'5vh'} primary={false} text='Delete' onClick={onDelete} />}
+                    {!showSave &&showExit && <Button height={'5vh'} primary={false} text='Exit App' onClick={onExit} />}
                 </ButtonBar>
             </ContentArea>
 
