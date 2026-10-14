@@ -6,6 +6,9 @@ import { EventLogger } from 'gd-eventlog';
 import { Autosize, ErrorBoundary, Loader } from '../../atoms';
 import { useUnmountEffect } from '../../../hooks';
 
+// fallback for desktop versions that don't report the MIME type of the stream (video only)
+export const DEFAULT_STREAM_MIME = 'video/mp4; codecs="avc1.4D0029"'
+
 export const VideoContainer = styled(Autosize)`
     width: ${props => props.width};
     height: ${props => props.height};   
@@ -23,7 +26,6 @@ export const AutoConvertVideo = ( { src, startTime, observer, width, height,mute
                          onPlaybackUpdate, onLoaded, onLoadError, onPlaybackError, onStalled, onWaiting, onEnded,
                          } ) => {
 
-    const mime = 'video/mp4; codecs="avc1.4D0029"';
     const refVideo = useRef(null)
     const [state,setState] = useState({mounted:false})
     const refInfo = useRef({
@@ -107,6 +109,18 @@ export const AutoConvertVideo = ( { src, startTime, observer, width, height,mute
     }
 
 
+    // muted is decided by services (sound setting, playback rate) - the element just follows the prop
+    const applyMuted = useCallback( ()=>{
+        const shouldMute = muted
+        if (refVideo.current && refVideo.current.muted!==shouldMute)
+            refVideo.current.muted = shouldMute
+    },[muted])
+
+    // keep the element's muted state in sync with the prop, so sound can be switched on/off during a ride
+    useEffect( ()=>{
+        applyMuted()
+    },[applyMuted])
+
     const setRate = useCallback( ( rate )=> {       
         if (!refVideo.current)
             return
@@ -119,6 +133,8 @@ export const AutoConvertVideo = ( { src, startTime, observer, width, height,mute
     
 
         try {
+            // playback speed follows the rider's speed - keep the audio at its natural pitch
+            refVideo.current.preservesPitch = true
             refVideo.current.playbackRate = rate        
             if (rate>0)
                 startPlay()
@@ -334,15 +350,32 @@ export const AutoConvertVideo = ( { src, startTime, observer, width, height,mute
 
     }
 
+    // the source buffer needs the MIME type of the stream (with or without audio), which is only known
+    // once the conversion has started - so it is created when the MediaSource is open AND the stream started
+    const initSourceBuffer = () => {
+        const info = refInfo.current
+        if (!info.mediaSourceOpened || !info.streamMime || info.buffer)
+            return
+
+        const mime = info.streamMime
+        if (!MediaSource.isTypeSupported(mime)) {
+            logEvent( {message:'video error', reason:'unsupported stream type', mime})
+            info.error = new Error('Conversion Error')
+            onError()
+            return
+        }
+
+        const buffer = info.buffer = info.mediaSource.addSourceBuffer(mime)
+        buffer.addEventListener( 'updateend',()=> {
+            getNextSegment()
+        })
+        getNextSegment()
+    }
+
     const initMediaSource = () => {
                 // init mediasource
         const video = refVideo.current;
         const mediaSource = new MediaSource();
-
-        if (!MediaSource.isTypeSupported(mime)) {
-            //TODO: handle error
-            return;
-        }
 
         video.src = URL.createObjectURL(mediaSource); 
 
@@ -352,14 +385,8 @@ export const AutoConvertVideo = ( { src, startTime, observer, width, height,mute
         });
 
         mediaSource.addEventListener('sourceopen', () => { 
-            const buffer = refInfo.current.buffer = mediaSource.addSourceBuffer(mime)
             refInfo.current.mediaSourceOpened = true
-            getNextSegment()
-
-            buffer.addEventListener( 'updateend',(...args)=> {
-                getNextSegment()
-            })
-
+            initSourceBuffer()
         })
 
         
@@ -397,9 +424,11 @@ export const AutoConvertVideo = ( { src, startTime, observer, width, height,mute
         refInfo.current.conversion = conversion
 
         conversion.getObserver()
-            .once('convert-start', ()=>{  
+            .once('convert-start', (startInfo)=>{  
                 refInfo.current.converting = true
                 refInfo.current.tsConvertStart = Date.now()
+                refInfo.current.streamMime = startInfo?.mime ?? DEFAULT_STREAM_MIME
+                initSourceBuffer()
             })
 
         initMediaSource()

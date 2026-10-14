@@ -12,6 +12,10 @@ export class MobileBinding {
     }
 
 
+    isConvertAudioSupported() {
+        return false
+    }
+
     isConvertSuported() {
         return false
     }

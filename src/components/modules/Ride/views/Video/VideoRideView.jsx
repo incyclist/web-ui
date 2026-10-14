@@ -12,7 +12,7 @@ export class VideoRideView extends React.Component {
 
     shouldComponentUpdate(nextProps, nextState) {
         // console.log('VideoRideView should update', nextProps, nextState)
-        return (this.props.src !== nextProps.src || this.props.hidden !== nextProps.hidden) 
+        return (this.props.src !== nextProps.src || this.props.hidden !== nextProps.hidden || this.props.muted !== nextProps.muted) 
     }
 
     render() {

@@ -105,6 +105,18 @@ export const Video = ( { src, startTime, observer, width, height,muted=true,loop
     }
 
 
+    // muted is decided by services (sound setting, playback rate) - the element just follows the prop
+    const applyMuted = useCallback( ()=>{
+        const shouldMute = muted
+        if (refVideo.current && refVideo.current.muted!==shouldMute)
+            refVideo.current.muted = shouldMute
+    },[muted])
+
+    // keep the element's muted state in sync with the prop, so sound can be switched on/off during a ride
+    useEffect( ()=>{
+        applyMuted()
+    },[applyMuted])
+
     const setRate = useCallback( ( rate )=> {       
         if (!refVideo.current)
             return
@@ -117,6 +129,8 @@ export const Video = ( { src, startTime, observer, width, height,muted=true,loop
 
 
         try {
+            // playback speed follows the rider's speed - keep the audio at its natural pitch
+            refVideo.current.preservesPitch = true
             refVideo.current.playbackRate = rate        
             if (rate>0)
                 startPlay()

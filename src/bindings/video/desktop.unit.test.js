@@ -78,4 +78,16 @@ describe('DesktopBinding', () => {
         expect(workaroundMock).toHaveBeenCalledWith('decoded(video:///mnt/nas/Hochb%C3%A4rneck-1.avi)')
         expect(apiMock.video.convert).toHaveBeenCalledWith('fixed(decoded(video:///mnt/nas/Hochb%C3%A4rneck-1.avi))', {})
     })
+
+    describe('isConvertAudioSupported', () => {
+        test('reports the desktop capability video.convert.audio', () => {
+            hasFeatureMock.mockImplementation((f) => f==='video.convert.audio')
+            expect(new DesktopBinding().isConvertAudioSupported()).toBe(true)
+        })
+
+        test('older desktop versions stream video only', () => {
+            hasFeatureMock.mockReturnValue(false)
+            expect(new DesktopBinding().isConvertAudioSupported()).toBe(false)
+        })
+    })
 })

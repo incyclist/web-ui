@@ -4,7 +4,7 @@ import {EventLogger} from 'gd-eventlog'
 import { getCoachesService, useRideDisplay, useRouteList, useUserSettings } from 'incyclist-services';
 
 import { AppThemeProvider } from '../../../../theme';
-import { EditNumber,Button, Row} from '../../../atoms';
+import { EditNumber,Button, Row, CheckBox} from '../../../atoms';
 import { DynamicCoachList,DynamicCoachEdit } from '../../Coaches';
 import { RIDE_MODES, RIDEVIEW } from './consts';
 
@@ -61,6 +61,7 @@ export class RideSettings extends React.Component {
 
         const preferences = {
             rideView: this.settings.getValue('preferences.rideView', RIDEVIEW.DEFAULT),
+            videoSound: this.settings.getValue('preferences.video.sound', false)===true,
             reality: this.routes.getStartSettings()?.realityFactor ?? this.props.reality ?? 100,
             renderKey: Date.now()
         }
@@ -83,6 +84,13 @@ export class RideSettings extends React.Component {
             this.updateSettings();
         })
 
+    }
+
+    onVideoSoundChanged(enabled) {
+        this.settings.set('preferences.video.sound',enabled)
+        this.setState({videoSound:enabled},()=>{
+            this.updateSettings();
+        })
     }
 
     onChangeRealityFactor(value) {
@@ -149,7 +157,7 @@ export class RideSettings extends React.Component {
     }
     
     render() {
-        const {rideView,reality} = this.state;
+        const {rideView,reality,videoSound} = this.state;
         const coachSupported = true;
         const {rideMode: legacyRideMode} = this.props;
         const rideMode = this.ride.getRideType();
@@ -157,12 +165,15 @@ export class RideSettings extends React.Component {
         const hasElevation  =  (rideMode==='GPX' || rideMode==='Video' || /* legacy ...*/legacyRideMode===RIDE_MODES.FOLLOW_ROUTE || legacyRideMode===RIDE_MODES.VIDEO )
 
 
-        const props = {legacyRideMode,rideMode, rideView, hasElevation, reality, coachSupported, }
+        const isVideo = rideMode==='Video' || legacyRideMode===RIDE_MODES.VIDEO
+
+        const props = {legacyRideMode,rideMode, rideView, hasElevation, reality, coachSupported, isVideo, videoSound }
         return <RideSettingsView {...props} 
             showCoachEditDialog= {this.state.showCoachEditDialog}
             coachEditDialogProps= {this.state.coachEditDialogProps??{}}
             onRideViewSelected={this.onRideViewSelected.bind(this)}
             onChangeRealityFactor={this.onChangeRealityFactor.bind(this)}
+            onVideoSoundChanged={this.onVideoSoundChanged.bind(this)}
             onCoachEditDone = {this.onCoachEditDone.bind(this)}
             onAddCoach = {this.onAddCoachClick.bind(this)}
             />
@@ -173,7 +184,8 @@ export class RideSettings extends React.Component {
 export const RideSettingsView = ( props)=> {
 
     const {legacyRideMode, rideMode, rideView, hasElevation, reality=100, coachSupported,showCoachEditDialog,coachEditDialogProps,
-        onRideViewSelected,onChangeRealityFactor,onCoachEditDone,onAddCoach
+        isVideo, videoSound=false,
+        onRideViewSelected,onChangeRealityFactor,onVideoSoundChanged,onCoachEditDone,onAddCoach
 
     } = props
 
@@ -218,6 +230,15 @@ export const RideSettingsView = ( props)=> {
                                     value={reality} min={0} max={100} digits={0}
                                     onValueChange={ onChangeRealityFactor} />
                         </>                            
+                    : null }
+
+                { isVideo ? 
+                    <>
+                        <Row> 
+                            <Header>Video</Header> 
+                        </Row>
+                        <CheckBox label='Play video sound' value={videoSound} onValueChange={onVideoSoundChanged} />
+                    </>
                     : null }
     
                 { coachSupported ? <div> <Header>Coach(es)</Header> </div>: null}

@@ -20,6 +20,11 @@ export class DesktopBinding {
     }
 
 
+    // desktop versions with this capability include the audio track in converted (streamed) videos
+    isConvertAudioSupported() {
+        return hasFeature('video.convert.audio')
+    }
+
     isConvertSuported() {
         return hasFeature('video.convertOffline')
     }

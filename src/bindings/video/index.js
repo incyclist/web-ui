@@ -32,6 +32,10 @@ export class VideoProcessing {
         return this.binding.isConvertSuported()
     }
 
+    isConvertAudioSupported() {
+        return this.binding.isConvertAudioSupported?.() ?? false
+    }
+
     async convert(url, props={}) {
         return this.binding.convert(url,props)
     }

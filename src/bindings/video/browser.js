@@ -11,6 +11,10 @@ export class BrowserBinding {
     }
 
 
+    isConvertAudioSupported() {
+        return false
+    }
+
     isConvertSuported() {
         return false
     }
