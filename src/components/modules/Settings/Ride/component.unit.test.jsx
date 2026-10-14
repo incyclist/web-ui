@@ -24,13 +24,13 @@ import { RideSettings, RideSettingsView } from './component'
 describe('RideSettingsView video sound', () => {
 
     test('shows the video sound checkbox for video rides', () => {
-        render(<RideSettingsView isVideo videoSound={true} onVideoSoundChanged={vi.fn()} />)
+        render(<RideSettingsView isRide isVideo videoSound={true} onVideoSoundChanged={vi.fn()} />)
 
         expect(screen.getByLabelText('Play video sound').checked).toBe(true)
     })
 
     test('hides the video sound checkbox for non-video rides', () => {
-        render(<RideSettingsView isVideo={false} />)
+        render(<RideSettingsView isRide isVideo={false} />)
 
         expect(screen.queryByLabelText('Play video sound')).toBeNull()
     })
@@ -85,8 +85,17 @@ describe('RideSettings video sound', () => {
     test('does not show the checkbox for non-video rides', () => {
         rideMock.getRideType.mockReturnValue('GPX')
 
-        render(<RideSettings />)
+        render(<RideSettings isRide/>)
 
         expect(screen.queryByLabelText('Play video sound')).toBeNull()
     })
+    test('shows the checkbox in App settings Ride section', () => {
+        rideMock.getRideType.mockReturnValue(undefined)
+
+        render(<RideSettings />)
+        expect(screen.queryByLabelText('Play video sound')).not.toBeNull()
+
+        
+    })
+
 })

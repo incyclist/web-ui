@@ -159,7 +159,7 @@ export class RideSettings extends React.Component {
     render() {
         const {rideView,reality,videoSound} = this.state;
         const coachSupported = true;
-        const {rideMode: legacyRideMode} = this.props;
+        const {rideMode: legacyRideMode,isRide} = this.props;
         const rideMode = this.ride.getRideType();
 
         const hasElevation  =  (rideMode==='GPX' || rideMode==='Video' || /* legacy ...*/legacyRideMode===RIDE_MODES.FOLLOW_ROUTE || legacyRideMode===RIDE_MODES.VIDEO )
@@ -167,7 +167,7 @@ export class RideSettings extends React.Component {
 
         const isVideo = rideMode==='Video' || legacyRideMode===RIDE_MODES.VIDEO
 
-        const props = {legacyRideMode,rideMode, rideView, hasElevation, reality, coachSupported, isVideo, videoSound }
+        const props = {isRide,legacyRideMode,rideMode, rideView, hasElevation, reality, coachSupported, isVideo, videoSound }
         return <RideSettingsView {...props} 
             showCoachEditDialog= {this.state.showCoachEditDialog}
             coachEditDialogProps= {this.state.coachEditDialogProps??{}}
@@ -184,10 +184,12 @@ export class RideSettings extends React.Component {
 export const RideSettingsView = ( props)=> {
 
     const {legacyRideMode, rideMode, rideView, hasElevation, reality=100, coachSupported,showCoachEditDialog,coachEditDialogProps,
-        isVideo, videoSound=false,
+        isRide=false,isVideo, videoSound=false,
         onRideViewSelected,onChangeRealityFactor,onVideoSoundChanged,onCoachEditDone,onAddCoach
 
     } = props
+
+    console.log('[debug]',isRide,isVideo)
 
         return (
             <AppThemeProvider>
@@ -232,7 +234,7 @@ export const RideSettingsView = ( props)=> {
                         </>                            
                     : null }
 
-                { isVideo ? 
+                { !isRide|| (isRide&&isVideo) ? 
                     <>
                         <Row> 
                             <Header>Video</Header> 

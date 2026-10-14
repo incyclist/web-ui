@@ -171,7 +171,7 @@ export class ActiveRideSettings extends React.Component {
                         {showUser ? <UserSettings label='User' onChange={this.props.onUserChanged} /> : null}
                         {showWorkout ? <WorkoutSettings label='Workout' onWorkoutChanged={this.props.onWorkoutChanged}  />:null}
                         {showGear ?  <GearSettings label='Gear' {...this.getGearProps()} />:null}
-                        {showRide ? <RideSettings label='Ride' {...this.getRouteProps()} /> : null}
+                        {showRide ? <RideSettings isRide label='Ride' {...this.getRouteProps()} /> : null}
                         {showActivity ? <DynamicActivitySummary label='Activity' manageButtons={true} showContinue={renderContinue} {...eventHandlers} /> : null}
                         {showApps? <AppsSettings label='Apps' />: null}
                         {showSupport  ? <SupportArea label='Support' user={this.props.user} /> : null}
@@ -182,9 +182,9 @@ export class ActiveRideSettings extends React.Component {
                 <ButtonBar justify='center'>
                     
                     {renderBack ? <Button height={'5vh'} primary={false} text='Back' onClick={ this.props.onBack} /> : null}  
-                    {renderNew ? <Button height={'5vh'} primary={true} text='New Ride' disabled={saveDisabled} onClick={this.props.onNew} />:null} 
+                    {/* {renderNew ? <Button height={'5vh'} primary={true} text='New Ride' disabled={saveDisabled} onClick={this.props.onNew} />:null}  */}
                     {renderContinue ? <Button height={'5vh'} primary={false} text='Continue' onClick={this.props.onContinue} /> : null} 
-                    {renderExit ? <Button height={'5vh'} primary={false} text='Exit App' onClick={this.props.onExit} /> : null}             
+                    {/* {renderExit ? <Button height={'5vh'} primary={false} text='Exit App' onClick={this.props.onExit} /> : null}              */}
                     {renderOK ? <Button height={'5vh'} primary={false} text='OK' onClick={this.props.onOK} /> : null}             
                 </ButtonBar> :null}
 
