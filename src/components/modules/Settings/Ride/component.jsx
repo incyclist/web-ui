@@ -4,7 +4,7 @@ import {EventLogger} from 'gd-eventlog'
 import { getCoachesService, useRideDisplay, useRouteList, useUserSettings } from 'incyclist-services';
 
 import { AppThemeProvider } from '../../../../theme';
-import { EditNumber,Button, Row, CheckBox, EditText} from '../../../atoms';
+import { EditNumber,Button, Row, CheckBox, EditText, Column,Text} from '../../../atoms';
 import { DynamicCoachList,DynamicCoachEdit } from '../../Coaches';
 import { RIDE_MODES, RIDEVIEW } from './consts';
 import { isValidGoogleMapsKeyFormat } from './validations';
@@ -208,22 +208,39 @@ const validateMapsApiKey = (key) =>{
 
 export const RideSettingsView = ( props)=> {
 
+
     const {legacyRideMode, rideMode, rideView, hasElevation, reality=100, coachSupported,showCoachEditDialog,coachEditDialogProps,
         isRide=false,isVideo, videoSound=false,
         mapsApiKey, onMapsApiKeyChanged,
         onRideViewSelected,onChangeRealityFactor,onVideoSoundChanged,onCoachEditDone,onAddCoach
-
     } = props
+
+    const showMapsHeader = !isRide || 
+        (rideMode===undefined && (legacyRideMode===undefined|| legacyRideMode!==RIDE_MODES.VIDEO))
+            || (rideMode==='Free-Ride' || rideMode==='GPX')
+
+
 
         return (
             <AppThemeProvider>
             <ContentArea>    
+
+                { showMapsHeader  ? 
+                    <Row> 
+                        <Header>Maps</Header> 
+                    </Row>
+                : null }
+    
+
+
                 { (rideMode===undefined && (legacyRideMode===undefined|| legacyRideMode!==RIDE_MODES.VIDEO))
-                   || (rideMode==='Free-Ride' || rideMode==='GPX')  ? 
-                <div>
-                    <div>
-                        <Header>View Preference</Header>
-                    </div>                
+                   || (rideMode==='Free-Ride' || rideMode==='GPX')
+                   || !isRide  ? 
+                <Row>
+                    <Column width="15ch">
+                    <Text>View Preference</Text>
+                    </Column>
+                    <Column>
                     <div>
                         <Radio 
                             checked= { rideView===RIDEVIEW.STREETVIEW}
@@ -244,8 +261,15 @@ export const RideSettingsView = ( props)=> {
                         />
                         <label htmlFor='streetview'>Map</label>
                     </div>
-                </div> : null 
+                    </Column>
+                </Row> : null 
                 }
+                { !isRide  ? 
+                    <Row> 
+                        <EditText label='Maps API Key'  labelPosition='before' labelWidth='15ch' maxLength={39}
+                            validate={validateMapsApiKey} value={mapsApiKey} noLog onValueChange={onMapsApiKeyChanged} />
+                    </Row>
+                    : null }
 
                 { hasElevation  ? 
                     <>
@@ -267,15 +291,6 @@ export const RideSettingsView = ( props)=> {
                     </>
                     : null }
 
-                { !isRide  ? 
-                    <>
-                        <Row> 
-                            <Header>Maps</Header> 
-                        </Row>
-                        <EditText label='Maps API Key'  labelPosition='before' labelWidth='15ch' maxLength={39}
-                            validate={validateMapsApiKey} value={mapsApiKey} noLog onValueChange={onMapsApiKeyChanged} />
-                    </>
-                    : null }
     
                 { coachSupported ? <div> <Header>Coach(es)</Header> </div>: null}
                 { coachSupported ? 
