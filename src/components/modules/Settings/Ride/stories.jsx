@@ -10,6 +10,7 @@ export default {
   argTypes: { 
     onRideViewSelected: { action: 'ride view changed' } ,
     onChangeRealityFactor: { action: 'reality factor changed' } ,
+    onMapsApiKeyChanged: { action: 'maps API changed' } ,
     onCoachEditDone: { action: 'coach edit done'},
     onAddCoach: { action: 'add coach'}
 

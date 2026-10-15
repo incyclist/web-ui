@@ -4,9 +4,10 @@ import {EventLogger} from 'gd-eventlog'
 import { getCoachesService, useRideDisplay, useRouteList, useUserSettings } from 'incyclist-services';
 
 import { AppThemeProvider } from '../../../../theme';
-import { EditNumber,Button, Row, CheckBox} from '../../../atoms';
+import { EditNumber,Button, Row, CheckBox, EditText} from '../../../atoms';
 import { DynamicCoachList,DynamicCoachEdit } from '../../Coaches';
 import { RIDE_MODES, RIDEVIEW } from './consts';
+import { isValidGoogleMapsKeyFormat } from './validations';
 
 export const ContentArea = styled.div`
     position:relative;
@@ -63,7 +64,8 @@ export class RideSettings extends React.Component {
             rideView: this.settings.getValue('preferences.rideView', RIDEVIEW.DEFAULT),
             videoSound: this.settings.getValue('preferences.video.sound', false)===true,
             reality: this.routes.getStartSettings()?.realityFactor ?? this.props.reality ?? 100,
-            renderKey: Date.now()
+            renderKey: Date.now(),
+            mapsApiKey: this.settings.getValue('GOOGLE_MAPS_API_KEY',undefined)
         }
         
         return preferences;
@@ -155,9 +157,17 @@ export class RideSettings extends React.Component {
         if (this.props?.onCoachesChanged)
             this.props.onCoachesChanged(result)
     }
+
+    onMapsApiKeyChanged( key) {
+        const mapsApiKey = key.trim()
+
+        this.settings.set('GOOGLE_MAPS_API_KEY',mapsApiKey)
+
+        this.setState( {mapsApiKey})
+    }
     
     render() {
-        const {rideView,reality,videoSound} = this.state;
+        const {rideView,reality,videoSound,mapsApiKey} = this.state;
         const coachSupported = true;
         const {rideMode: legacyRideMode,isRide} = this.props;
         const rideMode = this.ride.getRideType();
@@ -167,7 +177,7 @@ export class RideSettings extends React.Component {
 
         const isVideo = rideMode==='Video' || legacyRideMode===RIDE_MODES.VIDEO
 
-        const props = {isRide,legacyRideMode,rideMode, rideView, hasElevation, reality, coachSupported, isVideo, videoSound }
+        const props = {isRide,legacyRideMode,rideMode, rideView, hasElevation, reality, coachSupported, isVideo, videoSound,mapsApiKey }
         return <RideSettingsView {...props} 
             showCoachEditDialog= {this.state.showCoachEditDialog}
             coachEditDialogProps= {this.state.coachEditDialogProps??{}}
@@ -175,9 +185,24 @@ export class RideSettings extends React.Component {
             onChangeRealityFactor={this.onChangeRealityFactor.bind(this)}
             onVideoSoundChanged={this.onVideoSoundChanged.bind(this)}
             onCoachEditDone = {this.onCoachEditDone.bind(this)}
+            onMapsApiKeyChanged= {this.onMapsApiKeyChanged.bind(this)}
             onAddCoach = {this.onAddCoachClick.bind(this)}
             />
 
+    }
+}
+
+const validateMapsApiKey = (key) =>{
+    if (!key)
+        return
+
+    const trimmed = key.trim()
+    if (trimmed.length===0)
+        return
+
+    const isvalid = isValidGoogleMapsKeyFormat(key)
+    if (!isvalid) {
+        return "Invalid format, please check "
     }
 }
 
@@ -185,11 +210,10 @@ export const RideSettingsView = ( props)=> {
 
     const {legacyRideMode, rideMode, rideView, hasElevation, reality=100, coachSupported,showCoachEditDialog,coachEditDialogProps,
         isRide=false,isVideo, videoSound=false,
+        mapsApiKey, onMapsApiKeyChanged,
         onRideViewSelected,onChangeRealityFactor,onVideoSoundChanged,onCoachEditDone,onAddCoach
 
     } = props
-
-    console.log('[debug]',isRide,isVideo)
 
         return (
             <AppThemeProvider>
@@ -240,6 +264,16 @@ export const RideSettingsView = ( props)=> {
                             <Header>Video</Header> 
                         </Row>
                         <CheckBox label='Play video sound' value={videoSound} onValueChange={onVideoSoundChanged} />
+                    </>
+                    : null }
+
+                { !isRide  ? 
+                    <>
+                        <Row> 
+                            <Header>Maps</Header> 
+                        </Row>
+                        <EditText label='Maps API Key'  labelPosition='before' labelWidth='15ch' maxLength={39}
+                            validate={validateMapsApiKey} value={mapsApiKey} noLog onValueChange={onMapsApiKeyChanged} />
                     </>
                     : null }
     

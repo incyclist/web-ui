@@ -46,7 +46,7 @@ const Container = styled(Row)`
 const EditField = ( props) => {
 
     const {name,timeout, label,type,disabled=false, maxLength, value: valueProp, onChange,onTimeout,validate,checkInput,align='left',
-            labelPosition='after',labelWidth, innerMargin='0.4vw', unit
+            labelPosition='after',labelWidth, innerMargin='0.4vw', unit, noLog
         } =props
 
     const [errorText,setErrorText] = useState()
@@ -107,7 +107,7 @@ const EditField = ( props) => {
                 }
             }
 
-            const logValue = type === 'password' ? '***' : updated
+            const logValue = type === 'password'||type==='noLog'||noLog ? '***' : updated
 
             if ((updated??'')!==(props.value??''))
                 logger.logEvent( {message: 'text entered',field:label,value: logValue, eventSource:'user' })
