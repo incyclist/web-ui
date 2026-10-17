@@ -41,7 +41,7 @@ const Body = styled.div`
 
 export const MessageBox = (props) => {
 
-    const { yes='Yes', no='No', defaultButton='Yes', text, children, width, height='25vh',level=12, onYes , onNo, title, noYes, noNo, center} = props
+    const { yes='Yes', no='No', defaultButton='Yes', text, children, width, height='25vh',level=12, onYes , onNo, title,id, noYes, noNo, center} = props
 
     const onOKHandler = () => {
         if (onYes)
@@ -54,7 +54,7 @@ export const MessageBox = (props) => {
     }
 
     return( 
-        <Dialog width={width} height={height} level={level} onESC={onCancelHandler}>
+        <Dialog id={id??title??'MessageBox'} width={width} height={height} level={level} onESC={onCancelHandler}>
             <Header className='message-header'>
                 <HeaderText>{title}</HeaderText>
             </Header>

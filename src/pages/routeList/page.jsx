@@ -1,9 +1,9 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { useDevicePairing, useRouteList } from "incyclist-services";
+import { useDevicePairing, useFreeRideService, useRouteList } from "incyclist-services";
 import { useNavigate  } from "react-router";
 import { RouteListScreen } from "./screen";
 import { usePageLogger, useUnmountEffect } from "../../hooks";
-import { DialogLauncher } from "../../components/molecules";
+import { DialogLauncher, MessageBox } from "../../components/molecules";
 import { RouteDetailsDialog } from "../../components/modules/routeSelection/RouteDetails";
 import { FreeRideSettingsDialog } from "../../components/modules/routeSelection/FreeRideSettings";
 import { ImportRoutesDialog } from "../../components/modules/routeSelection/ImportRoutesDialog";
@@ -38,6 +38,22 @@ const countRoutes = (service, filters) => {
     }
 }
 
+const FreeRideNotAvailable = (props) => {
+
+    const onClose = ()=> {
+        if (props?.onClose)
+            props.onClose()
+    }
+    
+    return <MessageBox center no='OK' noYes title='Free-Ride' id='FreeRideNotAvailable' onNo={onClose} >
+        
+        <row><center>Could not initalize Free Ride service.</center></row>
+        <row><center>Please try again later</center></row>
+        
+    </MessageBox>
+}
+
+
 /**
  * The merged Routes page: one flat, searchable and sortable list (or tile grid) of all routes,
  * with Free Ride and Import as page actions.
@@ -66,6 +82,7 @@ export const RouteListPage =  () => {
     const [pageState,setPageState] = useState(null)
     const [logger,closePageLogger] = usePageLogger(PAGE_ID,pageState)
     const [state,setState] = useState({})
+    const [showFreeRideNA, setShowFreeRideNA] = useState(false)
     const [initialized,setInitialized] = useState(false)
 
     const ref = useRef()
@@ -144,6 +161,9 @@ export const RouteListPage =  () => {
 
     const openDialog = ( Dialog,props)=> {
         ref.current?.openDialog(Dialog,props)
+    }
+    const closeDialog = ( )=> {
+        ref.current?.closeDialog()
     }
 
     const onStart = async (settings) => {
@@ -240,6 +260,12 @@ export const RouteListPage =  () => {
     // --- page actions ---
 
     const onFreeRide = () => {
+
+        if (!service.isFreeRideSupported()) {
+            setShowFreeRideNA(true)
+            return
+        }
+
         const [card] = findSpecialCards(service,'Free-Ride')
         if (!card) {
             logger.logEvent({message:'error', fn:'onFreeRide', error:'free ride card not found'})
@@ -312,6 +338,7 @@ export const RouteListPage =  () => {
             closePage={closePage}
         />
         <DialogLauncher ref={ref}/>
+        { showFreeRideNA && <FreeRideNotAvailable onClose={ ()=>{setShowFreeRideNA(false)}} />}
         {importDialogOpen ? <ImportRoutesDialog onClose={onCloseImportDialog}/> : null}
     </ErrorBoundary>)
 }
