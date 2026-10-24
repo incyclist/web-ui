@@ -1,229 +1,110 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { AppThemeProvider } from '../../../../theme';
-import { Container, DataContainer, DeleteIcon, DetailsContainer, Image, ImageContainer, ImageLabel, Title } from './atoms';
-import { ActivityPreview } from '../ActivityPreview';
-import { Dynamic } from '../../../atoms/Dynamic';
-import { Column, Row, Text } from '../../../atoms';
-import { formatDateTime, useActivityList, useUserSettings } from 'incyclist-services';
-import styled from 'styled-components';
-import { useCallback } from 'react';
-import { useHoverObserver } from '../../../../hooks/ui/useHover.jsx';
+import React, { useEffect, useState } from 'react'
+import { ArrowRightIcon, TrashIcon } from '@primer/octicons-react'
+import { formatDateTime, useActivityList, useAppsService, useUserSettings } from 'incyclist-services'
+import { AppThemeProvider } from '../../../../theme'
+import { ActivityPreview } from '../ActivityPreview'
+import { Actions, Chart, Container, DateTime, DeleteButton, Identity, OpenButton, Profile,
+    Skeleton, Stats, StatusRow, Title, UploadStatus } from './atoms'
 
-const OutsideFold = styled(Container)`
-    opacity: 0.1;
-`
-
-export const ActivityListItem = ({ onClick,onDelete, activityInfo, outsideFold}) => { 
-
-
-    const initialized = useRef(false)
-    const [observer,setObserver] = useState(null)
-    const service = useActivityList()
-    const userSettings = useUserSettings()
-
-    const {id,distance: rideDistance,startTime,rideTime,totalElevation:summaryElavation} = activityInfo?.summary??{}
-    const {logs,totalElevation:detailsElevation} = activityInfo?.details??{}
-    const containerRef = useRef()
-    const [hoverObserverRef,setHoverObserver] = useHoverObserver(containerRef)
-    const totalElevation = summaryElavation??detailsElevation
-    
-
-    const onDeleteHandler = (event) => {
-        
-        event.stopPropagation();
-        if (typeof (onDelete)==='function')
-            onDelete()
-    }
- 
-    const getFtp = ()=>{
-        try {
-            return userSettings.get('user')?.ftp??200
-        }
-        catch{
-            return 200
-        }
-    }
-
-    const getDetails = useCallback( (id) =>{
-        try {
-            return service.getActivityDetails(id)        
-        }
-        catch(err) {
-            console.log('~~~ ERROR',err, service)
-            return null;
-        }
-    },[service])
-
-    const getTitle = (d) => {
-        const {summary} = activityInfo??{}
-        const details = d ?? activityInfo?.details
-        if (summary?.title!=='Incyclist Ride')
-            return summary?.title
-        return details?.route?.title??details?.route?.name??'Incyclist Ride'         
-    }
-
-    const getDateTime = () => {
-        let time = ''
-        let date = ''
-        if (startTime) {
-            const start = new Date(startTime)
-            time = formatDateTime(start,'%H:%M')
-            date = formatDateTime(start,'%d.%m.%Y')
-        }
-        return {date,time}
-    }
-    const getDuration= ()=>{
-        let duration = ''
-        if (rideTime) {
-            const hours = Math.floor(rideTime / 3600)
-            const minutes = Math.floor((rideTime % 3600) / 60)
-            if (hours > 0)
-                duration = `${hours}h ${minutes}min`
-            else
-                duration = `${minutes}min`
-        }
-        return duration
-    }
-
-    const formatted = (v) => {
-        const {value,unit} = v
-        return `${value}${unit}`
-    }
-
-    const getElevationText = (details)=>{
-        try {
-            const elevation = details ? details.totalElevation : totalElevation
-            if (elevation==undefined)
-                return ''
-
-            if (typeof elevation === 'number')
-                return elevation && !isNaN(elevation) ? `${(elevation).toFixed(0)}m ` : '';
-
-            if (elevation.value!==undefined && elevation.unit) {
-                return formatted(elevation)
-            }
-        }
-        catch {}
-        return ''
-
-    }
-
-    const getDistanceText = () => {
-        try {
-            if (rideDistance===undefined || rideDistance===null)
-                return ''
-
-            if (typeof rideDistance === 'number')
-                return rideDistance && !isNaN(rideDistance) ? `${(rideDistance / 1000).toFixed(1)}km ` : '';        
-            if (rideDistance.value!==undefined && rideDistance.unit) {
-                return formatted(rideDistance)
-            }
-
-        }
-        catch {}
-        return ''
-    }
-
-                                    
-    const onContainerClicked = (e) =>{        
-        if (onClick)
-            onClick(id)
-    }
-
-    useEffect( ()=> {
-        if (initialized.current)
-            return
-
-        if (!outsideFold) {
-            setHoverObserver(containerRef)
-        }
-
-        if (!logs && !outsideFold) {
-            if (id!==undefined) {
-                setObserver( getDetails(id))
-            }
-        }
-        initialized.current = !outsideFold
-    },[getDetails, id, logs, outsideFold, setHoverObserver])
-
-    // reduce rendering time when commponent is not visible (below fold), just reserve required space
-    if (outsideFold) {
-        return (
-            <AppThemeProvider>
-                <OutsideFold opacity='0.1'  height={'7vh'} onClick={ onContainerClicked}></OutsideFold>        
-            </AppThemeProvider>
-        )
-    }
-
-    if (!activityInfo || !activityInfo.summary) 
-        return null
-
-
-    const TitleElement = ({text}) => <Title>{text}</Title>
-
-    const title = getTitle()
-    const {date,time} = getDateTime()
-    const duration = getDuration()
-    const distanceText = getDistanceText()
-    const elevationText = getElevationText()
-    const ftp = getFtp()
-    
-
-    return (
-        <AppThemeProvider>
-            <Container  height={'7vh'} onClick={ onContainerClicked} ref={containerRef}>
-                <ImageContainer>
-                        <Dynamic observer={observer} events={'loaded,updated'} prop='activity' >
-                            <ActivityPreview activity={ activityInfo?.details } ftp={ftp}/>
-                        </Dynamic> 
-                </ImageContainer>
-                <DataContainer>
-                    <Row height='3.5vh' width='100%'> 
-                    <Dynamic observer={observer} events={'loaded,updated'} prop='text' transform={getTitle} >
-                            <TitleElement text={title}/>
-                        </Dynamic> 
-                        
-                    </Row>
-                    <Row height='3.5vh' width='100%' position='relative'> 
-                        <Column width='1vw'/>
-                        <Column width='10ch' justify='center' align='center'> <Text text={date} /> </Column>
-                        <Column width='1vw'/>
-                        <Column width='5ch' justify='center' align='center'> <Text text={time} /> </Column>
-                        <Column width='1vw'/>
-                        <Column width='10ch' justify='center' align='center'> <Text text={duration} /> </Column>
-                    </Row>
-
-                </DataContainer>
-
-                <DetailsContainer>
-                    <DataContainer width='3vw' justify='end'    align='center' >
-                            <Dynamic observer={hoverObserverRef.current} event='hovered' prop='visible'>
-                                <DeleteIcon onClick={onDeleteHandler} logContext={{id,title}} />
-                            </Dynamic>
-                    </DataContainer>
-                    <DataContainer width='5vw' justify='start' align='center'>
-                            <Row><Image src='images/length.gif' color='white' width='20px' /></Row>
-                            <Row><ImageLabel text='Distance' /></Row>
-                            <Row><Text align='center' text={distanceText} /></Row>
-                    </DataContainer>
-
-                    <DataContainer width='5vw' justify='start' align='center'>
-                            <Row><Image src='images/up.gif' color='white' width='20px' /></Row>
-                            
-                            <Row><ImageLabel text='Elevation' /></Row>
-                            <Row>
-                                <Dynamic observer={observer} events='loaded,updated' transform={getElevationText} prop='text'>
-                                    <Text align='center' text={elevationText} />
-                                </Dynamic>
-                            </Row>
-                    </DataContainer>
-
-                </DetailsContainer>
-
-
-            </Container>        
-        </AppThemeProvider>
-    )
+const finite = value => value !== null && value !== undefined && value !== '' && Number.isFinite(Number(value))
+const formatMetric = (value, divisor, unit, digits) => {
+    if (value?.value != null && value.unit) return `${value.value} ${value.unit}`
+    return finite(value) ? `${(Number(value) / divisor).toFixed(digits)} ${unit}` : '—'
+}
+const formatDuration = seconds => {
+    if (!finite(seconds)) return '—'
+    const hours = Math.floor(seconds / 3600)
+    const minutes = Math.floor((seconds % 3600) / 60)
+    return hours ? `${hours}h ${minutes}min` : `${minutes}min`
 }
 
+export const ActivityListItem = ({ onClick, onDelete, activityInfo, outsideFold }) => {
+    const service = useActivityList()
+    const apps = useAppsService()
+    const settings = useUserSettings()
+    const { summary, details: suppliedDetails } = activityInfo ?? {}
+    const id = summary?.id
+    const [loaded, setLoaded] = useState(null)
+    const details = loaded?.id === id ? { ...suppliedDetails, ...loaded.details } : suppliedDetails
+    const [failed, setFailed] = useState(false)
 
+    useEffect(() => {
+        if (outsideFold || id === undefined || suppliedDetails?.logs || loaded?.id === id) return
+        setFailed(false)
+        let active = true
+        let observer
+        const onLoaded = next => { if (active) setLoaded({ id, details: next }) }
+        const onError = () => { if (active) setFailed(true) }
+        try {
+            observer = service.getActivityDetails(id)
+            observer?.on('loaded', onLoaded)
+            observer?.on('updated', onLoaded)
+            observer?.on('load-error', onError)
+        } catch { onError() }
+        return () => {
+            active = false
+            observer?.off('loaded', onLoaded)
+            observer?.off('updated', onLoaded)
+            observer?.off('load-error', onError)
+        }
+    }, [outsideFold, id, suppliedDetails?.logs, service, loaded])
+
+    if (outsideFold) return <AppThemeProvider><Skeleton data-testid='activity-list-item-skeleton' aria-hidden='true' /></AppThemeProvider>
+    if (!summary) return null
+
+    const title = summary.title || 'Untitled activity'
+    const start = summary.startTime != null ? new Date(summary.startTime) : null
+    const validStart = start && !Number.isNaN(start.getTime())
+    const dateTime = validStart ? `${formatDateTime(start, '%d.%m.%Y')} · ${formatDateTime(start, '%H:%M')}` : 'Date unavailable'
+    const uploads = (summary.uploadStatus ?? []).filter(upload => upload.service && ['success', 'failure'].includes(upload.status))
+    let ftp = 200
+    try { ftp = settings.get('user')?.ftp ?? 200 } catch {}
+    const hasPower = details?.logs?.some(log => log && finite(log.power) && finite(log.time))
+    const loading = !details?.logs && !failed && loaded?.id !== id
+    const open = () => onClick?.(id)
+
+    return <AppThemeProvider>
+        <Container aria-label={`Activity ${title}`} tabIndex={0} onClick={open}
+            onKeyDown={event => {
+                if (event.target === event.currentTarget && ['Enter', ' '].includes(event.key)) {
+                    event.preventDefault()
+                    open()
+                }
+            }}>
+            <Identity>
+                <Title title={title}>{title}</Title>
+                <DateTime dateTime={validStart ? start.toISOString() : undefined}>{dateTime}</DateTime>
+                {uploads.length ? <StatusRow aria-label='Upload status'>
+                    {uploads.map(upload => {
+                        let name = upload.service
+                        try { name = apps.getName(upload.service) } catch {}
+                        const label = `${name} · ${upload.status === 'success' ? 'Uploaded' : 'Upload failed'}`
+                        return <UploadStatus key={upload.service} $success={upload.status === 'success'} title={label}>{label}</UploadStatus>
+                    })}
+                </StatusRow> : null}
+            </Identity>
+            <Stats>
+                <div><strong>{formatDuration(summary.rideTime)}</strong><small>Duration</small></div>
+                <div><strong>{formatMetric(summary.distance, 1000, 'km', 1)}</strong><small>Distance</small></div>
+                <div><strong>{formatMetric(summary.totalElevation ?? details?.totalElevation, 1, 'm', 0)}</strong><small>Total ascent</small></div>
+            </Stats>
+            <Profile>
+                {hasPower ? <>
+                    <Chart role='img' aria-label={`Power profile for ${title}`}>
+                        <ActivityPreview activity={details} ftp={ftp} />
+                    </Chart>
+                    <small>Power profile</small>
+                </> : <small role='status'>{loading ? 'Loading power profile…' : 'Power profile unavailable'}</small>}
+            </Profile>
+            <Actions>
+                {onClick ? <OpenButton responsive shape='rounded' primary no3D type='button'
+                    logContext={{ activity: title }} aria-label={`View details for ${title}`}
+                    onClick={event => { event.stopPropagation(); open() }}>
+                    Details<ArrowRightIcon size={16} />
+                </OpenButton> : null}
+                {onDelete ? <DeleteButton type='button' aria-label={`Delete ${title}`}
+                    onClick={event => { event.stopPropagation(); onDelete() }}><TrashIcon size={17} /></DeleteButton> : null}
+            </Actions>
+        </Container>
+    </AppThemeProvider>
+}
