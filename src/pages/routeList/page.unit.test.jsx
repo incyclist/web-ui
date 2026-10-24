@@ -92,6 +92,7 @@ describe('RouteListPage', () => {
             getListTop: vi.fn(),
             setListTop: vi.fn(),
             isStillLoading: vi.fn(() => false),
+            isFreeRideSupported: vi.fn(() => true),
             preload: vi.fn(() => ({ wait: () => Promise.resolve() })),
             search: vi.fn((filters) => ({ routes, cards:routes, filters:filters??{}, observer, units:{distance:'km', elevation:'m'} })),
             searchRepo: vi.fn((filters) => ({ routes: filters?.title ? allRoutes.slice(0,3) : allRoutes })),
