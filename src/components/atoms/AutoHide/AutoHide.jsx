@@ -20,18 +20,18 @@ export const AutoHide = forwardRef(({
     const intervalRef = useRef(undefined);
     const mountedRef = useRef(undefined);
 
-    const show =  useCallback((updateView = false) => {
+    const show =  useCallback((updateView = false, reason) => {
         const wasHidden = hidden;
         timerStartRef.current = Date.now();
         setHidden(false);
 
         if (wasHidden && updateView && typeof onChangeVisible === 'function') {
-            onChangeVisible(true);
+            onChangeVisible(true, reason);
         }
     },[hidden, onChangeVisible]);
 
 
-    const hide = useCallback( (updateView = false) => {
+    const hide = useCallback( (updateView = false, reason) => {
 
         if (pinned)
             return
@@ -40,7 +40,7 @@ export const AutoHide = forwardRef(({
         setHidden(true);
 
         if (!wasHidden && updateView && typeof onChangeVisible === 'function') {
-            onChangeVisible(false);
+            onChangeVisible(false, reason);
         }
     },[hidden, onChangeVisible, pinned]);
 
@@ -58,7 +58,7 @@ export const AutoHide = forwardRef(({
 
     const onMouseOver = () => {
         hoveredRef.current = true;
-        show(true);
+        show(true, 'hover');
     };
 
     const onMouseLeave = () => {
@@ -84,7 +84,7 @@ export const AutoHide = forwardRef(({
 
         if (pinned) {
             if (hidden) {
-                show(true);
+                show(true, 'pinned');
             } else {
                 timerStartRef.current = undefined;
             }
@@ -93,7 +93,7 @@ export const AutoHide = forwardRef(({
 
         const tNow = Date.now();
         if (tNow > timerStartRef.current + delay) {
-            hide(true);
+            hide(true, 'timeout');
         }
     }, [delay, pinned, hidden, show, hide]);
 
@@ -128,6 +128,9 @@ export const AutoHide = forwardRef(({
     });
 
     const childProps = copyPropsExcluding(props, ['children', 'delay', 'onChangeVisible', 'pinned']);
+
+    // render prop: the caller decides what to show while hidden (and has to attach the hover handlers)
+    if (typeof children === 'function') return <>{children({ hidden, onMouseOver, onMouseLeave })}</>;
 
     if (!children) return null;
     if (typeof children === 'string' || typeof children === 'number') return children;

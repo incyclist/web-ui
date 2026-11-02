@@ -3,11 +3,17 @@ import { DynamicRideDashboard, MapOverlay, StartRideOverlay, SideViewOverlay, Ro
 import { DynamicWorkoutDashboard } from "../../../components/modules/workout/dashboard/wrapper";
 import { Center, ErrorBoundary, Loader } from "../../../components/atoms";
 import { InfoText } from "../../../components/molecules";
-import { MainArea } from "../atoms/MainArea";
+import styled from "styled-components";
+import { MainArea as BaseMainArea } from "../atoms/MainArea";
 import { WorkoutControl } from "../../../components/modules/workout/control";
 import { GpxRideView } from "../../../components/modules/Ride/views/gpx/GpxRideView";
 import { ShiftingControl } from "../../../components/modules/shifting/control";
 
+
+// size container: the option band derives its scale unit from the size of the page
+const MainArea = styled(BaseMainArea)`
+    container-type: size;
+`
 
 export const PAGE_ID = 'FreeRide'
 const CAMERA_SOUND = 'sounds/camera-shutter.mp3';
@@ -76,8 +82,9 @@ export const FreeRideRidePage = ( { workout, activity, route, state,initialized,
 
                             <DynamicWorkoutDashboard visible={showWorkout && !screenshotRequested} showSlope={false} background='none' scheme='light' opacity={1.0}  height={'10vh'} top={'10vh'} left={`${(100-dbWidth)/2}vw`} width={`${dbWidth}vw`} />                            
                             <WorkoutControl visible={showWorkout} background='none' top={'calc(20vh + 10px);'} left={`${(100-dbWidth)/2}vw`} onToggleMode={ onToggleCyclingMode}/>
-                            <RouteOptions visible={!isStarting && !screenshotRequested} top='65vh' left='26vw' height='35vh' width='48vw'
+                            <RouteOptions variant='free-ride' visible={!isStarting && !screenshotRequested} top='0' left='0' height='100%' width='100%'
                                 options={options}  settings={true} screenshot={true}                                 
+                                avoidSideViews={Boolean(sideViews?.enabled && (sideViews?.left || sideViews?.right))}
                                 {...optionProps}
                                 transparent={true} pinned={false} 
                                 onScreenshot={onScreenshot} onSettings={onSettings} onOptionSelected={onFreeRideOptionSelected} />           
