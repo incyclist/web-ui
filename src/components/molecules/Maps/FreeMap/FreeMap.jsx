@@ -90,7 +90,7 @@ export  class FreeMap  extends React.Component {
                 options.forEach( (way,idx) => {
                     let poly = this.getPathPolyline(way.path);
                     //let color = OPTION_COLOR[idx];
-                    const color = way.selected ? 'green' : way.color
+                    const color = way.color
                     routeOptions.push( {polyline:poly,color} )
                 });             
             }
@@ -428,9 +428,7 @@ export  class FreeMap  extends React.Component {
                     <Polyline  
                         key={index}
                         positions={ pathInfo.polyline }
-                        color={ pathInfo.color || 'blue'}
-                        weight={5}
-                        opacity={0.5}
+                        pathOptions={{ color: pathInfo.color || 'blue', weight: 5, opacity: 0.5 }}
                     />
                 )}
             </>

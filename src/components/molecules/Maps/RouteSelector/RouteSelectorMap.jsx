@@ -82,12 +82,12 @@ export const RouteSelectorMap = ({position, viewport,mapType, onPositionChanged,
                 </Marker>
 
                 { routes?.length > 0 ? routes.map((pathInfo,index) => 
+                    // `color` etc. are only read when a line is created. Only pathOptions are applied on updates,
+                    // otherwise a line keeps the colour of the option that was at this position before
                     <Polyline  
-                        key={index}
+                        key={pathInfo.id ?? index}
                         positions={ pathInfo.polyline??getPolyline(pathInfo.path)} 
-                        color={ pathInfo.color || 'blue'}
-                        weight={5}
-                        opacity={0.5}
+                        pathOptions={{ color: pathInfo.color || 'blue', weight: 5, opacity: 0.5 }}
                     />
                 ): null}
 

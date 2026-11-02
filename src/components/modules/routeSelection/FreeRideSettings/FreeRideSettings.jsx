@@ -38,26 +38,22 @@ export const FreeRideSettingsDialog = (props) => {
         const settings = card.accept(data,position)
         if (onStart)
             onStart(settings)
-
-        setInitialized(false)
     }
 
     const onCancelHandler = (data) =>  {
         card.cancel()        
         if (onCancel)
             onCancel()
-        setInitialized(false)
-
     }
     const onChangeHandler = (position,props) =>  {
 
         
         const prevSettings = settings
 
-        const search = position?.query
-        if (search) {
-            const {lat,lng,address} = position
-            logger.logEvent({message:'user entered search', search, position:{lat,lng}, address,eventSource:'user' })
+        // search text, address and the found coordinates are not logged
+        const isSearch = Boolean(position?.query)
+        if (isSearch) {
+            logger.logEvent({message:'user entered search', hasQuery:true, eventSource:'user' })
         }
         else {
             logger.logEvent({message:'user selected position', position,eventSource:'user'})
@@ -66,7 +62,9 @@ export const FreeRideSettingsDialog = (props) => {
         setSettings(current => ({...current,position}))
         setLoading(true)
 
-        service.selectStartPosition(position).then( (settings) => {
+        const source = isSearch ? 'search' : 'map'
+        const {lat,lng} = position ?? {}
+        service.selectStartPosition({lat,lng}, {source}).then( (settings) => {
             setLoading(false)
             setSettings(settings)
         })

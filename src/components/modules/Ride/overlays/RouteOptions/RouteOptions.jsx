@@ -1,9 +1,10 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 import styled from 'styled-components';
 import { Button, AutoHide, ErrorBoundary } from '../../../../atoms';
 import { FreeRideOptionButton } from '../../../../molecules';
 import { EventLogger } from 'gd-eventlog';
 import { useKey } from '../../../../../hooks';
+import { FreeRideOptionBand } from './FreeRideOptionBand';
 
 const Popup = styled.div`
     position: absolute;
@@ -67,7 +68,31 @@ const SettingsButton = styled(Button)`
     opacity: ${(props) => props.opacity};
 `;
 
+const FreeRideScope = styled.div`
+    --u: clamp(10px, calc(0.25rem + 1cqmin), 26px);
+`;
+
+const FreeRideButtonArea = styled(ButtonArea)`
+    top: auto;
+    bottom: calc(var(--u) * 15);
+    left: 26vw;
+`;
+
+// the same option must never show up twice
+const unique = (options) => {
+    if (!Array.isArray(options)) return options;
+    const seen = new Set();
+    return options.filter((o) => {
+        if (seen.has(o.id)) return false;
+        seen.add(o.id);
+        return true;
+    });
+};
+
 export const RouteOptions = ({
+    variant,
+    optionsState,
+    avoidSideViews,
     screenshot,
     settings,
     turn,
@@ -75,7 +100,6 @@ export const RouteOptions = ({
 
     enforcedVisible,
     distance,
-    options,
     heading,
     pinned,
     optionsDelay,
@@ -85,8 +109,13 @@ export const RouteOptions = ({
     onOptionSelected,
     onScreenshot,
     onSettings,
-    onTurn
+    onTurn,
+    options: rawOptions
 }) => {
+
+    const isFreeRide = variant === 'free-ride';
+    // memoized: a new array on every render would be treated as a new set of options
+    const options = useMemo(() => (isFreeRide ? unique(rawOptions) : rawOptions), [isFreeRide, rawOptions]);
 
     const logger = new EventLogger('RouteOptions');
     const optionsViewRef = useRef(null);
@@ -111,7 +140,12 @@ export const RouteOptions = ({
         }
     };
 
-    const handleOptionSelected = (id) => {
+    const handleOptionSelected = (id, idx, source) => {
+        // tiles are custom buttons: same event as the Button atom wrote before (button = id of the button).
+        // Key presses are logged by useKey
+        if (isFreeRide && source !== 'key') {
+            logger.logEvent({ message: 'button clicked', button: idx < 9 ? `Option ${idx + 1}` : id, eventSource: 'user' });
+        }
         if (onOptionSelected) {
             onOptionSelected(id);
         }
@@ -140,18 +174,19 @@ export const RouteOptions = ({
             const key = event.key;
             if  (key==='0') {
                 if (optionsViewRef.current)
-                    optionsViewRef.current.show(true);
+                    optionsViewRef.current.show(true, 'key');
             }
 
             else if ('123456789'.includes(key)) {
 
                 if (optionsViewRef.current?.isHidden())
-                    optionsViewRef.current.show(true);
+                    optionsViewRef.current.show(true, 'key');
             
 
                 const idx = Number(key)-1
-                if (options?.[idx]) {
-                    handleOptionSelected(options[idx].id)
+                // a single way on is not a choice
+                if (options?.[idx] && !(isFreeRide && options.length===1)) {
+                    handleOptionSelected(options[idx].id, idx, 'key')
                 }
                 
             }
@@ -168,7 +203,7 @@ export const RouteOptions = ({
 
         const optionsView = optionsViewRef.current;
         if (optionsView.isHidden()) {
-            optionsView.show(true);
+            optionsView.show(true, 'nearby');
         } 
     },[isNearby, optionsViewRef]);
         
@@ -179,12 +214,12 @@ export const RouteOptions = ({
 
         if (!options || options.length === 0) {
             if (optionsViewRef.current && !optionsViewRef.current.isHidden()) {
-                optionsViewRef.current.hide(true);
+                optionsViewRef.current.hide(true, 'no options');
             }
             return;
         }
         else if (optionsViewRef.current ) {
-            optionsViewRef.current.show(true);
+            optionsViewRef.current.show(true, 'new options');
             
         }
 
@@ -194,9 +229,75 @@ export const RouteOptions = ({
     },[options, optionsViewRef, optionsRef]);
 
 
+    // The band is shown right away when options are delivered, which AutoHide does not report (it only reports changes). 
+    // Report it, so that the buttons of every junction (including the very first one) can be logged
+    const optionsKey = isFreeRide && options?.length ? options.map( o => o.id ).join('|') : undefined
+    useEffect(() => {
+        if (!optionsKey || !onOptionsVisibleChanged)
+            return;
+        if (optionsViewRef.current?.isHidden())
+            return;
+        onOptionsVisibleChanged(true, 'new options');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    },[optionsKey]);
+
     useKey(['0','1','2','3','4','5','6','7','8','9'],onKeyPressed,{logger})
 
     const visible = options !== undefined && options.length > 0;
+
+    const screenButtons = (Area) => (
+        <AutoHide delay={5000} pinned={pinned}>
+            <Area>
+                {screenshot && (
+                    <SettingsButton onClick={handleScreenshot} id="screenshot" color="black" opacity={0.5} fill="white" size="6vh">
+                        <ImgWhite src="images/camera.svg" />
+                    </SettingsButton>
+                )}
+                {settings && (
+                    <SettingsButton onClick={handleSettings} id="settings" color="black" opacity={0.5} fill="white" size="6vh">
+                        <ImgWhite src="images/settings.svg" />
+                    </SettingsButton>
+                )}
+                {turn && (
+                    <SettingsButton onClick={() => handleTurn()} color="black" opacity={0.5} fill="white" size="6vh">
+                        <ImgWhite src="images/u-turn.svg" />
+                    </SettingsButton>
+                )}
+            </Area>
+        </AutoHide>
+    );
+
+    if (isFreeRide) {
+        const distanceText = distance ? getDistance() : undefined;
+        return (
+            <ErrorBoundary hideOnError>
+                <FreeRideScope>
+                    <AutoHide
+                        ref={optionsViewRef}
+                        id={id}
+                        pinned={isNearby || enforcedVisible || pinned}
+                        delay={optionsDelay ?? 3000}
+                        onChangeVisible={onOptionsVisibleChanged}
+                    >
+                        {({ hidden, onMouseOver, onMouseLeave }) => (
+                            <FreeRideOptionBand
+                                options={options}
+                                optionsState={optionsState}
+                                distance={distanceText}
+                                isNearby={isNearby}
+                                hidden={hidden}
+                                avoidSideViews={avoidSideViews}
+                                onOptionSelected={handleOptionSelected}
+                                onMouseOver={onMouseOver}
+                                onMouseLeave={onMouseLeave}
+                            />
+                        )}
+                    </AutoHide>
+                    {screenButtons(FreeRideButtonArea)}
+                </FreeRideScope>
+            </ErrorBoundary>
+        );
+    }
 
     return (
         <ErrorBoundary hideOnError>
