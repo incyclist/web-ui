@@ -31,6 +31,17 @@ export const ContentArea = styled.div`
 
 
 
+// secondary text below a control: smaller and muted, so that it does not compete with the controls
+const Hint = styled.div`
+    font-size: 1.5vh;
+    line-height: 2.2vh;
+    opacity: 0.8;
+    margin-top: 0.4vh;
+    margin-bottom: 1.2vh;
+    // lines up with the control (label column + gap), not with the label
+    padding-left: ${props => props.$indent ? 'calc(15ch + 0.4vw)' : '0'};
+`
+
 export const Header = styled.h2`
     font-size: 2vh;
 `
@@ -285,10 +296,10 @@ export const RideSettingsView = ( props)=> {
                         <label htmlFor='ride-view-map'>Map</label>
                     </div>
                     {rideViewHelp ? 
-                        <div style={{fontSize:'1.6vh'}}>
+                        <Hint>
                             {SIMULATION_MESSAGE}{' '}
                             <LinkButton label={rideViewHelp.label} onClick={onRideViewHelp} />
-                        </div> : null}
+                        </Hint> : null}
                     </Column>
                 </Row> : null 
                 }
@@ -299,14 +310,12 @@ export const RideSettingsView = ( props)=> {
                             validate={validateMapsApiKey} value={mapsApiKey} noLog onValueChange={onMapsApiKeyChanged}
                             autoFocus={focusMapsKey} mask={maskGoogleMapsKey} />
                     </Row>
-                    <Row>
-                        <div style={{fontSize:'1.6vh'}}>
-                            {MAPS_KEY_PURPOSE}{' '}
-                            <LinkButton label={MAPS_KEY_TEXTS.helpLabel} external url={MAPS_KEY_HELP_URL} />
-                        </div>
-                    </Row>
+                    <Hint $indent>
+                        {MAPS_KEY_PURPOSE}{' '}
+                        <LinkButton label={MAPS_KEY_TEXTS.helpLabel} external url={MAPS_KEY_HELP_URL} />
+                    </Hint>
                     {mapsKeyPendingRestart ? 
-                        <Row><div style={{fontSize:'1.6vh', color:'#2e9e44', fontWeight:'bold'}}>{MAPS_KEY_TEXTS.pendingRestart}</div></Row> : null}
+                        <Hint $indent style={{color:'#2e9e44', fontWeight:'bold', opacity:1}}>{MAPS_KEY_TEXTS.pendingRestart}</Hint> : null}
                     </>
                     : null }
 
