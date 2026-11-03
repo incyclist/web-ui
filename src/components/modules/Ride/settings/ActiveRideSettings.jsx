@@ -92,7 +92,8 @@ export class ActiveRideSettings extends React.Component {
         const routeOptions = this.props.routeOptions || {}
         const routeDistance = this.props.activity ? this.props.activity.distance : undefined ;
         
-        return {...routeOptions, routeDistance, logger: this.logger, onSettingsChanged: this.props.onSettingsChanged, onCoachesChanged: this.props.onCoachesChanged}
+        return {...routeOptions, routeDistance, logger: this.logger, onSettingsChanged: this.props.onSettingsChanged, onCoachesChanged: this.props.onCoachesChanged,
+            focusMapsKey: this.props.focusMapsKey, onRideViewHelp: this.props.onRideViewHelp}
     }
 
     getWorkoutProps() {

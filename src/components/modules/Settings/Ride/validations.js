@@ -5,3 +5,17 @@ export function isValidGoogleMapsKeyFormat(apiKey) {
   
   return googleMapsKeyRegex.test(apiKey);
 }
+
+/**
+ * Hides all but the first and last characters of a Maps API key, so that it does not leak
+ * through a screenshot (e.g. in a support request). Short values are returned as they are.
+ */
+export function maskGoogleMapsKey(apiKey) {
+  const KEEP_START = 7
+  const KEEP_END = 2
+
+  if (typeof apiKey !== 'string' || apiKey.length <= KEEP_START + KEEP_END)
+    return apiKey
+
+  return apiKey.slice(0, KEEP_START) + '·'.repeat(apiKey.length - KEEP_START - KEEP_END) + apiKey.slice(-KEEP_END)
+}

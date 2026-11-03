@@ -6,6 +6,7 @@ import { DynamicRideDashboard, MapOverlay, NearbyRiders, StartRideOverlay, Total
 import { DynamicWorkoutDashboard } from "../../../components/modules/workout/dashboard/wrapper";
 import { Center, ErrorBoundary, Loader } from "../../../components/atoms";
 import { InfoText } from "../../../components/molecules";
+import { RideViewRestrictionNotice } from "../../../components/modules/Ride/restriction";
 import { MainArea } from "../atoms/MainArea";
 import { WorkoutControl } from "../../../components/modules/workout/control";
 import { GpxRideView } from "../../../components/modules/Ride/views/gpx/GpxRideView";
@@ -20,7 +21,7 @@ export const cameraSound = new Audio(CAMERA_SOUND);
 
 export const FollowRouteRidePage = ( { workout, activity, route, state,initialized,startOverlayProps= {},
                                        position, markers, hideAll,rideView,realityFactor,startPos, endPos,
-                                       displayObserver, onDisplayEvent,displayPosition, sideViews, svInitAllowed, rideViewNotice, svCoverageNotice, svHasCoverage,
+                                       displayObserver, onDisplayEvent,displayPosition, sideViews, svInitAllowed, rideViewNotice, svCoverageNotice, svHasCoverage, rideViewRestrictionNotice, onRideViewNoticeAction, onRideViewNoticeClosed,
                                        map,upcomingElevation,totalElevation,dbColumns,xScale, yScale,
                                        prevRides,nearbyRides, showShiftingButtons, showDashboard, showWorkout,
                                        screenshotRequested, onScreenshot, onSettings,
@@ -100,6 +101,7 @@ export const FollowRouteRidePage = ( { workout, activity, route, state,initializ
 
                         {fallbackNoticeKey ? <InfoText text="Street View isn't available right now. Showing the Map instead." routeDistance={fallbackNoticeKey} timeout={8000} /> : null}
                         {coverageNoticeKey && svHasCoverage!==true ? <InfoText text="No Street View imagery at this location." routeDistance={coverageNoticeKey} timeout={8000} /> : null}
+                        <RideViewRestrictionNotice notice={rideViewRestrictionNotice} onAction={onRideViewNoticeAction} onClose={onRideViewNoticeClosed} />
 
                         <RidePageItems visible={true} width='100%' height='100%' zIndex={1}  >
                             {/* ride view */}

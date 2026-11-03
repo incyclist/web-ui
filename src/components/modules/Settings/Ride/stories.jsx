@@ -78,3 +78,23 @@ Workout.args = {
     rideMode: 'Workout'
 }
 
+
+
+const restrictedOption = (label) => ({ label, disabled: true, message: 'Not available in simulated rides', reason: 'simulation' })
+
+export const SimulatedRideRestricted = Template.bind({});
+SimulatedRideRestricted.args = {
+    isRide: true,
+    rideMode: 'GPX',
+    rideView: RIDEVIEW.MAP,
+    rideViewOptions: new Map([['sv', restrictedOption('Street View')], ['map', { label: 'Map' }], ['sat', restrictedOption('Satellite View')]]),
+    rideViewHelp: { label: 'How to get Street View' },
+    mapsApiKey: 'AIzaSyB0123456789012345678901234567890',
+}
+
+export const MapsKeySavedPendingRestart = Template.bind({});
+MapsKeySavedPendingRestart.args = {
+    rideView: RIDEVIEW.STREETVIEW,
+    mapsApiKey: 'AIzaSyB0123456789012345678901234567890',
+    mapsKeyPendingRestart: true,
+}
