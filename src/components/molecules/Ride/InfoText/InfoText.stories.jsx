@@ -44,3 +44,25 @@ const UpdateTemplate =  args => <UpdateTest {...args} />
 export const Update = UpdateTemplate.bind({});
 Update.args = {
 };
+
+const noticeActions = [
+    { id: 'how-to', label: 'How to get Street View' },
+    { id: 'dont-show-again', label: "Don't show this again" },
+]
+
+export const NoticeWithActions = Template.bind({});
+NoticeWithActions.args = {
+    text: "Street View isn't available in simulated rides. Showing the Map instead.",
+    routeDistance: 1,
+    actions: noticeActions,
+    timeout: 12000,
+};
+NoticeWithActions.argTypes = { onAction: { action: 'action' }, onClose: { action: 'close' } }
+
+export const NoticeAcknowledged = Template.bind({});
+NoticeAcknowledged.args = {
+    routeDistance: 1,
+    actions: [{ id: 'change-this', label: "We won't show this again. Change this" }],
+    timeout: 12000,
+};
+NoticeAcknowledged.argTypes = { onAction: { action: 'action' }, onClose: { action: 'close' } }

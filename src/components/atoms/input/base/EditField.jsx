@@ -46,12 +46,13 @@ const Container = styled(Row)`
 const EditField = ( props) => {
 
     const {name,timeout, label,type,disabled=false, maxLength, value: valueProp, onChange,onTimeout,validate,checkInput,align='left',
-            labelPosition='after',labelWidth, innerMargin='0.4vw', unit, noLog
+            labelPosition='after',labelWidth, innerMargin='0.4vw', unit, noLog, autoFocus, mask
         } =props
 
     const [errorText,setErrorText] = useState()
+    const [focused,setFocused] = useState(false)
     const [value,setValue] = useState(valueProp===undefined?'':valueProp)
-    const childProps = copyPropsExcluding(props,['onTimeout','onValueChange'])
+    const childProps = copyPropsExcluding(props,['onTimeout','onValueChange','autoFocus','mask'])
     delete childProps.label
     delete childProps.onChange
 
@@ -131,8 +132,11 @@ const EditField = ( props) => {
             <Container {...childProps}> 
             { (labelPosition ==='before') ? <Label labelPosition={labelPosition} labelWidth={labelWidth} innerMargin={innerMargin} htmlFor={id} >{label}</Label>:null }
     
-            <Input type={type} align={align} disabled={disabled} size={maxLength} value={value} 
-                onBlur={ (e)=> { onChangeHandler( e.target.value, true) }} 
+            <Input type={type} align={align} disabled={disabled} size={maxLength} autoFocus={autoFocus}
+                // `mask` hides all but the edges of the value while the field is not being edited
+                value={mask && !focused && value ? mask(value) : value} 
+                onFocus={ ()=> { setFocused(true) }}
+                onBlur={ (e)=> { setFocused(false); onChangeHandler( e.target.value, true) }} 
                 onChange={(e)=> { onChangeHandler( e.target.value, false) }} />
 
             { (labelPosition ==='after') ? <Label labelPosition={labelPosition} labelWidth={labelWidth} innerMargin={innerMargin}  htmlFor={id} >{label}</Label>:null }

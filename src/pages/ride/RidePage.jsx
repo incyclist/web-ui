@@ -13,6 +13,7 @@ import { VideoRidePage } from "./video/VideoPage";
 import { MainArea } from "./atoms";
 import { Center, Loader } from "../../components/atoms";
 import { ActiveRideSettings } from "../../components/modules/Ride/settings";
+import { RideViewRestrictionDialog } from "../../components/modules/Ride/restriction";
 
 
 export const RidePage = ({simulate}) => {
@@ -29,6 +30,8 @@ export const RidePage = ({simulate}) => {
     const refDialogs = useRef(null);
     const refSettingsOpened = useRef(false);
     const refObserver = useRef(undefined)
+    // openSettings() is defined before the dialog helpers it needs for this - the ref breaks the cycle
+    const onRideViewHelpRef = useRef(undefined)
     const refScreenshotState = useRef(undefined)
     
     const navigate = useNavigate()    
@@ -197,7 +200,7 @@ export const RidePage = ({simulate}) => {
 
     // Hotkeys
 
-    const openSettings = useCallback((rideState) => {
+    const openSettings = useCallback((rideState, options = {}) => {
 
         if (refSettingsOpened.current)
             return;
@@ -230,6 +233,12 @@ export const RidePage = ({simulate}) => {
                 additionalProps.finished = true;
             }
 
+            // e.g. the rider wants to add a Maps API key from the Street View explanation
+            if (options.focusMapsKey && !hidden.includes('Ride')) {
+                selected = 'Ride';
+                additionalProps.focusMapsKey = true;
+            }
+
 
             // ... end TODO
 
@@ -241,7 +250,8 @@ export const RidePage = ({simulate}) => {
             openDialog(ActiveRideSettings, {
                 area: selected , hidden, ...additionalProps,
                 onSettingsChanged,
-                onNew: onNewRide, onExit, onContinue: onContinueRide
+                onNew: onNewRide, onExit, onContinue: onContinueRide,
+                onRideViewHelp: onRideViewHelpRef.current
             });
 
         }
@@ -250,6 +260,54 @@ export const RidePage = ({simulate}) => {
         }
 
     },[logger, onContinueRide, onExit, onNewRide, openDialog, ride, state.route, state.state, state.workout]);
+
+    const onDiscardSimulatedRide = useCallback(async () => {
+        try {
+            // stop listening to state updates (which could trigger re-render)
+            const observer = refObserver.current
+            if (observer) {
+                observer.stop()
+                await waitNextTick()
+                refObserver.current = null
+            }
+
+            const discarded = await ride.discardSimulatedRide()
+            const source = location.state?.source
+
+            closeDialog();
+            if (discarded)
+                navigate('/pairingStart', { state: { source } })
+            else
+                navigate(source ?? -1)
+            closePage();
+        }
+        catch (err) {
+            logger.logEvent({ message: 'error', fn: 'onDiscardSimulatedRide', error: err.message, stack: err.stack });
+        }
+    },[closePage, location.state?.source, logger, navigate, ride])
+
+    const openRideViewDialog = useCallback(() => {
+        openDialog(RideViewRestrictionDialog, {
+            onClose: closeDialog,
+            onAddKey: () => { closeDialog(); openSettings(undefined, { focusMapsKey: true }) },
+            onDiscard: onDiscardSimulatedRide
+        })
+    },[onDiscardSimulatedRide, openDialog, openSettings])
+
+    useEffect(() => {
+        // settings pauses the ride; explaining the restriction does not, so continue before switching over
+        onRideViewHelpRef.current = () => { ride.resume(); closeDialog(); openRideViewDialog() }
+    },[openRideViewDialog, ride])
+
+    const onRideViewNoticeAction = useCallback((id) => {
+        ride.onRideViewNoticeAction(id)
+        if (id === 'how-to' || id === 'change-this')
+            openRideViewDialog()
+    },[openRideViewDialog, ride])
+
+    const onRideViewNoticeClosed = useCallback(() => {
+        ride.onRideViewNoticeClosed()
+    },[ride])
 
     const closeSettings = useCallback(() => {
         if (refSettingsOpened.current)
@@ -451,6 +509,8 @@ export const RidePage = ({simulate}) => {
             onSettings={openSettings}
             onScreenshot={onTakeScreenShot} 
             onFreeRideOptionSelected={onFreeRideOptionSelected}    
+            onRideViewNoticeAction={onRideViewNoticeAction}
+            onRideViewNoticeClosed={onRideViewNoticeClosed}
             onBack={onBack}
             onPairing={onPairing}
             logger={logger}    

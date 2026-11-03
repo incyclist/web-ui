@@ -1,13 +1,13 @@
 import React from 'react';
 import styled from 'styled-components';
 import {EventLogger} from 'gd-eventlog'
-import { getCoachesService, useRideDisplay, useRouteList, useUserSettings } from 'incyclist-services';
+import { getCoachesService, MAPS_KEY_HELP_URL, MAPS_KEY_TEXTS, useGoogleMaps, useRideDisplay, useRideSettingsDisplay, useRouteList, useUserSettings } from 'incyclist-services';
 
 import { AppThemeProvider } from '../../../../theme';
-import { EditNumber,Button, Row, CheckBox, EditText, Column,Text} from '../../../atoms';
+import { EditNumber,Button, Row, CheckBox, EditText, Column,Text, LinkButton} from '../../../atoms';
 import { DynamicCoachList,DynamicCoachEdit } from '../../Coaches';
 import { RIDE_MODES, RIDEVIEW } from './consts';
-import { isValidGoogleMapsKeyFormat } from './validations';
+import { isValidGoogleMapsKeyFormat, maskGoogleMapsKey } from './validations';
 
 export const ContentArea = styled.div`
     position:relative;
@@ -31,6 +31,21 @@ export const ContentArea = styled.div`
 
 
 
+// secondary text below a control: smaller and muted, so that it does not compete with the controls
+const Hint = styled.div`
+    font-size: 1.5vh;
+    line-height: 2.2vh;
+    opacity: 0.8;
+    margin-top: 0.4vh;
+    margin-bottom: 1.2vh;
+`
+
+// The indent has to be measured in the font of the label column (15ch), not in the smaller font of
+// the hint, so it is applied by a wrapper that still has the label's font
+const HintIndent = styled.div`
+    padding-left: calc(15ch + 0.4vw);
+`
+
 export const Header = styled.h2`
     font-size: 2vh;
 `
@@ -52,6 +67,8 @@ export class RideSettings extends React.Component {
         this.settings = useUserSettings()
         this.ride = useRideDisplay()
         this.routes = useRouteList()
+        this.rideSettings = useRideSettingsDisplay()
+        this.googleMaps = useGoogleMaps()
 
         this.state =  this.getPreferences();
         this.state.showCoachEditDialog = false;
@@ -167,9 +184,13 @@ export class RideSettings extends React.Component {
     }
     
     render() {
-        const {rideView,reality,videoSound,mapsApiKey} = this.state;
+        const {reality,videoSound,mapsApiKey} = this.state;
         const coachSupported = true;
-        const {rideMode: legacyRideMode,isRide} = this.props;
+        const {rideMode: legacyRideMode,isRide,focusMapsKey,onRideViewHelp} = this.props;
+
+        // services decide which views are selectable (e.g. not in a simulated ride) and why
+        const {rideView, rideViewOptions, rideViewHelp} = this.rideSettings.getDisplayProps()
+        const mapsKeyPendingRestart = this.googleMaps.isPersonalApiKeyPendingRestart()
         const rideMode = this.ride.getRideType();
 
         const hasElevation  =  (rideMode==='GPX' || rideMode==='Video' || /* legacy ...*/legacyRideMode===RIDE_MODES.FOLLOW_ROUTE || legacyRideMode===RIDE_MODES.VIDEO )
@@ -177,7 +198,8 @@ export class RideSettings extends React.Component {
 
         const isVideo = rideMode==='Video' || legacyRideMode===RIDE_MODES.VIDEO
 
-        const props = {isRide,legacyRideMode,rideMode, rideView, hasElevation, reality, coachSupported, isVideo, videoSound,mapsApiKey }
+        const props = {isRide,legacyRideMode,rideMode, rideView, rideViewOptions, rideViewHelp, hasElevation, reality, coachSupported, isVideo, videoSound,mapsApiKey,
+            mapsKeyPendingRestart, focusMapsKey }
         return <RideSettingsView {...props} 
             showCoachEditDialog= {this.state.showCoachEditDialog}
             coachEditDialogProps= {this.state.coachEditDialogProps??{}}
@@ -186,11 +208,15 @@ export class RideSettings extends React.Component {
             onVideoSoundChanged={this.onVideoSoundChanged.bind(this)}
             onCoachEditDone = {this.onCoachEditDone.bind(this)}
             onMapsApiKeyChanged= {this.onMapsApiKeyChanged.bind(this)}
+            onRideViewHelp={onRideViewHelp}
             onAddCoach = {this.onAddCoachClick.bind(this)}
             />
 
     }
 }
+
+const SIMULATION_MESSAGE = "Street View and Satellite View aren't available in simulated rides."
+const MAPS_KEY_PURPOSE = 'Optional. Lets you use Street View and Satellite View in simulated rides.'
 
 const validateMapsApiKey = (key) =>{
     if (!key)
@@ -211,9 +237,16 @@ export const RideSettingsView = ( props)=> {
 
     const {legacyRideMode, rideMode, rideView, hasElevation, reality=100, coachSupported,showCoachEditDialog,coachEditDialogProps,
         isRide=false,isVideo, videoSound=false,
-        mapsApiKey, onMapsApiKeyChanged,
+        mapsApiKey, onMapsApiKeyChanged, mapsKeyPendingRestart=false, focusMapsKey=false,
+        rideViewOptions, rideViewHelp, onRideViewHelp,
         onRideViewSelected,onChangeRealityFactor,onVideoSoundChanged,onCoachEditDone,onAddCoach
     } = props
+
+    // services mark options that are disabled for the running ride; in a restricted (simulated) ride
+    // the key is the way out, so the field is offered there as well
+    const isDisabled = (view) => rideViewOptions?.get(view)?.disabled === true
+    const labelStyle = (view) => isDisabled(view) ? {opacity:0.5} : undefined
+    const showMapsKey = !isRide || rideViewHelp !== undefined
 
     const showMapsHeader = !isRide || 
         (rideMode===undefined && (legacyRideMode===undefined|| legacyRideMode!==RIDE_MODES.VIDEO))
@@ -243,32 +276,53 @@ export const RideSettingsView = ( props)=> {
                     <Column>
                     <div>
                         <Radio 
+                            id='ride-view-sv'
                             checked= { rideView===RIDEVIEW.STREETVIEW}
+                            disabled={ isDisabled(RIDEVIEW.STREETVIEW) }
                             name='streetview' 
                             value={RIDEVIEW.STREETVIEW} onChange={ (event) => onRideViewSelected( event.target.value)}
                         />
-                        <label htmlFor='streetview'>Street View</label>
+                        <label htmlFor='ride-view-sv' style={labelStyle(RIDEVIEW.STREETVIEW)}>Street View</label>
                         <Radio 
+                            id='ride-view-sat'
                             checked= { rideView===RIDEVIEW.SATTELITE}
+                            disabled={ isDisabled(RIDEVIEW.SATTELITE) }
                             name='satelite' 
                             value={RIDEVIEW.SATTELITE} onChange={ (event) => onRideViewSelected( event.target.value)}
                         />
-                        <label htmlFor='streetview'>Satelite View</label>
+                        <label htmlFor='ride-view-sat' style={labelStyle(RIDEVIEW.SATTELITE)}>Satellite View</label>
                         <Radio 
+                            id='ride-view-map'
                             checked= { rideView===RIDEVIEW.MAP}
                             name='satelite' 
                             value={RIDEVIEW.MAP} onChange={ (event) => onRideViewSelected( event.target.value)}
                         />
-                        <label htmlFor='streetview'>Map</label>
+                        <label htmlFor='ride-view-map'>Map</label>
                     </div>
+                    {rideViewHelp ? 
+                        <Hint>
+                            {SIMULATION_MESSAGE}{' '}
+                            <LinkButton label={rideViewHelp.label} onClick={onRideViewHelp} />
+                        </Hint> : null}
                     </Column>
                 </Row> : null 
                 }
-                { !isRide  ? 
+                { showMapsKey  ? 
+                    <>
                     <Row> 
                         <EditText label='Maps API Key'  labelPosition='before' labelWidth='15ch' maxLength={39}
-                            validate={validateMapsApiKey} value={mapsApiKey} noLog onValueChange={onMapsApiKeyChanged} />
+                            validate={validateMapsApiKey} value={mapsApiKey} noLog onValueChange={onMapsApiKeyChanged}
+                            autoFocus={focusMapsKey} mask={maskGoogleMapsKey} />
                     </Row>
+                    <HintIndent>
+                        <Hint>
+                            {MAPS_KEY_PURPOSE}{' '}
+                            <LinkButton label={MAPS_KEY_TEXTS.helpLabel} external url={MAPS_KEY_HELP_URL} />
+                        </Hint>
+                        {mapsKeyPendingRestart ? 
+                            <Hint style={{color:'#2e9e44', fontWeight:'bold', opacity:1}}>{MAPS_KEY_TEXTS.pendingRestart}</Hint> : null}
+                    </HintIndent>
+                    </>
                     : null }
 
                 { hasElevation  ? 
