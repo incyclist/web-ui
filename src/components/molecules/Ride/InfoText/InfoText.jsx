@@ -144,6 +144,14 @@ export function InfoText(props) {
         }
     }, [text, routeDistance, actions, isNotice, state, logger]);
 
+    // a notice that is replaced by a dialog (or removed by the service) must not fire its timer later
+    useEffect(() => () => {
+        if (refTimer.current) {
+            clearTimeout(refTimer.current);
+            refTimer.current = null;
+        }
+    }, []);
+
     if (!state.visible) return false;
 
     const close = () => {

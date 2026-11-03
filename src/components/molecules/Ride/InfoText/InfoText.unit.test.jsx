@@ -112,6 +112,17 @@ describe('InfoText', () => {
             expect(logEvent.mock.calls.filter(([e]) => e.message === 'Infotext shown')).toHaveLength(1)
         })
 
+        test('a notice that is gone does not fire its timer later', () => {
+            const onClose = vi.fn()
+            const { unmount } = render(<InfoText text={message} routeDistance={7} actions={actions} onClose={onClose} timeout={12000} />)
+
+            unmount()
+            act(() => { vi.advanceTimersByTime(12000) })
+
+            expect(onClose).not.toHaveBeenCalled()
+            expect(logEvent).not.toHaveBeenCalledWith({ message: 'Infotext closed' })
+        })
+
         test('a new id shows the notice again', () => {
             const { rerender } = render(<InfoText text={message} routeDistance={7} actions={actions} />)
             fireEvent.click(screen.getByRole('button', { name: 'Close' }))
