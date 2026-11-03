@@ -85,15 +85,23 @@ describe('RideViewRestrictionDialogView', () => {
             expect(onDiscard).toHaveBeenCalledTimes(1)
         })
 
-        test('"Keep riding" returns to the normal state', () => {
-            const { onDiscard } = renderDialog()
+        test('the confirmation replaces the button, there is no separate cancel button', () => {
+            renderDialog()
 
             fireEvent.click(screen.getByRole('button', { name: 'Discard ride and connect a device' }))
-            fireEvent.click(screen.getByRole('button', { name: 'Keep riding' }))
+
+            expect(screen.queryByRole('button', { name: 'Discard ride and connect a device' })).toBeNull()
+            expect(screen.queryByRole('button', { name: 'Keep riding' })).toBeNull()
+        })
+
+        test('Close leaves the ride as it is', () => {
+            const { onDiscard, onClose } = renderDialog()
+
+            fireEvent.click(screen.getByRole('button', { name: 'Discard ride and connect a device' }))
+            fireEvent.click(screen.getByRole('button', { name: 'Close' }))
 
             expect(onDiscard).not.toHaveBeenCalled()
-            expect(screen.queryByRole('button', { name: 'Discard ride and connect a device' })).not.toBeNull()
-            expect(screen.queryByText('Discard this simulated ride?')).toBeNull()
+            expect(onClose).toHaveBeenCalledTimes(1)
         })
 
         test('no discard button outside a ride', () => {

@@ -4,6 +4,7 @@ import { Button, ButtonBar, CheckBox, LinkButton } from '../../../atoms'
 import { Dialog } from '../../../molecules/Dialog'
 
 const Body = styled.div`
+    box-sizing: border-box;
     height: calc(100% - 7.7vh);
     overflow-y: auto;
     padding: 1vh 1.5vw;
@@ -46,18 +47,16 @@ const DeviceOption = ({ option, logContext, onDiscard }) => {
     const [confirming, setConfirming] = useState(false)
     const { discard } = option
 
+    // The button asks once, then confirms: there is no separate "cancel" - Close, Esc or a click
+    // outside the dialog leave the ride as it is.
     return <Section>
         {option.heading ? <Heading>{option.heading}</Heading> : null}
         <div>{option.text}</div>
-        {discard && !confirming ?
+        {discard ?
             <Actions>
-                <Button text={discard.label} size='small' margin='0' logContext={logContext} onClick={() => setConfirming(true)} />
-            </Actions> : null}
-        {discard && confirming ?
-            <Actions>
-                <Question>{discard.confirm.question}</Question>
-                <Button text={discard.confirm.confirmLabel} size='small' primary margin='0' logContext={logContext} onClick={onDiscard} />
-                <Button text={discard.confirm.cancelLabel} size='small' margin='0' logContext={logContext} onClick={() => setConfirming(false)} />
+                {confirming ? <Question>{discard.confirm.question}</Question> : null}
+                <Button text={confirming ? discard.confirm.confirmLabel : discard.label} size='small' primary={confirming} margin='0'
+                    logContext={logContext} onClick={confirming ? onDiscard : () => setConfirming(true)} />
             </Actions> : null}
     </Section>
 }

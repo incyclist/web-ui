@@ -54,9 +54,8 @@ const openExternal = (url) => {
 /**
  * A button that looks like a text link.
  *
- * Logs the standard 'button clicked' event (nothing else). If `external` is set, `onClick` is
- * called with nothing and the caller is expected to open the link - unless `url` is given, in
- * which case the link is opened in the browser.
+ * Logs the standard 'button clicked' event. If `url` is given, the link is opened in the browser
+ * and the same 'external link clicked' event as UrlLink is logged as well.
  */
 export const LinkButton = (props) => {
     const { label, onClick, disabled = false, external = false, url, color, logContext, id, plain = false, ariaLabel } = props
@@ -69,8 +68,11 @@ export const LinkButton = (props) => {
         const logger = new EventLogger('Incyclist')
         logger.logEvent({ message: 'button clicked', button: label, ...logContext, eventSource: 'user' })
 
-        if (url)
+        if (url) {
+            // same event as UrlLink, so that all links to external pages can be analysed together
+            logger.logEvent({ message: 'external link clicked', url, eventSource: 'user' })
             openExternal(url)
+        }
         onClick?.(e)
     }
 
