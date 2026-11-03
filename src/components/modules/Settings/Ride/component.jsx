@@ -38,8 +38,12 @@ const Hint = styled.div`
     opacity: 0.8;
     margin-top: 0.4vh;
     margin-bottom: 1.2vh;
-    // lines up with the control (label column + gap), not with the label
-    padding-left: ${props => props.$indent ? 'calc(15ch + 0.4vw)' : '0'};
+`
+
+// The indent has to be measured in the font of the label column (15ch), not in the smaller font of
+// the hint, so it is applied by a wrapper that still has the label's font
+const HintIndent = styled.div`
+    padding-left: calc(15ch + 0.4vw);
 `
 
 export const Header = styled.h2`
@@ -310,12 +314,14 @@ export const RideSettingsView = ( props)=> {
                             validate={validateMapsApiKey} value={mapsApiKey} noLog onValueChange={onMapsApiKeyChanged}
                             autoFocus={focusMapsKey} mask={maskGoogleMapsKey} />
                     </Row>
-                    <Hint $indent>
-                        {MAPS_KEY_PURPOSE}{' '}
-                        <LinkButton label={MAPS_KEY_TEXTS.helpLabel} external url={MAPS_KEY_HELP_URL} />
-                    </Hint>
-                    {mapsKeyPendingRestart ? 
-                        <Hint $indent style={{color:'#2e9e44', fontWeight:'bold', opacity:1}}>{MAPS_KEY_TEXTS.pendingRestart}</Hint> : null}
+                    <HintIndent>
+                        <Hint>
+                            {MAPS_KEY_PURPOSE}{' '}
+                            <LinkButton label={MAPS_KEY_TEXTS.helpLabel} external url={MAPS_KEY_HELP_URL} />
+                        </Hint>
+                        {mapsKeyPendingRestart ? 
+                            <Hint style={{color:'#2e9e44', fontWeight:'bold', opacity:1}}>{MAPS_KEY_TEXTS.pendingRestart}</Hint> : null}
+                    </HintIndent>
                     </>
                     : null }
 
