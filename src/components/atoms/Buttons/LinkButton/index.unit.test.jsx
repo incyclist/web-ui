@@ -72,22 +72,22 @@ describe('LinkButton', () => {
         expect(screen.getByText('Opens in your browser').id).toBe(button.getAttribute('aria-describedby'))
     })
 
-    test('with a url: opens it through the desktop shell and logs the button click and the external link click', () => {
+    test('with a url: opens it through the desktop shell and logs only the external link click', () => {
         render(<LinkButton label='How to create a key' external url='https://incyclist.com/maps-api-key/' />)
 
         fireEvent.click(screen.getByRole('button'))
 
         expect(openExternal).toHaveBeenCalledWith('https://incyclist.com/maps-api-key/')
-        expect(logEvent).toHaveBeenCalledTimes(2)
-        expect(logEvent).toHaveBeenCalledWith(expect.objectContaining({ message: 'button clicked' }))
+        expect(logEvent).toHaveBeenCalledTimes(1)
         expect(logEvent).toHaveBeenCalledWith({ message: 'external link clicked', url: 'https://incyclist.com/maps-api-key/', eventSource: 'user' })
     })
 
-    test('without a url: no external link event', () => {
+    test('without a url: logs the button click and no external link event', () => {
         render(<LinkButton label='Change this' onClick={vi.fn()} />)
 
         fireEvent.click(screen.getByRole('button'))
 
+        expect(logEvent).toHaveBeenCalledWith(expect.objectContaining({ message: 'button clicked', button: 'Change this' }))
         expect(logEvent).not.toHaveBeenCalledWith(expect.objectContaining({ message: 'external link clicked' }))
     })
 
