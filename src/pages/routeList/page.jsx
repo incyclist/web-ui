@@ -47,7 +47,7 @@ const FreeRideNotAvailable = (props) => {
     
     return <MessageBox center no='OK' noYes title='Free-Ride' id='FreeRideNotAvailable' onNo={onClose} >
         
-        <row><center>Could not initalize Free Ride service.</center></row>
+        <row><center>Could not initialize Free Ride service.</center></row>
         <row><center>Please try again later</center></row>
         
     </MessageBox>
@@ -262,6 +262,10 @@ export const RouteListPage =  () => {
     const onFreeRide = () => {
 
         if (!service.isFreeRideSupported()) {
+            // The free ride service is only initialized at startup (if Overpass was reachable then).
+            // Trigger a new attempt in the background so that the next click can succeed; we don't wait for it.
+            // The service shares a running attempt, so repeated clicks don't start duplicate loads.
+            service.ensureFreeRideSupported().catch( ()=>{} )
             setShowFreeRideNA(true)
             return
         }

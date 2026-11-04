@@ -34,7 +34,8 @@ vi.mock('../../components/molecules', async () => {
         DialogLauncher: React.forwardRef((props, ref) => {
             React.useImperativeHandle(ref, () => ({ openDialog: mockOpenDialog, closeDialog: vi.fn() }))
             return null
-        })
+        }),
+        MessageBox: ({ id, children }) => React.createElement('div', { 'data-testid': id }, children)
     }
 })
 
@@ -278,6 +279,34 @@ describe('RouteListPage', () => {
             expect(Dialog).toBe(FreeRideSettingsDialog)
             expect(props.card).toBe(freeRideCard)
             expect(typeof props.onStart).toBe('function')
+        })
+
+        test('Free Ride shows "not available" and triggers a retry in the background if not initialized', () => {
+            mockService.isFreeRideSupported.mockReturnValue(false)
+            mockService.ensureFreeRideSupported = vi.fn(() => new Promise(() => {}))   // never settles: the click must not wait for it
+            const { container } = renderPage()
+            act(() => { last().onFreeRide() })
+
+            expect(mockService.ensureFreeRideSupported).toHaveBeenCalledTimes(1)
+            expect(mockOpenDialog).not.toHaveBeenCalled()
+            expect(container.querySelector('[data-testid="FreeRideNotAvailable"]')).not.toBeNull()
+        })
+
+        test('Free Ride does not fail if the background retry rejects', async () => {
+            mockService.isFreeRideSupported.mockReturnValue(false)
+            mockService.ensureFreeRideSupported = vi.fn(() => Promise.reject(new Error('overpass down')))
+            renderPage()
+            await act(async () => { last().onFreeRide() })
+
+            expect(mockOpenDialog).not.toHaveBeenCalled()
+        })
+
+        test('Free Ride does not retry if the service is initialized', async () => {
+            mockService.ensureFreeRideSupported = vi.fn(async () => true)
+            renderPage()
+            act(() => { last().onFreeRide() })
+
+            expect(mockService.ensureFreeRideSupported).not.toHaveBeenCalled()
         })
 
         test('Import Routes mounts the dialog, not through DialogLauncher', () => {
