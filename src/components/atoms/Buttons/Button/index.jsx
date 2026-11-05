@@ -90,7 +90,7 @@ const Btn = styled.button`
     touch-action: manipulation;    
     cursor: pointer;
     width: ${props => props.width ? props.width : undefined};
-    min-width: ${props => props.width ? props.width : undefined};
+    min-width: ${props => props.minWidth ? props.minWidth : props.width ? props.width : undefined};
     max-width: ${props => props.width ? props.width : undefined};
     background-image: ${props => props.img ? props.img : undefined};
     border: ${props => props.noBorder ? undefined: '1px solid transparent'};

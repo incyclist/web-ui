@@ -157,7 +157,7 @@ export const PairingScreen = ( {capabilities,interfaces,connectRetry, readyToSta
             </BottomRow>
             {buttons?.length ?
                 <Buttons>
-                    {buttons.map( (b,idx)=> <Button key={idx} height={'6vh'} width={'8vw'} primary={b.primary} text={b.label} onClick={b.onClick} />)}
+                    {buttons.map( (b,idx)=> <Button key={idx} height={'6vh'} width={'auto'} minWidth={'8vw'} padding={'0 1.5vw'} primary={b.primary} text={b.label} onClick={b.onClick} />)}
                 </Buttons>
             : null}
             {interfaces?.length ?
