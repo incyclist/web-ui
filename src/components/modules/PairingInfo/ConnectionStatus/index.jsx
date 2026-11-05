@@ -54,6 +54,7 @@ const Status = styled.div`
 const Text = styled.div`
     text-transform: uppercase;
     margin-left: 0.2vw;
+    color: ${props => props.$searching ? '#f5a623' : 'inherit'};
 `
 
 export const LaunchStatusIcon = ( {status}) => {
@@ -70,7 +71,7 @@ export const LaunchStatusIcon = ( {status}) => {
 }
 
 
-export const ConnectionStatus = ({state,disabled,footer,onUnselect,onUse})=>{
+export const ConnectionStatus = ({state,disabled,footer,stateText,onUnselect,onUse})=>{
 
     // the toggle is on while the capability is used; switching it off unselects the capability.
     // On a switched-off (T16) tile the toggle is off; switching it on restores the remembered
@@ -90,7 +91,7 @@ export const ConnectionStatus = ({state,disabled,footer,onUnselect,onUse})=>{
     return (
         <Status>
             {!disabled && <LaunchStatusIcon status={state}/>}
-            <Text>{disabled ? (footer ?? 'Not used') : state}</Text>
+            <Text $searching={!disabled && !!stateText}>{disabled ? (footer ?? 'Not used') : (stateText ?? state)}</Text>
             <Toggle
                 type="button"
                 role="switch"
