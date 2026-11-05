@@ -1,6 +1,5 @@
-import React, { act } from 'react';
+import React from 'react';
 import {ActivityListItem} from './ActivityListItem';
-import Activity from '../../../../__tests__/testdata/activity.json'
 import ActivityLarge from '../../../../__tests__/testdata/ActivityLarge.json'
 import DB from '../../../../__tests__/testdata/activity-db.json'
 
@@ -66,7 +65,8 @@ WithRouteTitle.args = {
 export const NoLogs = Template.bind({});
 NoLogs.args = {
     activityInfo: {
-        summery: activities[0]
+        summary: activities[0],
+        details: { logs: [] }
     }
 }
 
