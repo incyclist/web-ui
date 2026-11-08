@@ -7,7 +7,7 @@ export default {
     title: 'Modules/Pairing/Helper Panel',
 };
 
-const Template = args => <div style={{ width: 'max(320px, 28vw)', height: '70vh', background: '#1f2a33' }}><PairingHelperPanel {...args} /></div>;
+const Template = args => <div style={{ width: 'max(280px, 28vw)', height: '70vh', background: '#1f2a33' }}><PairingHelperPanel {...args} /></div>;
 
 export const NothingPicked = Template.bind({});
 NothingPicked.args = { helper: helperNoTrainer() };

@@ -66,6 +66,60 @@ describe('PairingScreen', () => {
         expect(screen.getByText('OPTIONAL')).toBeTruthy()
     })
 
+    describe('row labels and the helper panel', () => {
+
+        const rowLabels = { top: { text: 'TO RIDE', subtext: 'connect any one' }, bottom: { text: 'OPTIONAL', subtext: 'add what you have' } }
+
+        test('while the helper is closed, the label sits in a column left of the tiles', () => {
+            const { container } = render(<PairingScreen capabilities={{ top: [tile()], bottom: [], rowLabels }} helper={helper({ phase: 'hidden' })} />)
+
+            const label = getComputedStyle(screen.getByText('TO RIDE').parentElement)
+            expect(label.width).toBe('10vw')
+            expect(label.flexDirection).toBe('column')
+            expect(getComputedStyle(container.querySelector('.top')).paddingLeft).not.toBe('1vw')
+        })
+
+        test('while the helper is open, the label is one line above the tiles and the row gives up the label column', () => {
+            const { container } = render(<PairingScreen capabilities={{ top: [tile()], bottom: [], rowLabels }} helper={helper()} />)
+
+            for (const [row, text] of [['.top', 'TO RIDE'], ['.bottom', 'OPTIONAL']]) {
+                const label = getComputedStyle(screen.getByText(text).parentElement)
+                expect(label.position).toBe('absolute')
+                expect(label.left).toBe('1vw')
+                expect(label.flexDirection).toBe('row')
+                expect(label.whiteSpace).toBe('nowrap')
+                expect(label.width).not.toBe('10vw')
+                expect(getComputedStyle(container.querySelector(row)).paddingLeft).toBe('1vw')
+            }
+        })
+
+        test('while the helper is open, the bold label is never cut; only the sub-label may take the ellipsis', () => {
+            render(<PairingScreen capabilities={{ top: [tile()], bottom: [], rowLabels }} helper={helper()} />)
+
+            const text = screen.getByText('TO RIDE')
+            const sub = screen.getByText('connect any one')
+            expect(text.textContent).toBe('TO RIDE')
+            expect(text.parentElement).toBe(sub.parentElement)
+
+            const textStyle = getComputedStyle(text)
+            expect(textStyle.fontWeight).toBe('bold')
+            expect(textStyle.flexShrink).toBe('0')
+            expect(textStyle.overflow).not.toBe('hidden')
+
+            const subStyle = getComputedStyle(sub)
+            expect(subStyle.fontWeight).not.toBe('bold')
+            expect(subStyle.overflow).toBe('hidden')
+            expect(subStyle.textOverflow).toBe('ellipsis')
+            expect(subStyle.minWidth).toMatch(/^0(px)?$/)
+        })
+
+        test('a row with no sub-label shows just its bold label above the tiles', () => {
+            render(<PairingScreen capabilities={{ top: [], bottom: [], rowLabels: { top: { text: 'TO RIDE' }, bottom: { text: 'OPTIONAL' } } }} helper={helper()} />)
+
+            expect(screen.getByText('OPTIONAL').parentElement.children.length).toBe(1)
+        })
+    })
+
     test('renders the status line from the status prop, not derived locally', () => {
         render(<PairingScreen capabilities={{ top: [], bottom: [] }} status={{ id: 'S3', dot: 'amber', text: 'Connect a trainer' }} />)
 

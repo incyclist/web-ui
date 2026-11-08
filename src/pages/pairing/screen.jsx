@@ -8,8 +8,9 @@ import { Button } from '../../components/atoms/Buttons/Button';
 import { getStatusLinkHandler, isHelperShown } from './utils';
 
 // the helper panel's width: about a third of the page, never narrower than its text needs
-const PANEL_WIDTH = 'max(320px, 28vw)'
+const PANEL_WIDTH = 'max(280px, 28vw)'
 
+// while the helper is closed, the label is a column left of the row's tiles
 const RowLabel = styled.div`
     position: absolute;
     left: 0.5vw;
@@ -31,11 +32,57 @@ const RowLabel = styled.div`
     }
 `
 
-// while the helper is open the row only has the space left of the panel: the tiles start right
-// of the row label and share the rest, instead of keeping their fixed width
+// while the helper is open, the label is one line above the tiles, inside the row's top padding.
+// The bold part is never cut; only the sub-label gives way (with an ellipsis) if the line is too long
+const CompactRowLabel = styled.div`
+    position: absolute;
+    top: 1vh;
+    left: 1vw;
+    right: 1vw;
+    display: flex;
+    flex-direction: row;
+    align-items: baseline;
+    white-space: nowrap;
+    overflow: hidden;
+    color: white;
+    font-size: max(12px, 1.8vh);
+    pointer-events: none;
+`
+
+const CompactRowLabelText = styled.span`
+    flex-shrink: 0;
+    font-weight: bold;
+`
+
+const CompactRowLabelSubtext = styled.span`
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-left: 0.5vw;
+`
+
+const renderRowLabel = (label, compact) => {
+    if (compact) {
+        return (
+            <CompactRowLabel>
+                <CompactRowLabelText>{label?.text}</CompactRowLabelText>
+                {label?.subtext ? <CompactRowLabelSubtext>{label.subtext}</CompactRowLabelSubtext> : null}
+            </CompactRowLabel>
+        )
+    }
+    return (
+        <RowLabel>
+            <div>{label?.text}</div>
+            {label?.subtext ? <div>{label.subtext}</div> : null}
+        </RowLabel>
+    )
+}
+
+// while the helper is open the row only has the space left of the panel: the label moves above
+// the tiles, and the tiles share the row's width instead of keeping their fixed width
 const compactRow = css`
     box-sizing: border-box;
-    padding-left: 11.5vw;
+    padding-left: 1vw;
     padding-right: 1vw;
     >* {
         margin-right: 1.5vw;
@@ -161,17 +208,11 @@ export const PairingScreen = ( {capabilities,interfaces,connectRetry,status, but
                 <Main>
                     <PairingStatusLine status={status} onLinkClick={onStatusLink} />
                     <TopRow className='top' $compact={helperShown}>
-                        <RowLabel>
-                            <div>{rowLabels?.top?.text}</div>
-                            {rowLabels?.top?.subtext ? <div>{rowLabels.top.subtext}</div> : null}
-                        </RowLabel>
+                        {renderRowLabel(rowLabels?.top, helperShown)}
                         {top.map(renderTile)}
                     </TopRow>
                     <BottomRow className='bottom' $compact={helperShown}>
-                        <RowLabel>
-                            <div>{rowLabels?.bottom?.text}</div>
-                            {rowLabels?.bottom?.subtext ? <div>{rowLabels.bottom.subtext}</div> : null}
-                        </RowLabel>
+                        {renderRowLabel(rowLabels?.bottom, helperShown)}
                         {bottom.map(renderTile)}
                     </BottomRow>
                     {buttons?.length ?
