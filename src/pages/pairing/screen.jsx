@@ -128,7 +128,7 @@ export const PairingScreen = ( {capabilities,interfaces,connectRetry, readyToSta
     const renderTile = (c,idx) => {
         const waiting = c.role==='required' && !readyToStart && !noSearch && !c.disabled
         return c.deviceName ?
-            <SelectedDevice key={idx} title={c.title} capability={c.capability} deviceName={c.deviceName} connectState={c.connectState} value={c.value} unit={c.unit} disabled={c.disabled} footer={c.emptyFooter}  onClick={c.onClick} onUnselect={c.onUnselect} onUse={c.onUse} /> :
+            <SelectedDevice key={idx} title={c.title} capability={c.capability} deviceName={c.deviceName} connectState={c.connectState} value={c.value} unit={c.unit} disabled={c.disabled} footer={c.emptyFooter} stateText={c.stateText}  onClick={c.onClick} onUnselect={c.onUnselect} onUse={c.onUse} /> :
             <SearchingDevice key={idx} title={c.title} capability={c.capability} waiting={waiting} helpText={c.helpText?.full} footer={c.emptyFooter}  onClick={c.onClick} />
     }
 
@@ -157,7 +157,7 @@ export const PairingScreen = ( {capabilities,interfaces,connectRetry, readyToSta
             </BottomRow>
             {buttons?.length ?
                 <Buttons>
-                    {buttons.map( (b,idx)=> <Button key={idx} height={'6vh'} width={'8vw'} primary={b.primary} text={b.label} onClick={b.onClick} />)}
+                    {buttons.map( (b,idx)=> <Button key={idx} height={'6vh'} width={'auto'} minWidth={'8vw'} padding={'0 1.5vw'} primary={b.primary} text={b.label} onClick={b.onClick} />)}
                 </Buttons>
             : null}
             {interfaces?.length ?

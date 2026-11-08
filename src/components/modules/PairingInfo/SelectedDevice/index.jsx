@@ -80,7 +80,7 @@ const Value = styled.div`
 `
 
 
-export const SelectedDevice = ( {title, capability, value, unit, deviceName, imageUrl, connectState, disabled, footer, onClick,onUnselect, onUse }) => {
+export const SelectedDevice = ( {title, capability, value, unit, deviceName, imageUrl, connectState, disabled, footer, stateText, onClick,onUnselect, onUse }) => {
 
     const onContainerClicked = (e) =>{
         if (onClick)
@@ -114,7 +114,7 @@ export const SelectedDevice = ( {title, capability, value, unit, deviceName, ima
             : null}
 
 
-            <ConnectionStatus state={connectState} disabled={disabled} footer={footer} onUnselect={onUnselectClicked} onUse={onUseClicked} />
+            <ConnectionStatus state={connectState} disabled={disabled} footer={footer} stateText={stateText} onUnselect={onUnselectClicked} onUse={onUseClicked} />
         </Container>
     )
 }
