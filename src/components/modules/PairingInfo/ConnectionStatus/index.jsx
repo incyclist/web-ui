@@ -30,11 +30,14 @@ const Toggle = styled.button`
     }
 `
 
-// the right padding keeps the centred icon and state text clear of the toggle on narrow tiles
+// the right padding keeps the centred icon and state text clear of the toggle on narrow tiles:
+// the toggle's width, its right offset and a small gap
 const Status = styled.div`
     position: absolute;
     box-sizing: border-box;
-    padding-right: calc(3.9vh + 2vw);
+    padding-right: calc(3.9vh + 1.5vw);
+    overflow: hidden;
+    white-space: nowrap;
     background: black;
     height: 20%;
     min-heigt: 20%;
@@ -51,7 +54,13 @@ const Status = styled.div`
     color: white;
 `
 
+// one line only; min-width: 0 lets the flex item shrink below its text so the ellipsis can show
+// as a last resort on a very narrow tile
 const Text = styled.div`
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
     text-transform: ${props => props.$asIs ? 'none' : 'uppercase'};
     margin-left: 0.2vw;
     color: ${props => props.$searching ? '#f5a623' : 'inherit'};
@@ -79,7 +88,7 @@ export const LaunchStatusIcon = ( {status}) => {
 }
 
 
-export const ConnectionStatus = ({state,disabled,footer,footerText,stateText,onUnselect,onUse})=>{
+export const ConnectionStatus = ({state,disabled,footer,footerText,stateText,compact,onUnselect,onUse})=>{
 
     // the toggle is on while the capability is used; switching it off unselects the capability.
     // On a switched-off (T16) tile the toggle is off; switching it on restores the remembered
@@ -98,9 +107,13 @@ export const ConnectionStatus = ({state,disabled,footer,footerText,stateText,onU
 
     const active = getActiveText(footerText, stateText, state)
 
+    // the footer copy already says how the tile stands (an icon could contradict it, e.g. a red
+    // cross next to "waiting"), and while the helper is open the strip needs the room for the text
+    const showIcon = !disabled && !footerText && !compact
+
     return (
         <Status>
-            {!disabled && <LaunchStatusIcon status={state}/>}
+            {showIcon && <LaunchStatusIcon status={state}/>}
             {disabled ?
                 <Text>{footerText ?? footer ?? 'Not used'}</Text> :
                 <Text $asIs={active.asIs} $searching={active.searching}>{active.text}</Text>

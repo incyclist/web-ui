@@ -3,7 +3,7 @@ import styled from 'styled-components';
 import AppTheme from '../../../../theme';
 import { ContainerTitle } from '../../../atoms/Title';
 import { ConnectionStatus } from '../ConnectionStatus';
-import { tileOutline, tileSize } from '../tile';
+import { hoverFrame, tileOutline, tileSize } from '../tile';
 
 const style  = AppTheme.get().devices;
 
@@ -24,12 +24,9 @@ const Container = styled.div`
     overflow: none;
     transition: all 0.2s;
     &:hover {
-        border-style: solid;
-        border-width: 5px;
-        border-color: white;
-
         box-shadow: 0px 15px 10px 0px rgba(0, 0, 0, 1)
     }
+    ${hoverFrame}
 
 `
 const DeviceName = styled.div`
@@ -126,7 +123,7 @@ export const SelectedDevice = ( {title, capability, value, unit, deviceName, ima
             : null}
 
 
-            <ConnectionStatus state={connectState} disabled={disabled} footer={footer} footerText={footerText} stateText={stateText} onUnselect={onUnselectClicked} onUse={onUseClicked} />
+            <ConnectionStatus state={connectState} disabled={disabled} footer={footer} footerText={footerText} stateText={stateText} compact={compact} onUnselect={onUnselectClicked} onUse={onUseClicked} />
         </Container>
     )
 }

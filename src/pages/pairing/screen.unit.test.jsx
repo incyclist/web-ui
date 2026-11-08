@@ -157,6 +157,16 @@ describe('PairingScreen', () => {
         expect(screen.getByText('Waiting for trainer')).toBeTruthy()
     })
 
+    test('an empty tile\'s footer stays on one line and may only be cut with an ellipsis', () => {
+        render(<PairingScreen capabilities={{ top: [tile({ footerText: { full: 'Waiting for trainer', short: 'Waiting' } })], bottom: [] }} />)
+
+        const footer = getComputedStyle(screen.getByText('Waiting for trainer'))
+        expect(footer.whiteSpace).toBe('nowrap')
+        expect(footer.overflow).toBe('hidden')
+        expect(footer.textOverflow).toBe('ellipsis')
+        expect(footer.minWidth).toMatch(/^0(px)?$/)
+    })
+
     test('clicking an interface calls its own bound onClick, not a page-level handler', () => {
         const onClick = vi.fn()
         render(<PairingScreen capabilities={{ top: [], bottom: [] }} interfaces={[{ name: 'ant', enabled: true, state: 'idle', onClick }]} />)

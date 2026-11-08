@@ -28,6 +28,60 @@ describe('ConnectionStatus use toggle', ()=> {
     })
 })
 
+describe('ConnectionStatus status icon', ()=> {
+
+    const icon = (container) => container.querySelector('svg.octicon-check, svg.octicon-x-circle-fill')
+
+    test('a connected tile with no footer copy shows the connect-state icon', ()=> {
+        const { container } = render(<ConnectionStatus state="connected" onUnselect={vi.fn()} />)
+
+        expect(icon(container)).not.toBeNull()
+    })
+
+    test('a tile with the page service\'s footer copy shows no icon next to it', ()=> {
+        const { container, getByText } = render(
+            <ConnectionStatus state="failed" footerText="Waiting for trainer" onUnselect={vi.fn()} />
+        )
+
+        expect(getByText('Waiting for trainer')).toBeTruthy()
+        expect(icon(container)).toBeNull()
+    })
+
+    test('a compact tile (helper open) shows no icon, only the state text', ()=> {
+        const { container, getByText } = render(
+            <ConnectionStatus state="connected" compact={true} onUnselect={vi.fn()} />
+        )
+
+        expect(getByText('connected')).toBeTruthy()
+        expect(icon(container)).toBeNull()
+    })
+})
+
+describe('ConnectionStatus footer strip layout', ()=> {
+
+    test('the footer text stays on one line and may only be cut with an ellipsis', ()=> {
+        const { getByText } = render(
+            <ConnectionStatus state="failed" footerText="Waiting for trainer" onUnselect={vi.fn()} />
+        )
+
+        const text = getComputedStyle(getByText('Waiting for trainer'))
+        expect(text.whiteSpace).toBe('nowrap')
+        expect(text.overflow).toBe('hidden')
+        expect(text.textOverflow).toBe('ellipsis')
+        expect(text.minWidth).toMatch(/^0(px)?$/)
+    })
+
+    test('the strip keeps the toggle\'s width, its right offset and a small gap clear on the right', ()=> {
+        const { getByText } = render(
+            <ConnectionStatus state="failed" footerText="Waiting for trainer" onUnselect={vi.fn()} />
+        )
+
+        const strip = getComputedStyle(getByText('Waiting for trainer').parentElement)
+        expect(strip.paddingRight).toBe('calc(3.9vh + 1.5vw)')
+        expect(strip.overflow).toBe('hidden')
+    })
+})
+
 describe('ConnectionStatus T16 (switched off, device remembered)', ()=> {
 
     test('shows the footer text instead of the connect state, and the toggle in the off position', ()=> {

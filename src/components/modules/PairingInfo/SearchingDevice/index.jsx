@@ -2,7 +2,7 @@ import React from 'react';
 import styled from 'styled-components';
 import AppTheme from '../../../../theme';
 import { ContainerTitle } from '../../../atoms/Title';
-import { tileOutline, tileSize } from '../tile';
+import { hoverFrame, tileOutline, tileSize } from '../tile';
 
 const style  = AppTheme.get().devices;
 
@@ -22,11 +22,9 @@ const Container = styled.div`
     overflow: none;
     transition: all 0.2s;
     &:hover {
-        border-style: solid;
-        border-width: 5px;
-        border-color: white;
         box-shadow: 0px 5px 10px 0px rgba(0, 0, 0, 1)
     }
+    ${hoverFrame}
 `
 const Status = styled.div`
     position: absolute;
@@ -38,6 +36,10 @@ const Status = styled.div`
     justify-content: center;
     align-items: center;
     text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
 
     width: 100%;
     top: 80%;
