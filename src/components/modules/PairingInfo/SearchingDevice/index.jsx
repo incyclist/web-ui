@@ -2,6 +2,7 @@ import React from 'react';
 import styled from 'styled-components';
 import AppTheme from '../../../../theme';
 import { ContainerTitle } from '../../../atoms/Title';
+import { tileOutline, tileSize } from '../tile';
 
 const style  = AppTheme.get().devices;
 
@@ -9,13 +10,9 @@ const Container = styled.div`
     display: flex;
     position:relative;
     flex-direction: column;
-    background: ${style.searching.background}; 
-    width: 20vw;
-    min-width: 20vw;
-    max-width: 20vw;
-    height: 25vh;
-    min-height: 25vh;
-    max-height: 25vh;
+    box-sizing: border-box;
+    background: ${style.searching.background};
+    ${props => tileSize(props.$compact)}
     top:0;
     left:0;
     bottom:0;
@@ -60,17 +57,15 @@ const HelpText = styled.div`
     font-size: 2vh;
 `
 
-export const SearchingDevice = ( {title, capability, waiting, helpText, footer, onClick }) => {
+export const SearchingDevice = ( {title, capability, awaited, helpText, footer, compact, onClick }) => {
 
     const onContainerClicked = () =>{
         if (onClick)
             onClick(capability)
     }
 
-    const outline = waiting ? '#f5a623' : undefined
-
     return (
-        <Container onClick={ onContainerClicked} style={outline ? { outline: `4px solid ${outline}`, outlineOffset: '-4px' } : undefined}>
+        <Container onClick={ onContainerClicked} $compact={compact} style={tileOutline(awaited)}>
             <ContainerTitle size='2.5vh' bold={true}>{title ?? capability} </ContainerTitle>
 
             <HelpText>{helpText}</HelpText>

@@ -3,6 +3,7 @@ import styled from 'styled-components';
 import AppTheme from '../../../../theme';
 import { ContainerTitle } from '../../../atoms/Title';
 import { ConnectionStatus } from '../ConnectionStatus';
+import { tileOutline, tileSize } from '../tile';
 
 const style  = AppTheme.get().devices;
 
@@ -10,13 +11,9 @@ const Container = styled.div`
     display: flex;
     position:relative;
     flex-direction: column;
-    background: ${props => props.background}; 
-    width: 20vw;
-    min-width: 20vw;
-    max-width: 20vw;
-    height: 25vh;
-    min-height: 25vh;
-    max-height: 25vh;
+    box-sizing: border-box;
+    background: ${props => props.background};
+    ${props => tileSize(props.$compact)}
 
     top:0;
     left:0;
@@ -68,6 +65,12 @@ const Info = styled.div`
     color: white;
 `
 
+const RoleLabel = styled.div`
+    font-size: 2vh;
+    font-style: italic;
+    margin: 0.3vh 0;
+`
+
 const Unit = styled.div`
     font-size: 2vh;
     color: white;
@@ -80,7 +83,9 @@ const Value = styled.div`
 `
 
 
-export const SelectedDevice = ( {title, capability, value, unit, deviceName, imageUrl, connectState, disabled, footer, stateText, onClick,onUnselect, onUse }) => {
+// The line that says how the tile relates to the trainer sits above the device name on the
+// trainer's own tile ("Your trainer"), below it on a tile the trainer fills ("via your trainer")
+export const SelectedDevice = ( {title, capability, value, unit, deviceName, imageUrl, connectState, disabled, footer, footerText, stateText, roleLabel, trainerRole, awaited, compact, onClick,onUnselect, onUse }) => {
 
     const onContainerClicked = (e) =>{
         if (onClick)
@@ -102,10 +107,17 @@ export const SelectedDevice = ( {title, capability, value, unit, deviceName, ima
     const failed = connectState==='failed'
     const background = disabled ? style.searching.background : failed ? style.failed.background : style.selected.background
 
+    const role = roleLabel ? <RoleLabel>{roleLabel}</RoleLabel> : null
+    const roleFirst = trainerRole==='trainer'
+
     return (
-        <Container background={background} onClick={ onContainerClicked}>
+        <Container background={background} $compact={compact} onClick={ onContainerClicked} style={tileOutline(awaited)}>
             <ContainerTitle size='2.5vh'  bold={true}>{title??capability} </ContainerTitle>
-            <DeviceName>{deviceName}</DeviceName>
+            <DeviceName>
+                {roleFirst ? role : null}
+                <div>{deviceName}</div>
+                {roleFirst ? null : role}
+            </DeviceName>
             {!disabled && value!==undefined && value!==null && !isNaN(value)?
             <Info>
                 <Value>{value}</Value>
@@ -114,7 +126,7 @@ export const SelectedDevice = ( {title, capability, value, unit, deviceName, ima
             : null}
 
 
-            <ConnectionStatus state={connectState} disabled={disabled} footer={footer} stateText={stateText} onUnselect={onUnselectClicked} onUse={onUseClicked} />
+            <ConnectionStatus state={connectState} disabled={disabled} footer={footer} footerText={footerText} stateText={stateText} onUnselect={onUnselectClicked} onUse={onUseClicked} />
         </Container>
     )
 }

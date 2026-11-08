@@ -52,10 +52,18 @@ const Status = styled.div`
 `
 
 const Text = styled.div`
-    text-transform: uppercase;
+    text-transform: ${props => props.$asIs ? 'none' : 'uppercase'};
     margin-left: 0.2vw;
     color: ${props => props.$searching ? '#f5a623' : 'inherit'};
 `
+
+// the page service's own footer copy is shown as written; otherwise the state text ('Found', shown
+// amber while a search runs) or the connect state
+const getActiveText = (footerText, stateText, state) => {
+    if (footerText)
+        return { text: footerText, asIs: true, searching: false }
+    return { text: stateText ?? state, asIs: false, searching: Boolean(stateText) }
+}
 
 export const LaunchStatusIcon = ( {status}) => {
 
@@ -71,7 +79,7 @@ export const LaunchStatusIcon = ( {status}) => {
 }
 
 
-export const ConnectionStatus = ({state,disabled,footer,stateText,onUnselect,onUse})=>{
+export const ConnectionStatus = ({state,disabled,footer,footerText,stateText,onUnselect,onUse})=>{
 
     // the toggle is on while the capability is used; switching it off unselects the capability.
     // On a switched-off (T16) tile the toggle is off; switching it on restores the remembered
@@ -88,10 +96,15 @@ export const ConnectionStatus = ({state,disabled,footer,stateText,onUnselect,onU
             onUnselect()
     }
 
+    const active = getActiveText(footerText, stateText, state)
+
     return (
         <Status>
             {!disabled && <LaunchStatusIcon status={state}/>}
-            <Text $searching={!disabled && !!stateText}>{disabled ? (footer ?? 'Not used') : (stateText ?? state)}</Text>
+            {disabled ?
+                <Text>{footerText ?? footer ?? 'Not used'}</Text> :
+                <Text $asIs={active.asIs} $searching={active.searching}>{active.text}</Text>
+            }
             <Toggle
                 type="button"
                 role="switch"
