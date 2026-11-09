@@ -1,5 +1,5 @@
 import React from 'react'
-import { describe, test, expect, vi, beforeEach } from 'vitest'
+import { describe, test, expect, vi, afterEach } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 
 const { service } = vi.hoisted(() => ({ service: { getListTop: vi.fn(), setListTop: vi.fn() } }))
@@ -17,7 +17,7 @@ import { ActivitiesTable } from './ActivitiesTable'
 const activities = Array.from({ length: 30 }, (_, i) => ({ summary: { id: `a${i}` } }))
 
 describe('ActivitiesTable', () => {
-    beforeEach(() => vi.clearAllMocks())
+    afterEach(() => vi.clearAllMocks())
 
     test('preserves scroll position and folds rows in both directions as the list scrolls', () => {
         service.getListTop.mockReturnValue(100)

@@ -1,7 +1,7 @@
 import React, { useCallback } from 'react'
 import styled from 'styled-components'
 import { useActivityList } from 'incyclist-services'
-import { Dynamic, TableContainer } from '../../../atoms'
+import { Dynamic, ErrorBoundary, TableContainer } from '../../../atoms'
 import { AppThemeProvider } from '../../../../theme'
 import { useFoldWindow } from '../../../../hooks'
 import { ActivityListItem } from '../../../molecules/Activity'
@@ -16,9 +16,9 @@ const List = styled(TableContainer)`
     overflow-y: auto;
 `
 
-const getActivityKey = (activity, index) => activity.summary?.id ?? `activity-${index}`
+const getActivityKey = (activity, index) => activity?.summary?.id ?? `activity-${index}`
 
-export const ActivitiesTable = ({ activities, onSelect, onDelete }) => {
+const ActivitiesTableContent = ({ activities, onSelect, onDelete }) => {
     const service = useActivityList()
     const onScrollTop = useCallback(top => service.setListTop(top), [service])
     const visible = activities ?? []
@@ -35,10 +35,12 @@ export const ActivitiesTable = ({ activities, onSelect, onDelete }) => {
                 const key = getActivityKey(activity, index)
                 return <Dynamic observer={observer} key={key} event={getFoldEvent(key)} prop='outsideFold'>
                     <ActivityListItem activityInfo={activity} outsideFold={isOutsideFold(key)}
-                        onClick={onSelect ? () => { if (!swipedRecently()) onSelect(activity.summary?.id) } : undefined}
-                        onDelete={onDelete ? () => onDelete(activity.summary?.id) : undefined} />
+                        onClick={onSelect ? () => { if (!swipedRecently()) onSelect(activity?.summary?.id) } : undefined}
+                        onDelete={onDelete ? () => onDelete(activity?.summary?.id) : undefined} />
                 </Dynamic>
             })}
         </List>
     </AppThemeProvider>
 }
+
+export const ActivitiesTable = props => <ErrorBoundary hideOnError><ActivitiesTableContent {...props} /></ErrorBoundary>

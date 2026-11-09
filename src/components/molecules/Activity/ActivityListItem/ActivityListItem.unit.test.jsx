@@ -1,19 +1,27 @@
 import React from 'react'
-import { describe, test, expect, vi, beforeEach } from 'vitest'
+import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest'
 import { act, fireEvent, render, screen } from '@testing-library/react'
 
-const { service } = vi.hoisted(() => ({ service: { getActivityDetails: vi.fn() } }))
+const { service, converter } = vi.hoisted(() => ({
+    service: { getActivityDetails: vi.fn() },
+    converter: { convert: vi.fn(), getUnit: vi.fn() }
+}))
 vi.mock('incyclist-services', async importOriginal => ({
     ...await importOriginal(),
     useActivityList: () => service,
+    useUnitConverter: () => converter,
     useUserSettings: () => ({ get: () => ({ ftp: 240 }) }),
     useAppsService: () => ({ getName: key => ({ strava: 'Strava', intervals: 'Intervals.icu' }[key] ?? key) })
 }))
 // The existing chart has its own rendering; test the activity data delivered to it here.
 vi.mock('../ActivityPreview', () => ({
-    ActivityPreview: ({ activity, ftp }) => <div data-testid='power-chart' data-count={activity.logs.length} data-ftp={ftp} />
+    ActivityPreview: ({ activity, ftp }) => {
+        if (activity.corrupt) throw new Error('Invalid power profile')
+        return <div data-testid='power-chart' data-count={activity.logs.length} data-ftp={ftp} />
+    }
 }))
 
+import { EventLogger } from 'gd-eventlog'
 import { Observer, formatDateTime } from 'incyclist-services'
 import { ActivityListItem } from './ActivityListItem'
 
@@ -25,7 +33,18 @@ const details = { title: 'Incyclist ride: Morning ride', logs: [{ time: 0, power
 const activityInfo = { summary, details }
 
 describe('ActivityListItem', () => {
-    beforeEach(() => vi.clearAllMocks())
+    beforeEach(() => {
+        service.getActivityDetails.mockReturnValue(new Observer())
+        converter.convert.mockImplementation((value, dimension) => dimension === 'distance' ? value / 1000 : value)
+        converter.getUnit.mockImplementation(dimension => dimension === 'distance' ? 'km' : 'm')
+        vi.spyOn(EventLogger.prototype, 'logEvent').mockImplementation(() => {})
+    })
+
+    afterEach(() => {
+        vi.clearAllMocks()
+        vi.restoreAllMocks()
+        vi.useRealTimers()
+    })
 
     test('shows the service summary title, all required metrics, and the power profile', () => {
         render(<ActivityListItem activityInfo={activityInfo} />)
@@ -120,4 +139,81 @@ describe('ActivityListItem', () => {
         expect(screen.getByText('Power profile unavailable')).toBeInTheDocument()
         expect(screen.queryByTestId('power-chart')).toBeNull()
     })
+    test('renders a missing activity or ID without crashing or requesting details', () => {
+        const errors = vi.spyOn(console, 'error').mockImplementation(() => {})
+        const { container, rerender } = render(<ActivityListItem />)
+        expect(container).toBeEmptyDOMElement()
+        rerender(<ActivityListItem activityInfo={{ summary: { title: 'Missing ID' } }} />)
+        expect(screen.getByRole('heading', { name: 'Missing ID' })).toBeInTheDocument()
+        expect(screen.getByText('Power profile unavailable')).toBeInTheDocument()
+        expect(service.getActivityDetails).not.toHaveBeenCalled()
+        expect(errors).not.toHaveBeenCalled()
+    })
+
+    test('logs card and keyboard activation and logs deletion exactly once through the Button atom', () => {
+        const onClick = vi.fn(), onDelete = vi.fn()
+        render(<ActivityListItem activityInfo={activityInfo} onClick={onClick} onDelete={onDelete} />)
+        const card = screen.getByRole('article', { name: 'Activity Morning ride' })
+        fireEvent.click(card)
+        fireEvent.keyDown(card, { key: 'Enter' })
+        expect(EventLogger.prototype.logEvent).toHaveBeenCalledWith({ message: 'tile clicked', activityId: 'ride-1', eventSource: 'user' })
+        expect(EventLogger.prototype.logEvent).toHaveBeenCalledWith({ message: 'key pressed', key: 'Enter', activityId: 'ride-1', eventSource: 'user' })
+        vi.mocked(EventLogger.prototype.logEvent).mockClear()
+        fireEvent.click(screen.getByRole('button', { name: 'Delete Morning ride' }))
+        expect(EventLogger.prototype.logEvent).toHaveBeenCalledExactlyOnceWith({ message: 'button clicked', button: 'delete', activityId: 'ride-1', eventSource: 'user' })
+        expect(onDelete).toHaveBeenCalledOnce()
+        expect(onClick).toHaveBeenCalledTimes(2)
+    })
+
+    test('converts raw detail ascent using the selected imperial units', () => {
+        const observer = new Observer()
+        service.getActivityDetails.mockReturnValue(observer)
+        converter.convert.mockImplementation((value, dimension) => dimension === 'elevation' ? Math.round(value * 3.280839895) : value / 1609.344)
+        converter.getUnit.mockImplementation(dimension => dimension === 'elevation' ? 'ft' : 'mi')
+        render(<ActivityListItem activityInfo={{ summary: { ...summary, distance: { value: 20.2, unit: 'mi' }, totalElevation: undefined } }} />)
+        act(() => observer.emit('loaded', { ...details, totalElevation: 120 }))
+        expect(screen.getByText('394 ft')).toBeInTheDocument()
+        expect(screen.getByText('20.2 mi')).toBeInTheDocument()
+    })
+
+    test('finishes loading when the service never emits and accepts a late result', () => {
+        vi.useFakeTimers()
+        const observer = new Observer()
+        service.getActivityDetails.mockReturnValue(observer)
+        render(<ActivityListItem activityInfo={{ summary }} />)
+        expect(screen.getByText('Loading power profile…')).toBeInTheDocument()
+        act(() => vi.advanceTimersByTime(60000))
+        expect(screen.getByText('Power profile unavailable')).toBeInTheDocument()
+        act(() => observer.emit('loaded', details))
+        expect(screen.getByTestId('power-chart')).toBeInTheDocument()
+    })
+
+    test('cancels the loading timeout and subscriptions when unmounted', () => {
+        vi.useFakeTimers()
+        const observer = new Observer()
+        service.getActivityDetails.mockReturnValue(observer)
+        const off = vi.spyOn(observer, 'off')
+        const { unmount } = render(<ActivityListItem activityInfo={{ summary }} />)
+        expect(vi.getTimerCount()).toBe(1)
+        unmount()
+        expect(vi.getTimerCount()).toBe(0)
+        expect(off).toHaveBeenCalledWith('loaded', expect.any(Function))
+    })
+
+    test('shows an unavailable profile when the service returns no observer', () => {
+        service.getActivityDetails.mockReturnValue(undefined)
+        render(<ActivityListItem activityInfo={{ summary }} />)
+        expect(screen.getByText('Power profile unavailable')).toBeInTheDocument()
+    })
+
+    test('isolates a broken power profile without hiding another activity', () => {
+        vi.spyOn(console, 'error').mockImplementation(() => {})
+        render(<>
+            <ActivityListItem activityInfo={{ summary: { ...summary, id: 'broken', title: 'Broken ride' }, details: { ...details, corrupt: true } }} />
+            <ActivityListItem activityInfo={activityInfo} />
+        </>)
+        expect(screen.queryByRole('heading', { name: 'Broken ride' })).not.toBeInTheDocument()
+        expect(screen.getByRole('heading', { name: 'Morning ride' })).toBeInTheDocument()
+    })
+
 })
