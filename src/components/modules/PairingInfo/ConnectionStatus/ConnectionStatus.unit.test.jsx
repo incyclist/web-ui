@@ -82,6 +82,49 @@ describe('ConnectionStatus footer strip layout', ()=> {
     })
 })
 
+describe('ConnectionStatus dimmed (device kept, but not used while the ride falls back to another one)', ()=> {
+
+    const icon = (container) => container.querySelector('svg.octicon-check, svg.octicon-x-circle-fill')
+
+    test('renders no toggle at all', ()=> {
+        const { queryByRole } = render(
+            <ConnectionStatus state="failed" dimmed={true} footerText="Tap to use again" onUnselect={vi.fn()} onUse={vi.fn()} />
+        )
+
+        expect(queryByRole('switch')).toBeNull()
+    })
+
+    test('shows the page service\'s footer copy as written, and no icon', ()=> {
+        const { container, getByText, queryByText } = render(
+            <ConnectionStatus state="failed" dimmed={true} footerText="Tap to use again" />
+        )
+
+        expect(getByText('Tap to use again')).toBeTruthy()
+        expect(getComputedStyle(getByText('Tap to use again')).textTransform).toBe('none')
+        expect(queryByText('failed')).toBeNull()
+        expect(icon(container)).toBeNull()
+    })
+
+    test('falls back to the footer it was given, never to copy of its own', ()=> {
+        const { getByText, rerender, container } = render(
+            <ConnectionStatus state="failed" dimmed={true} footer="Not used here" />
+        )
+        expect(getByText('Not used here')).toBeTruthy()
+
+        rerender(<ConnectionStatus state="failed" dimmed={true} />)
+        expect(container.textContent).toBe('')
+    })
+
+    test('without a toggle, the strip no longer keeps room for one on the right', ()=> {
+        const { getByText } = render(
+            <ConnectionStatus state="failed" dimmed={true} footerText="Tap to use again" />
+        )
+
+        const strip = getComputedStyle(getByText('Tap to use again').parentElement)
+        expect(strip.paddingRight).not.toBe('calc(3.9vh + 1.5vw)')
+    })
+})
+
 describe('ConnectionStatus T16 (switched off, device remembered)', ()=> {
 
     test('shows the footer text instead of the connect state, and the toggle in the off position', ()=> {

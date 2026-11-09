@@ -31,11 +31,11 @@ const Toggle = styled.button`
 `
 
 // the right padding keeps the centred icon and state text clear of the toggle on narrow tiles:
-// the toggle's width, its right offset and a small gap
+// the toggle's width, its right offset and a small gap. Without a toggle, the text stays centred.
 const Status = styled.div`
     position: absolute;
     box-sizing: border-box;
-    padding-right: calc(3.9vh + 1.5vw);
+    ${props => props.$noToggle ? 'padding: 0 1vw;' : 'padding-right: calc(3.9vh + 1.5vw);'}
     overflow: hidden;
     white-space: nowrap;
     background: black;
@@ -88,7 +88,18 @@ export const LaunchStatusIcon = ( {status}) => {
 }
 
 
-export const ConnectionStatus = ({state,disabled,footer,footerText,stateText,compact,onUnselect,onUse})=>{
+export const ConnectionStatus = ({state,disabled,dimmed,footer,footerText,stateText,compact,onUnselect,onUse})=>{
+
+    // dimmed: the device is kept but not used while the ride falls back to another device. There is
+    // no switch to flip - the tile itself is what takes the device back into use - and the footer
+    // shows the page service's copy as written
+    if (dimmed) {
+        return (
+            <Status $noToggle>
+                <Text $asIs>{footerText ?? footer}</Text>
+            </Status>
+        )
+    }
 
     // the toggle is on while the capability is used; switching it off unselects the capability.
     // On a switched-off (T16) tile the toggle is off; switching it on restores the remembered
