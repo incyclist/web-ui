@@ -1,6 +1,6 @@
 import React from 'react';
 import { PairingHelperPanel } from './index';
-import { helperNoTrainer, helperTrainerUnavailable } from './PairingHelperPanel.mock';
+import { helperNoTrainer, helperTrainerUnavailable, helperTrainerUnavailableWithFallback } from './PairingHelperPanel.mock';
 
 export default {
     component: PairingHelperPanel,
@@ -20,6 +20,9 @@ NoDevicePicked.args = { helper: helperNoTrainer('no_device') };
 
 export const TrainerUnavailablePicked = Template.bind({});
 TrainerUnavailablePicked.args = { helper: helperTrainerUnavailable('trainer_unavailable') };
+
+export const TrainerUnavailableWithFallback = Template.bind({});
+TrainerUnavailableWithFallback.args = { helper: helperTrainerUnavailableWithFallback() };
 
 export const Resolved = Template.bind({});
 Resolved.args = { helper: { ...helperNoTrainer('asleep'), phase: 'resolved', resolvedText: 'Found it! Ready to ride.' } };

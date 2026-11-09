@@ -2,6 +2,7 @@ import React from 'react'
 import { describe, test, expect, vi } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 import { PairingScreen } from './screen'
+import { conflictFromDetection } from '../../components/modules/PairingInfo/PairingConflictCard/PairingConflictCard.mock'
 
 const tile = (overrides = {}) => ({
     title: 'Resistance',
@@ -226,6 +227,150 @@ describe('PairingScreen', () => {
         expect(footer.overflow).toBe('hidden')
         expect(footer.textOverflow).toBe('ellipsis')
         expect(footer.minWidth).toMatch(/^0(px)?$/)
+    })
+
+    describe('a tile dimmed while the ride falls back to another device', () => {
+
+        const dimmedTrainer = (overrides = {}) => tile({
+            deviceName: 'Tacx Flux', connectState: 'failed', trainerRole: 'trainer', roleLabel: 'Your trainer',
+            footerText: { full: 'Tap to use again', short: 'Tap to use again' }, dimmed: true, awaited: false, ...overrides,
+        })
+
+        test('the Resistance tile shows no toggle, and its role line and footer copy as given', () => {
+            render(<PairingScreen capabilities={{ top: [dimmedTrainer()], bottom: [] }} />)
+
+            expect(screen.queryByRole('switch')).toBeNull()
+            expect(screen.getByText('Your trainer')).toBeTruthy()
+            expect(screen.getByText('Tap to use again')).toBeTruthy()
+        })
+
+        test('a click on the dimmed Resistance tile calls the tile\'s own onClick', () => {
+            const onClick = vi.fn()
+            render(<PairingScreen capabilities={{ top: [dimmedTrainer({ onClick })], bottom: [] }} />)
+
+            fireEvent.click(tileOf('Resistance'))
+
+            expect(onClick).toHaveBeenCalledTimes(1)
+        })
+
+        test('another tile the trainer still fills is dimmed the same way, while the fallback device\'s tile keeps its toggle', () => {
+            const speed = tile({ title: 'Speed', capability: 'speed', deviceName: 'Tacx Flux', connectState: 'failed', dimmed: true, footerText: { full: 'Not used', short: 'Not used' } })
+            const power = tile({ title: 'Power', capability: 'power', deviceName: 'Assioma Duo', connectState: 'connected', onUnselect: vi.fn() })
+            render(<PairingScreen capabilities={{ top: [dimmedTrainer(), power, speed], bottom: [] }} />)
+
+            expect(screen.getAllByRole('switch')).toHaveLength(1)
+            expect(tileOf('Power').querySelector('[role="switch"]')).toBeTruthy()
+            expect(screen.getByText('Not used')).toBeTruthy()
+        })
+    })
+
+    describe('switching Resistance off', () => {
+
+        // whether that opens the helper or unselects the trainer is the page service's decision
+        test.each(['connecting', 'failed', 'connected'])('calls the tile\'s onUnselect once while the trainer is %s', (connectState) => {
+            const onUnselect = vi.fn()
+            const onClick = vi.fn()
+            render(<PairingScreen capabilities={{ top: [tile({ deviceName: 'Tacx Flux', connectState, onUnselect, onClick })], bottom: [] }} />)
+
+            fireEvent.click(screen.getByRole('switch'))
+
+            expect(onUnselect).toHaveBeenCalledTimes(1)
+            expect(onClick).not.toHaveBeenCalled()
+        })
+    })
+
+    describe('a conflict found by the search', () => {
+
+        const conflict = (overrides = {}) => ({ ...conflictFromDetection(), onChoice: vi.fn(), onDone: vi.fn(), onDismiss: vi.fn(), ...overrides })
+
+        test('is shown as a card beside the tiles whenever the service hands it over', () => {
+            const c = conflict()
+            render(<PairingScreen capabilities={{ top: [tile()], bottom: [] }} pendingConflict={c} buttons={[{ label: 'OK', primary: true, onClick: vi.fn() }]} />)
+
+            expect(screen.getByRole('complementary', { name: c.title })).toBeTruthy()
+            expect(screen.getByText('Resistance')).toBeTruthy()
+        })
+
+        test('never blocks OK', () => {
+            const onOK = vi.fn()
+            render(<PairingScreen capabilities={{ top: [], bottom: [] }} pendingConflict={conflict()} buttons={[{ label: 'OK', primary: true, onClick: onOK }]} />)
+
+            fireEvent.click(screen.getByRole('button', { name: 'OK' }))
+
+            expect(onOK).toHaveBeenCalledTimes(1)
+        })
+
+        test('is not shown without one', () => {
+            render(<PairingScreen capabilities={{ top: [], bottom: [] }} />)
+
+            expect(screen.queryByRole('complementary')).toBeNull()
+        })
+
+        test('takes the helper\'s place instead of showing next to it', () => {
+            const c = conflict()
+            render(<PairingScreen capabilities={{ top: [], bottom: [] }} helper={helper()} pendingConflict={c} />)
+
+            expect(screen.getAllByRole('complementary')).toHaveLength(1)
+            expect(screen.getByRole('complementary', { name: c.title })).toBeTruthy()
+        })
+
+        test('the rows give up the label column for the card, as they do for the helper', () => {
+            const rowLabels = { top: { text: 'TO RIDE' }, bottom: { text: 'OPTIONAL' } }
+            const { container } = render(<PairingScreen capabilities={{ top: [tile()], bottom: [], rowLabels }} pendingConflict={conflict()} />)
+
+            expect(getComputedStyle(container.querySelector('.top')).paddingLeft).toBe('1vw')
+            expect(getComputedStyle(screen.getByText('TO RIDE').parentElement).flexDirection).toBe('row')
+        })
+
+        test('the card\'s Done and close buttons call the conflict\'s own handlers', () => {
+            const c = conflict()
+            render(<PairingScreen capabilities={{ top: [], bottom: [] }} pendingConflict={c} />)
+
+            fireEvent.click(screen.getByRole('button', { name: 'Done' }))
+            fireEvent.click(screen.getByRole('button', { name: 'Close' }))
+
+            expect(c.onDone).toHaveBeenCalledTimes(1)
+            expect(c.onDismiss).toHaveBeenCalledTimes(1)
+        })
+    })
+
+    describe('no "try again" anywhere on the screen', () => {
+
+        const retryWording = /try\s*again|retry|re-?try|reconnect/i
+
+        const fallbackAction = { label: 'Ride with power meter only', onClick: vi.fn() }
+        const states = {
+            'searching': {
+                capabilities: { top: [tile({ awaited: true })], bottom: [] },
+                buttons: [{ label: 'Stop searching', primary: true, onClick: vi.fn() }, { label: 'Skip', primary: false, onClick: vi.fn() }],
+            },
+            'trainer unreachable, helper open with the fallback action': {
+                capabilities: { top: [tile({ deviceName: 'Tacx Flux', connectState: 'failed', trainerRole: 'trainer', roleLabel: 'Your trainer', footerText: { full: 'Not connected · waiting', short: 'Waiting…' }, onUnselect: vi.fn() })], bottom: [] },
+                helper: helper({ reasons: [{ id: 'trainer_unavailable', label: "My trainer isn't available today", selected: true, onSelect: vi.fn() }], tip: { text: 'Ride with your power meter.', shortText: '' }, action: fallbackAction }),
+                buttons: [{ label: 'Skip', primary: true, onClick: vi.fn() }],
+            },
+            'fallback active': {
+                capabilities: { top: [tile({ deviceName: 'Tacx Flux', connectState: 'failed', dimmed: true, roleLabel: 'Your trainer', footerText: { full: 'Tap to use again', short: 'Tap to use again' } }), tile({ title: 'Power', capability: 'power', deviceName: 'Assioma Duo', connectState: 'connected', onUnselect: vi.fn() })], bottom: [] },
+                buttons: [{ label: 'OK', primary: true, onClick: vi.fn() }],
+            },
+            'search ended without a trainer': {
+                capabilities: { top: [tile({ emptyFooter: 'Not found' })], bottom: [] },
+                buttons: [{ label: 'Search again', primary: true, onClick: vi.fn() }, { label: 'Skip', primary: false, onClick: vi.fn() }],
+            },
+            'conflict card shown': {
+                capabilities: { top: [], bottom: [] },
+                pendingConflict: { ...conflictFromDetection({ queued: 1 }) },
+                buttons: [{ label: 'OK', primary: true, onClick: vi.fn() }, { label: 'Search again', primary: false, onClick: vi.fn() }],
+            },
+        }
+
+        test.each(Object.keys(states))('while %s', (name) => {
+            render(<PairingScreen {...states[name]} />)
+
+            const labels = screen.getAllByRole('button').map(b => b.textContent)
+            expect(labels.length).toBeGreaterThan(0)
+            expect(labels.filter(l => retryWording.test(l))).toEqual([])
+        })
     })
 
     test('clicking an interface calls its own bound onClick, not a page-level handler', () => {

@@ -32,7 +32,7 @@ vi.mock('../../components/modules/PairingInfo/InterfaceSettings', () => ({ defau
 vi.mock('../../components/modules/PairingInfo/DeviceSelector', () => ({ default: (props) => <div>device-selector:{props.capability}</div> }))
 
 vi.mock('./screen', () => ({
-    PairingScreen: ({ title }) => <span>{title}</span>,
+    PairingScreen: ({ title, pendingConflict }) => <span>{title}{pendingConflict ? ` conflict:${pendingConflict.id}` : ''}</span>,
 }))
 
 const renderPage = (mode) => render(<MemoryRouter><PairingPage mode={mode} /></MemoryRouter>)
@@ -60,6 +60,14 @@ describe('PairingPage', () => {
         renderPage('start')
 
         expect(screen.getByText('Paired Devices')).toBeTruthy()
+    })
+
+    test('hands a conflict found by the search on to PairingScreen as given', () => {
+        service.getPageDisplayProperties.mockReturnValue({ title: 'Paired Devices', capabilities: { top: [], bottom: [] }, interfaces: [], buttons: [], pendingConflict: { id: 'detection-1' } })
+
+        renderPage(undefined)
+
+        expect(screen.getByText('Paired Devices conflict:detection-1')).toBeTruthy()
     })
 
     test('renders the device selector when the service sets deviceSelection', () => {

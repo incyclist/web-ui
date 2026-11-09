@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import MainPage from '../../components/molecules/MainPage';
 import {PageTitle} from '../../components/atoms/Title';
 import styled, { css } from 'styled-components';
-import { PairingHelperPanel, PairingStatusLine, SearchingDevice, SelectedDevice } from '../../components/modules/PairingInfo';
+import { PairingConflictCard, PairingHelperPanel, PairingStatusLine, SearchingDevice, SelectedDevice } from '../../components/modules/PairingInfo';
 import {InterfaceInfo}  from '../../components/modules/PairingInfo/InterfaceSettings/interface-info';
 import { Button } from '../../components/atoms/Buttons/Button';
 import { getStatusLinkHandler, isHelperShown } from './utils';
@@ -161,12 +161,16 @@ const Interfaces = styled.div`
 
 `
 
-// Purely a renderer of the page service's display props: tile order/role, row labels, status, helper
-// and button layout all come from the props - nothing is derived here beyond what depends on the
-// page's own size (the resize listener and the narrower layout while the helper panel is shown).
-// Tile, interface, link and helper clicks call each item's own bound handler (the service already
-// logs them), the same way a selected tile's onUnselect/onUse come straight from its own props.
-export const PairingScreen = ( {capabilities,interfaces,connectRetry,status, buttons, helper}) => {
+// Purely a renderer of the page service's display props: tile order/role, row labels, status, helper,
+// conflict card and button layout all come from the props - nothing is derived here beyond what
+// depends on the page's own size (the resize listener and the narrower layout while a panel is shown).
+// Tile, interface, link, helper and conflict clicks call each item's own bound handler (the service
+// already logs them), the same way a selected tile's onUnselect/onUse come straight from its own props.
+//
+// The panel beside the tiles shows either the conflict card or the helper, never both. The card is
+// shown whenever the service hands one over - the service already holds it back while the helper or
+// a device list is open.
+export const PairingScreen = ( {capabilities,interfaces,connectRetry,status, buttons, helper, pendingConflict}) => {
 
     const ref = useRef(null);
 
@@ -184,7 +188,9 @@ export const PairingScreen = ( {capabilities,interfaces,connectRetry,status, but
     const top = capabilities?.top ?? []
     const bottom = capabilities?.bottom ?? []
     const rowLabels = capabilities?.rowLabels
-    const helperShown = isHelperShown(helper)
+    const conflictShown = Boolean(pendingConflict)
+    const helperShown = !conflictShown && isHelperShown(helper)
+    const panelShown = conflictShown || helperShown
     const onStatusLink = getStatusLinkHandler(status, helper)
 
     const onResize = () =>  {
@@ -195,10 +201,10 @@ export const PairingScreen = ( {capabilities,interfaces,connectRetry,status, but
 
     const renderTile = (c,idx) => {
         return c.deviceName ?
-            <SelectedDevice key={idx} title={c.title} capability={c.capability} deviceName={c.deviceName} connectState={c.connectState} value={c.value} unit={c.unit} disabled={c.disabled}
-                footer={c.emptyFooter} footerText={c.footerText?.full} stateText={c.stateText} roleLabel={c.roleLabel} trainerRole={c.trainerRole} awaited={c.awaited} compact={helperShown}
+            <SelectedDevice key={idx} title={c.title} capability={c.capability} deviceName={c.deviceName} connectState={c.connectState} value={c.value} unit={c.unit} disabled={c.disabled} dimmed={c.dimmed}
+                footer={c.emptyFooter} footerText={c.footerText?.full} stateText={c.stateText} roleLabel={c.roleLabel} trainerRole={c.trainerRole} awaited={c.awaited} compact={panelShown}
                 onClick={c.onClick} onUnselect={c.onUnselect} onUse={c.onUse} /> :
-            <SearchingDevice key={idx} title={c.title} capability={c.capability} awaited={c.awaited} helpText={c.helpText?.full} footer={c.footerText?.full ?? c.emptyFooter} compact={helperShown} onClick={c.onClick} />
+            <SearchingDevice key={idx} title={c.title} capability={c.capability} awaited={c.awaited} helpText={c.helpText?.full} footer={c.footerText?.full ?? c.emptyFooter} compact={panelShown} onClick={c.onClick} />
     }
 
     return (
@@ -207,12 +213,12 @@ export const PairingScreen = ( {capabilities,interfaces,connectRetry,status, but
             <Body>
                 <Main>
                     <PairingStatusLine status={status} onLinkClick={onStatusLink} />
-                    <TopRow className='top' $compact={helperShown}>
-                        {renderRowLabel(rowLabels?.top, helperShown)}
+                    <TopRow className='top' $compact={panelShown}>
+                        {renderRowLabel(rowLabels?.top, panelShown)}
                         {top.map(renderTile)}
                     </TopRow>
-                    <BottomRow className='bottom' $compact={helperShown}>
-                        {renderRowLabel(rowLabels?.bottom, helperShown)}
+                    <BottomRow className='bottom' $compact={panelShown}>
+                        {renderRowLabel(rowLabels?.bottom, panelShown)}
                         {bottom.map(renderTile)}
                     </BottomRow>
                     {buttons?.length ?
@@ -221,9 +227,12 @@ export const PairingScreen = ( {capabilities,interfaces,connectRetry,status, but
                         </Buttons>
                     : null}
                 </Main>
-                {helperShown ?
+                {panelShown ?
                     <HelperSlot>
-                        <PairingHelperPanel helper={helper} />
+                        {conflictShown ?
+                            <PairingConflictCard conflict={pendingConflict} /> :
+                            <PairingHelperPanel helper={helper} />
+                        }
                     </HelperSlot>
                 : null}
             </Body>

@@ -72,6 +72,28 @@ describe('PairingHelperPanel', () => {
         expect(onClick).toHaveBeenCalledTimes(1)
     })
 
+    test('the fallback action is pinned under the answers, with its note above the button, both as given', () => {
+        const onClick = vi.fn()
+        const reasons = [reason('trainer_unavailable', "My trainer isn't available today", true)]
+        render(<PairingHelperPanel helper={helper({ reasons, subline: undefined, tip: { text: 'Ride with your power meter instead.', shortText: '' }, action: { label: 'Ride with power meter only', note: 'No resistance control on this ride.', onClick } })} />)
+
+        const note = screen.getByText('No resistance control on this ride.')
+        const button = screen.getByRole('button', { name: 'Ride with power meter only' })
+        expect(note.compareDocumentPosition(button) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+        expect(screen.getByRole('radiogroup').contains(button)).toBe(false)
+
+        fireEvent.click(button)
+        expect(onClick).toHaveBeenCalledTimes(1)
+    })
+
+    test('an action without a note shows just the button', () => {
+        const reasons = [reason('trainer_unavailable', "My trainer isn't available today", true)]
+        render(<PairingHelperPanel helper={helper({ reasons, tip: { text: 'Tip', shortText: '' }, action: { label: 'Ride with power meter only', onClick: vi.fn() } })} />)
+
+        const button = screen.getByRole('button', { name: 'Ride with power meter only' })
+        expect(button.parentElement.previousElementSibling.textContent).toBe('Still searching. Your tiles light up as soon as something is found.')
+    })
+
     test('the close button dismisses the helper', () => {
         const h = helper()
         render(<PairingHelperPanel helper={h} />)

@@ -48,6 +48,25 @@ export const helperNoTrainer = (selected) => build({
     selected,
 })
 
+/**
+ * The helper while the configured trainer can't be reached, "not available today" picked, and a
+ * separate power meter connected: the tip explains the ride without resistance control, and the
+ * action takes the power meter for the ride.
+ */
+export const helperTrainerUnavailableWithFallback = () => ({
+    ...build({
+        title: "Can't connect to your trainer?",
+        footer: 'Still trying to connect to your saved devices.',
+        ids: ['asleep', 'other_app', 'interface', 'trainer_unavailable', 'unsure'],
+        selected: 'trainer_unavailable',
+    }),
+    tip: {
+        text: "You can ride with your power meter instead. Normally Incyclist changes your trainer's resistance, so you feel hills and workouts get harder or easier by themselves. With only a power meter that doesn't happen: you set the effort with your gears. This lasts until you next open Devices.",
+        shortText: "Ride with your power meter instead. You won't feel hills or workout changes; use your gears. Until you next open Devices.",
+    },
+    action: { label: 'Ride with power meter only', onClick: noop },
+})
+
 /** The helper while the configured trainer can't be reached, optionally with an answer picked. */
 export const helperTrainerUnavailable = (selected) => build({
     title: "Can't connect to your trainer?",
