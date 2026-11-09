@@ -165,23 +165,30 @@ describe('PairingScreen', () => {
         expect(screen.getByText('Resistance')).toBeTruthy()
     })
 
-    test('a tile the page waits for gets the amber outline, others don\'t', () => {
+    test('a tile the page waits for gets the amber frame, others don\'t', () => {
         render(<PairingScreen capabilities={{ top: [tile({ awaited: true }), tile({ title: 'Power', capability: 'power', awaited: false })], bottom: [] }} />)
 
-        expect(tileOf('Resistance').style.outline).toContain('solid')
-        expect(tileOf('Power').style.outline).toBe('')
+        expect(tileOf('Resistance').querySelector('[data-testid="awaited-frame"]')).toBeTruthy()
+        expect(tileOf('Power').querySelector('[data-testid="awaited-frame"]')).toBeFalsy()
     })
 
-    test('a tile with a device the page waits for gets the amber outline too', () => {
+    test('a tile with a device the page waits for gets the amber frame too', () => {
         render(<PairingScreen capabilities={{ top: [tile({ deviceName: 'Tacx Flux', connectState: 'connecting', awaited: true })], bottom: [] }} />)
 
-        expect(tileOf('Resistance').style.outline).toContain('solid')
+        expect(tileOf('Resistance').querySelector('[data-testid="awaited-frame"]')).toBeTruthy()
     })
 
-    test('the outline follows the awaited prop, not the role', () => {
+    test('the frame follows the awaited prop, not the role', () => {
         render(<PairingScreen capabilities={{ top: [tile({ awaited: false })], bottom: [] }} readyToStart={false} />)
 
-        expect(tileOf('Resistance').style.outline).toBe('')
+        expect(tileOf('Resistance').querySelector('[data-testid="awaited-frame"]')).toBeFalsy()
+    })
+
+    test('the amber frame is the tile\'s last child, so it paints above the footer strip', () => {
+        render(<PairingScreen capabilities={{ top: [tile({ awaited: true })], bottom: [] }} />)
+
+        const container = tileOf('Resistance')
+        expect(container.lastElementChild.getAttribute('data-testid')).toBe('awaited-frame')
     })
 
     test('an empty tile shows the service\'s footer copy instead of its empty footer', () => {

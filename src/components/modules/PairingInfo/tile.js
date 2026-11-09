@@ -1,5 +1,7 @@
 // Shared sizing and outline of the Pairing page's capability tiles.
 
+import styled from 'styled-components'
+
 export const AWAITED_COLOR = '#f5a623'
 
 /**
@@ -45,7 +47,18 @@ export const hoverFrame = `
     }
 `
 
-/** The amber outline of a tile the page is waiting for. */
-export const tileOutline = (awaited) => awaited
-    ? { outline: `4px solid ${AWAITED_COLOR}`, outlineOffset: '-4px' }
-    : undefined
+/**
+ * The amber frame of a tile the page is waiting for. Rendered as the tile's last child (after the
+ * footer strip), not as the container's own `outline` - the footer strip has its own opaque
+ * background and is itself an absolutely positioned child, so an outline on the container paints
+ * underneath it and is covered along the bottom (and, while the footer wraps, the side) edges. The
+ * same reasoning as `hoverFrame`, but as a real element (not `::after`) so the two can combine: the
+ * hover frame still wins while both are shown, since it is injected after this one in paint order.
+ */
+export const AwaitedFrame = styled.div`
+    position: absolute;
+    inset: 0;
+    box-sizing: border-box;
+    border: 4px solid ${AWAITED_COLOR};
+    pointer-events: none;
+`

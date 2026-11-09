@@ -3,7 +3,7 @@ import styled from 'styled-components';
 import AppTheme from '../../../../theme';
 import { ContainerTitle } from '../../../atoms/Title';
 import { ConnectionStatus } from '../ConnectionStatus';
-import { hoverFrame, tileOutline, tileSize } from '../tile';
+import { AwaitedFrame, hoverFrame, tileSize } from '../tile';
 
 const style  = AppTheme.get().devices;
 
@@ -108,7 +108,7 @@ export const SelectedDevice = ( {title, capability, value, unit, deviceName, ima
     const roleFirst = trainerRole==='trainer'
 
     return (
-        <Container background={background} $compact={compact} onClick={ onContainerClicked} style={tileOutline(awaited)}>
+        <Container background={background} $compact={compact} onClick={ onContainerClicked}>
             <ContainerTitle size='2.5vh'  bold={true}>{title??capability} </ContainerTitle>
             <DeviceName>
                 {roleFirst ? role : null}
@@ -124,6 +124,7 @@ export const SelectedDevice = ( {title, capability, value, unit, deviceName, ima
 
 
             <ConnectionStatus state={connectState} disabled={disabled} footer={footer} footerText={footerText} stateText={stateText} compact={compact} onUnselect={onUnselectClicked} onUse={onUseClicked} />
+            {awaited && <AwaitedFrame data-testid="awaited-frame" />}
         </Container>
     )
 }

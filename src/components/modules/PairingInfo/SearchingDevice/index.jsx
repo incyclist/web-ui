@@ -2,7 +2,7 @@ import React from 'react';
 import styled from 'styled-components';
 import AppTheme from '../../../../theme';
 import { ContainerTitle } from '../../../atoms/Title';
-import { hoverFrame, tileOutline, tileSize } from '../tile';
+import { AwaitedFrame, hoverFrame, tileSize } from '../tile';
 
 const style  = AppTheme.get().devices;
 
@@ -67,11 +67,12 @@ export const SearchingDevice = ( {title, capability, awaited, helpText, footer, 
     }
 
     return (
-        <Container onClick={ onContainerClicked} $compact={compact} style={tileOutline(awaited)}>
+        <Container onClick={ onContainerClicked} $compact={compact}>
             <ContainerTitle size='2.5vh' bold={true}>{title ?? capability} </ContainerTitle>
 
             <HelpText>{helpText}</HelpText>
             <Status>{footer}</Status>
+            {awaited && <AwaitedFrame data-testid="awaited-frame" />}
         </Container>
     )
 }
