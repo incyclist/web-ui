@@ -2,6 +2,7 @@ import React from 'react';
 import styled from 'styled-components';
 import AppTheme from '../../../../theme';
 import { ContainerTitle } from '../../../atoms/Title';
+import { AwaitedFrame, hoverFrame, tileSize } from '../tile';
 
 const style  = AppTheme.get().devices;
 
@@ -9,13 +10,9 @@ const Container = styled.div`
     display: flex;
     position:relative;
     flex-direction: column;
-    background: ${style.searching.background}; 
-    width: 20vw;
-    min-width: 20vw;
-    max-width: 20vw;
-    height: 25vh;
-    min-height: 25vh;
-    max-height: 25vh;
+    box-sizing: border-box;
+    background: ${style.searching.background};
+    ${props => tileSize(props.$compact)}
     top:0;
     left:0;
     bottom:0;
@@ -25,11 +22,9 @@ const Container = styled.div`
     overflow: none;
     transition: all 0.2s;
     &:hover {
-        border-style: solid;
-        border-width: 5px;
-        border-color: white;
         box-shadow: 0px 5px 10px 0px rgba(0, 0, 0, 1)
     }
+    ${hoverFrame}
 `
 const Status = styled.div`
     position: absolute;
@@ -41,6 +36,10 @@ const Status = styled.div`
     justify-content: center;
     align-items: center;
     text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
 
     width: 100%;
     top: 80%;
@@ -60,21 +59,20 @@ const HelpText = styled.div`
     font-size: 2vh;
 `
 
-export const SearchingDevice = ( {title, capability, waiting, helpText, footer, onClick }) => {
+export const SearchingDevice = ( {title, capability, awaited, helpText, footer, compact, onClick }) => {
 
     const onContainerClicked = () =>{
         if (onClick)
             onClick(capability)
     }
 
-    const outline = waiting ? '#f5a623' : undefined
-
     return (
-        <Container onClick={ onContainerClicked} style={outline ? { outline: `4px solid ${outline}`, outlineOffset: '-4px' } : undefined}>
+        <Container onClick={ onContainerClicked} $compact={compact}>
             <ContainerTitle size='2.5vh' bold={true}>{title ?? capability} </ContainerTitle>
 
             <HelpText>{helpText}</HelpText>
             <Status>{footer}</Status>
+            {awaited && <AwaitedFrame data-testid="awaited-frame" />}
         </Container>
     )
 }

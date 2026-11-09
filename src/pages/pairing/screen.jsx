@@ -1,32 +1,16 @@
 import React, { useEffect, useRef, useState } from 'react';
 import MainPage from '../../components/molecules/MainPage';
 import {PageTitle} from '../../components/atoms/Title';
-import styled from 'styled-components';
-import { SearchingDevice, SelectedDevice } from '../../components/modules/PairingInfo';
+import styled, { css } from 'styled-components';
+import { PairingHelperPanel, PairingStatusLine, SearchingDevice, SelectedDevice } from '../../components/modules/PairingInfo';
 import {InterfaceInfo}  from '../../components/modules/PairingInfo/InterfaceSettings/interface-info';
 import { Button } from '../../components/atoms/Buttons/Button';
+import { getStatusLinkHandler, isHelperShown } from './utils';
 
-const StatusLine = styled.div`
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    font-size: 2vh;
-    color: white;
-    text-align: center;
-    margin-top: 1vh;
-`
+// the helper panel's width: about a third of the page, never narrower than its text needs
+const PANEL_WIDTH = 'max(280px, 28vw)'
 
-const StatusDot = styled.span`
-    display: inline-block;
-    width: 1.2vh;
-    height: 1.2vh;
-    border-radius: 50%;
-    margin-right: 0.8vw;
-    background: ${props => props.$color};
-`
-
-const statusDotColors = { red: '#e74c3c', green: '#2ecc71', amber: '#f5a623' }
-
+// while the helper is closed, the label is a column left of the row's tiles
 const RowLabel = styled.div`
     position: absolute;
     left: 0.5vw;
@@ -48,6 +32,63 @@ const RowLabel = styled.div`
     }
 `
 
+// while the helper is open, the label is one line above the tiles, inside the row's top padding.
+// The bold part is never cut; only the sub-label gives way (with an ellipsis) if the line is too long
+const CompactRowLabel = styled.div`
+    position: absolute;
+    top: 1vh;
+    left: 1vw;
+    right: 1vw;
+    display: flex;
+    flex-direction: row;
+    align-items: baseline;
+    white-space: nowrap;
+    overflow: hidden;
+    color: white;
+    font-size: max(12px, 1.8vh);
+    pointer-events: none;
+`
+
+const CompactRowLabelText = styled.span`
+    flex-shrink: 0;
+    font-weight: bold;
+`
+
+const CompactRowLabelSubtext = styled.span`
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-left: 0.5vw;
+`
+
+const renderRowLabel = (label, compact) => {
+    if (compact) {
+        return (
+            <CompactRowLabel>
+                <CompactRowLabelText>{label?.text}</CompactRowLabelText>
+                {label?.subtext ? <CompactRowLabelSubtext>{label.subtext}</CompactRowLabelSubtext> : null}
+            </CompactRowLabel>
+        )
+    }
+    return (
+        <RowLabel>
+            <div>{label?.text}</div>
+            {label?.subtext ? <div>{label.subtext}</div> : null}
+        </RowLabel>
+    )
+}
+
+// while the helper is open the row only has the space left of the panel: the label moves above
+// the tiles, and the tiles share the row's width instead of keeping their fixed width
+const compactRow = css`
+    box-sizing: border-box;
+    padding-left: 1vw;
+    padding-right: 1vw;
+    >* {
+        margin-right: 1.5vw;
+    }
+`
+
 const BottomRow = styled.div`
     min-height: 26vh;
     position: relative;
@@ -59,6 +100,8 @@ const BottomRow = styled.div`
     >* {
         margin-right: 5vw;
     }
+    ${props => props.$compact ? compactRow : ''}
+    ${props => props.$compact ? 'min-height: 22vh; padding-top: 4vh; padding-bottom: 3vh;' : ''}
 `
 
 const TopRow = styled.div`
@@ -72,6 +115,31 @@ const TopRow = styled.div`
     >* {
         margin-right: 4vw;
     }
+    ${props => props.$compact ? compactRow : ''}
+    ${props => props.$compact ? 'min-height: 22vh; padding-top: 5vh; padding-bottom: 3vh;' : ''}
+`
+
+// the title stays on top; below it, the status line, rows and buttons share the width with the helper
+const Body = styled.div`
+    position: relative;
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: row;
+`
+
+const Main = styled.div`
+    position: relative;
+    flex: 1;
+    min-width: 0;
+`
+
+// from under the status line to above the button bar
+const HelperSlot = styled.div`
+    flex: none;
+    width: ${PANEL_WIDTH};
+    margin-top: 5vh;
+    margin-bottom: 11vh;
 `
 
 const Buttons = styled.div`
@@ -93,13 +161,12 @@ const Interfaces = styled.div`
 
 `
 
-// Purely a renderer of the page service's display props: tile order/role, row labels, status and
-// button layout all come from `capabilities`/`status`/`buttons` - nothing is derived here beyond
-// what depends on the page's own size (the resize listener) and the "waiting" ring, which mirrors
-// mobile's CapabilityGrid (computed from role/readyToStart/noSearch, not sent over the wire). Tile
-// and interface clicks call each item's own bound `onClick` (the service already logs them), the
-// same way a selected tile's onUnselect/onUse come straight from its own props.
-export const PairingScreen = ( {capabilities,interfaces,connectRetry, readyToStart,status, buttons}) => {
+// Purely a renderer of the page service's display props: tile order/role, row labels, status, helper
+// and button layout all come from the props - nothing is derived here beyond what depends on the
+// page's own size (the resize listener and the narrower layout while the helper panel is shown).
+// Tile, interface, link and helper clicks call each item's own bound handler (the service already
+// logs them), the same way a selected tile's onUnselect/onUse come straight from its own props.
+export const PairingScreen = ( {capabilities,interfaces,connectRetry,status, buttons, helper}) => {
 
     const ref = useRef(null);
 
@@ -117,7 +184,8 @@ export const PairingScreen = ( {capabilities,interfaces,connectRetry, readyToSta
     const top = capabilities?.top ?? []
     const bottom = capabilities?.bottom ?? []
     const rowLabels = capabilities?.rowLabels
-    const noSearch = status?.id === 'S1'
+    const helperShown = isHelperShown(helper)
+    const onStatusLink = getStatusLinkHandler(status, helper)
 
     const onResize = () =>  {
         setWidth(window.innerWidth)
@@ -126,40 +194,39 @@ export const PairingScreen = ( {capabilities,interfaces,connectRetry, readyToSta
     }
 
     const renderTile = (c,idx) => {
-        const waiting = c.role==='required' && !readyToStart && !noSearch && !c.disabled
         return c.deviceName ?
-            <SelectedDevice key={idx} title={c.title} capability={c.capability} deviceName={c.deviceName} connectState={c.connectState} value={c.value} unit={c.unit} disabled={c.disabled} footer={c.emptyFooter} stateText={c.stateText}  onClick={c.onClick} onUnselect={c.onUnselect} onUse={c.onUse} /> :
-            <SearchingDevice key={idx} title={c.title} capability={c.capability} waiting={waiting} helpText={c.helpText?.full} footer={c.emptyFooter}  onClick={c.onClick} />
+            <SelectedDevice key={idx} title={c.title} capability={c.capability} deviceName={c.deviceName} connectState={c.connectState} value={c.value} unit={c.unit} disabled={c.disabled}
+                footer={c.emptyFooter} footerText={c.footerText?.full} stateText={c.stateText} roleLabel={c.roleLabel} trainerRole={c.trainerRole} awaited={c.awaited} compact={helperShown}
+                onClick={c.onClick} onUnselect={c.onUnselect} onUse={c.onUse} /> :
+            <SearchingDevice key={idx} title={c.title} capability={c.capability} awaited={c.awaited} helpText={c.helpText?.full} footer={c.footerText?.full ?? c.emptyFooter} compact={helperShown} onClick={c.onClick} />
     }
 
     return (
         <MainPage className='main'>
             <PageTitle>Devices</PageTitle>
-            {status ?
-                <StatusLine>
-                    <StatusDot $color={statusDotColors[status.dot]} />
-                    <span>{status.text}</span>
-                </StatusLine>
-            : null}
-            <TopRow className='top'>
-                <RowLabel>
-                    <div>{rowLabels?.top?.text}</div>
-                    {rowLabels?.top?.subtext ? <div>{rowLabels.top.subtext}</div> : null}
-                </RowLabel>
-                {top.map(renderTile)}
-            </TopRow>
-            <BottomRow className='bottom'>
-                <RowLabel>
-                    <div>{rowLabels?.bottom?.text}</div>
-                    {rowLabels?.bottom?.subtext ? <div>{rowLabels.bottom.subtext}</div> : null}
-                </RowLabel>
-                {bottom.map(renderTile)}
-            </BottomRow>
-            {buttons?.length ?
-                <Buttons>
-                    {buttons.map( (b,idx)=> <Button key={idx} height={'6vh'} width={'auto'} minWidth={'8vw'} padding={'0 1.5vw'} primary={b.primary} text={b.label} onClick={b.onClick} />)}
-                </Buttons>
-            : null}
+            <Body>
+                <Main>
+                    <PairingStatusLine status={status} onLinkClick={onStatusLink} />
+                    <TopRow className='top' $compact={helperShown}>
+                        {renderRowLabel(rowLabels?.top, helperShown)}
+                        {top.map(renderTile)}
+                    </TopRow>
+                    <BottomRow className='bottom' $compact={helperShown}>
+                        {renderRowLabel(rowLabels?.bottom, helperShown)}
+                        {bottom.map(renderTile)}
+                    </BottomRow>
+                    {buttons?.length ?
+                        <Buttons>
+                            {buttons.map( (b,idx)=> <Button key={idx} height={'6vh'} width={'auto'} minWidth={'8vw'} padding={'0 1.5vw'} primary={b.primary} text={b.label} onClick={b.onClick} />)}
+                        </Buttons>
+                    : null}
+                </Main>
+                {helperShown ?
+                    <HelperSlot>
+                        <PairingHelperPanel helper={helper} />
+                    </HelperSlot>
+                : null}
+            </Body>
             {interfaces?.length ?
                 <Interfaces>
                     { interfaces.map( (info,idx)=>

@@ -12,6 +12,19 @@ const tile = (overrides = {}) => ({
     ...overrides,
 })
 
+const helper = (overrides = {}) => ({
+    phase: 'open',
+    title: "Can't find your trainer?",
+    reasons: [{ id: 'asleep', label: "It's switched off or asleep", selected: false, onSelect: vi.fn() }],
+    footer: 'Still searching. Your tiles light up as soon as something is found.',
+    onOpen: vi.fn(),
+    onDismiss: vi.fn(),
+    ...overrides,
+})
+
+// the tile element: the title's container
+const tileOf = (title) => screen.getByText(title).parentElement
+
 describe('PairingScreen', () => {
 
     test('renders a tile with no device as a SearchingDevice, waiting when required and not ready', () => {
@@ -53,6 +66,60 @@ describe('PairingScreen', () => {
         expect(screen.getByText('OPTIONAL')).toBeTruthy()
     })
 
+    describe('row labels and the helper panel', () => {
+
+        const rowLabels = { top: { text: 'TO RIDE', subtext: 'connect any one' }, bottom: { text: 'OPTIONAL', subtext: 'add what you have' } }
+
+        test('while the helper is closed, the label sits in a column left of the tiles', () => {
+            const { container } = render(<PairingScreen capabilities={{ top: [tile()], bottom: [], rowLabels }} helper={helper({ phase: 'hidden' })} />)
+
+            const label = getComputedStyle(screen.getByText('TO RIDE').parentElement)
+            expect(label.width).toBe('10vw')
+            expect(label.flexDirection).toBe('column')
+            expect(getComputedStyle(container.querySelector('.top')).paddingLeft).not.toBe('1vw')
+        })
+
+        test('while the helper is open, the label is one line above the tiles and the row gives up the label column', () => {
+            const { container } = render(<PairingScreen capabilities={{ top: [tile()], bottom: [], rowLabels }} helper={helper()} />)
+
+            for (const [row, text] of [['.top', 'TO RIDE'], ['.bottom', 'OPTIONAL']]) {
+                const label = getComputedStyle(screen.getByText(text).parentElement)
+                expect(label.position).toBe('absolute')
+                expect(label.left).toBe('1vw')
+                expect(label.flexDirection).toBe('row')
+                expect(label.whiteSpace).toBe('nowrap')
+                expect(label.width).not.toBe('10vw')
+                expect(getComputedStyle(container.querySelector(row)).paddingLeft).toBe('1vw')
+            }
+        })
+
+        test('while the helper is open, the bold label is never cut; only the sub-label may take the ellipsis', () => {
+            render(<PairingScreen capabilities={{ top: [tile()], bottom: [], rowLabels }} helper={helper()} />)
+
+            const text = screen.getByText('TO RIDE')
+            const sub = screen.getByText('connect any one')
+            expect(text.textContent).toBe('TO RIDE')
+            expect(text.parentElement).toBe(sub.parentElement)
+
+            const textStyle = getComputedStyle(text)
+            expect(textStyle.fontWeight).toBe('bold')
+            expect(textStyle.flexShrink).toBe('0')
+            expect(textStyle.overflow).not.toBe('hidden')
+
+            const subStyle = getComputedStyle(sub)
+            expect(subStyle.fontWeight).not.toBe('bold')
+            expect(subStyle.overflow).toBe('hidden')
+            expect(subStyle.textOverflow).toBe('ellipsis')
+            expect(subStyle.minWidth).toMatch(/^0(px)?$/)
+        })
+
+        test('a row with no sub-label shows just its bold label above the tiles', () => {
+            render(<PairingScreen capabilities={{ top: [], bottom: [], rowLabels: { top: { text: 'TO RIDE' }, bottom: { text: 'OPTIONAL' } } }} helper={helper()} />)
+
+            expect(screen.getByText('OPTIONAL').parentElement.children.length).toBe(1)
+        })
+    })
+
     test('renders the status line from the status prop, not derived locally', () => {
         render(<PairingScreen capabilities={{ top: [], bottom: [] }} status={{ id: 'S3', dot: 'amber', text: 'Connect a trainer' }} />)
 
@@ -73,6 +140,92 @@ describe('PairingScreen', () => {
 
         expect(onClick).toHaveBeenCalled()
         expect(screen.getByText('Skip')).toBeTruthy()
+    })
+
+    test('the status line\'s link opens the helper', () => {
+        const onOpen = vi.fn()
+        const status = { id: 'S6', dot: 'amber', text: 'Still searching…', link: "Can't find your trainer?" }
+        render(<PairingScreen capabilities={{ top: [], bottom: [] }} status={status} helper={helper({ phase: 'hidden', onOpen })} />)
+
+        fireEvent.click(screen.getByRole('button', { name: "Can't find your trainer?" }))
+
+        expect(onOpen).toHaveBeenCalledTimes(1)
+    })
+
+    test('shows no helper panel while the helper is hidden', () => {
+        render(<PairingScreen capabilities={{ top: [], bottom: [] }} helper={helper({ phase: 'hidden' })} />)
+
+        expect(screen.queryByText("Can't find your trainer?")).toBeNull()
+    })
+
+    test('shows the helper panel beside the tiles while it is open', () => {
+        render(<PairingScreen capabilities={{ top: [tile()], bottom: [] }} helper={helper()} />)
+
+        expect(screen.getByRole('complementary', { name: "Can't find your trainer?" })).toBeTruthy()
+        expect(screen.getByText('Resistance')).toBeTruthy()
+    })
+
+    test('a tile the page waits for gets the amber frame, others don\'t', () => {
+        render(<PairingScreen capabilities={{ top: [tile({ awaited: true }), tile({ title: 'Power', capability: 'power', awaited: false })], bottom: [] }} />)
+
+        expect(tileOf('Resistance').querySelector('[data-testid="awaited-frame"]')).toBeTruthy()
+        expect(tileOf('Power').querySelector('[data-testid="awaited-frame"]')).toBeFalsy()
+    })
+
+    test('a tile with a device the page waits for gets the amber frame too', () => {
+        render(<PairingScreen capabilities={{ top: [tile({ deviceName: 'Tacx Flux', connectState: 'connecting', awaited: true })], bottom: [] }} />)
+
+        expect(tileOf('Resistance').querySelector('[data-testid="awaited-frame"]')).toBeTruthy()
+    })
+
+    test('the frame follows the awaited prop, not the role', () => {
+        render(<PairingScreen capabilities={{ top: [tile({ awaited: false })], bottom: [] }} readyToStart={false} />)
+
+        expect(tileOf('Resistance').querySelector('[data-testid="awaited-frame"]')).toBeFalsy()
+    })
+
+    test('the amber frame is the tile\'s last child, so it paints above the footer strip', () => {
+        render(<PairingScreen capabilities={{ top: [tile({ awaited: true })], bottom: [] }} />)
+
+        const container = tileOf('Resistance')
+        expect(container.lastElementChild.getAttribute('data-testid')).toBe('awaited-frame')
+    })
+
+    test('an empty tile shows the service\'s footer copy instead of its empty footer', () => {
+        render(<PairingScreen capabilities={{ top: [tile({ title: 'Power', capability: 'power', emptyFooter: 'Searching...', footerText: { full: 'Optional for now', short: 'Optional for now' } })], bottom: [] }} />)
+
+        expect(screen.getByText('Optional for now')).toBeTruthy()
+        expect(screen.queryByText('Searching...')).toBeNull()
+    })
+
+    test('the trainer\'s tile shows its role line above the device name and the full footer copy as written', () => {
+        render(<PairingScreen capabilities={{ top: [tile({ deviceName: 'Tacx Flux', connectState: 'failed', trainerRole: 'trainer', roleLabel: 'Your trainer', footerText: { full: 'Not connected · waiting', short: 'Waiting…' }, awaited: true })], bottom: [] }} />)
+
+        const role = screen.getByText('Your trainer')
+        const device = screen.getByText('Tacx Flux')
+        expect(role.compareDocumentPosition(device) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+        expect(screen.getByText('Not connected · waiting')).toBeTruthy()
+        expect(screen.queryByText('Waiting…')).toBeNull()
+        expect(screen.queryByText('failed')).toBeNull()
+    })
+
+    test('a tile the trainer fills shows its role line below the device name', () => {
+        render(<PairingScreen capabilities={{ top: [tile({ title: 'Power', capability: 'power', deviceName: 'Tacx Flux', connectState: 'failed', trainerRole: 'via-trainer', roleLabel: 'via your trainer', footerText: { full: 'Waiting for trainer', short: 'Via trainer' } })], bottom: [] }} />)
+
+        const role = screen.getByText('via your trainer')
+        const device = screen.getByText('Tacx Flux')
+        expect(device.compareDocumentPosition(role) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+        expect(screen.getByText('Waiting for trainer')).toBeTruthy()
+    })
+
+    test('an empty tile\'s footer stays on one line and may only be cut with an ellipsis', () => {
+        render(<PairingScreen capabilities={{ top: [tile({ footerText: { full: 'Waiting for trainer', short: 'Waiting' } })], bottom: [] }} />)
+
+        const footer = getComputedStyle(screen.getByText('Waiting for trainer'))
+        expect(footer.whiteSpace).toBe('nowrap')
+        expect(footer.overflow).toBe('hidden')
+        expect(footer.textOverflow).toBe('ellipsis')
+        expect(footer.minWidth).toMatch(/^0(px)?$/)
     })
 
     test('clicking an interface calls its own bound onClick, not a page-level handler', () => {
