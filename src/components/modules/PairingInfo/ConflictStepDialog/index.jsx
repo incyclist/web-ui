@@ -120,7 +120,7 @@ export const ConflictStepDialog = ({ conflict, id = 'ConflictStepDialog', log, a
                 <StepHeader>
                     <TitleLine>
                         <StepTitle>{conflict.title}</StepTitle>
-                        {conflict.queuedText ? <Queued>{conflict.queuedText}</Queued> : null}
+                        {conflict.queuedText ? <Queued>{conflict.queuedText.full}</Queued> : null}
                     </TitleLine>
                     {conflict.subline?.full ? <StepSubline>{conflict.subline.full}</StepSubline> : null}
                 </StepHeader>

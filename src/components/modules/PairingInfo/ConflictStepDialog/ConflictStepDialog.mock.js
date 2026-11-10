@@ -40,8 +40,10 @@ export const conflictFromDetection = ({ queued = 0, choice = 'keep', single = fa
         onDone: noop,
         onDismiss: noop,
     }
-    if (queued > 0)
-        conflict.queuedText = `${queued} more`
+    if (queued > 0) {
+        const device = queued === 1 ? 'device' : 'devices'
+        conflict.queuedText = { full: `${queued} more ${device} to check`, short: `${queued} more to check` }
+    }
     return conflict
 }
 

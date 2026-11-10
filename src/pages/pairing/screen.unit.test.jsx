@@ -296,7 +296,7 @@ describe('PairingScreen', () => {
             expect(screen.getByText(c.subline.full)).toBeTruthy()
             expect(screen.queryByText(c.subline.short)).toBeNull()
             expect(screen.getAllByRole('radiogroup')).toHaveLength(2)
-            expect(screen.getByText('1 more')).toBeTruthy()
+            expect(screen.getByText('1 more device to check')).toBeTruthy()
             expect(screen.getByText('Resistance')).toBeTruthy()
         })
 

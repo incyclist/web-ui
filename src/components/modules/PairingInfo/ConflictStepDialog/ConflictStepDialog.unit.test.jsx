@@ -56,10 +56,10 @@ describe('ConflictStepDialog', () => {
 
     test('shows how many more conflicts wait next to the title, only when the service says so', () => {
         const { rerender } = render(<ConflictStepDialog conflict={conflict({ queued: 2 })} />)
-        expect(screen.getByText('2 more')).toBeTruthy()
+        expect(screen.getByText('2 more devices to check')).toBeTruthy()
 
         rerender(<ConflictStepDialog conflict={conflict()} />)
-        expect(screen.queryByText(/^\d+ more$/)).toBeNull()
+        expect(screen.queryByText(/more.*to check/)).toBeNull()
     })
 
     test('each row shows the choice the service hands over - keep, unless it says otherwise', () => {
