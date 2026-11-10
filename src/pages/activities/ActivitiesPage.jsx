@@ -23,11 +23,21 @@ const View = styled(Row)`
 const ContentArea = styled(Column)`
    
     width: ${props => props.width ||'100%'};
+    min-width: 0;
     user-select:none;    
     height: 100%;
-    padding-left:40px;
-    padding-right: 40px;
-    overflow-y: hidden;  
+    padding: 0 20px;
+    box-sizing: border-box;
+    overflow: hidden;
+    @media (max-width: 650px) { padding: 0 8px; }
+`
+
+const ListArea = styled.div`
+    flex: 1 1 0;
+    min-height: 0;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
 `
 
 const NoActivitiesArea = styled(Row)`    
@@ -41,17 +51,10 @@ const NoActivitiesArea = styled(Row)`
 `
 
 
-export const ActivitiesScreen =  
-    ({ observer, activities, countries,filters={},contentTypes,routeTypes,
-       onSelect,onDelete, closePage,loading,
-       onChangeFilter 
-    }) => {
+export const ActivitiesScreen =
+    ({ activities, onSelect, onDelete, closePage, loading }) => {
 
-    // TODO: Filtering
-    // const filterProps = {activities, countries,filters,contentTypes,routeTypes,onChangeFilter}
-    
-
-    const Table = ({activities,loading}) => {
+    const renderList = () => {
         if (!loading && activities?.length>0)
             return <ActivitiesTable activities={activities} onSelect={onSelect} onDelete={onDelete}/>
 
@@ -78,7 +81,7 @@ export const ActivitiesScreen =
 
                 <ContentArea width={'100%'} height='100%' >
                     <PageTitle>Activities</PageTitle>   
-                    <Table activities={activities} loading={loading}/>
+                    <ListArea>{renderList()}</ListArea>
                     
 
                 </ContentArea>

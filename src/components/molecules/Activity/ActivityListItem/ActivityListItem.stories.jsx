@@ -1,87 +1,38 @@
-import React, { act } from 'react';
-import {ActivityListItem} from './ActivityListItem';
-import Activity from '../../../../__tests__/testdata/activity.json'
+import React from 'react'
+import { ActivityListItemView } from './ActivityListItemView'
 import ActivityLarge from '../../../../__tests__/testdata/ActivityLarge.json'
-import DB from '../../../../__tests__/testdata/activity-db.json'
 
 export default {
-    component: ActivityListItem,
-    title: 'Molecules/Activities/ActivityListItem',    
-    argTypes: { 
-        onClick: { action: 'click' } ,
-        onDelete: { action: 'delete' } 
-    },
-  };
-const Template = args => <ActivityListItem {...args} />
-
-const {activities} = DB
-
-const summaryLarge = activities.find( a=> a.id===ActivityLarge.id)
-
-
-export const Default = Template.bind({});
-Default.args = {    
-    activityInfo: {
-        summary: summaryLarge, 
-        details: { ...structuredClone(ActivityLarge) }
-    }
-
+    component: ActivityListItemView,
+    title: 'Molecules/Activities/ActivityListItem',
+    argTypes: { onOpen: { action: 'open' }, onDelete: { action: 'delete' } }
 }
 
-export const Imperial = Template.bind({});
-Imperial.args = {    
-    activityInfo: {
-        summary: { ...summaryLarge, 
-            distance:{value:'30.2',unit:'mi'},
-            totalElevation:{value:'200',unit:'ft'} 
-        },
-        details: { ...structuredClone(ActivityLarge),
-            distance:{value:'30.2',unit:'mi'},
-            totalElevation:{value:'200',unit:'ft'} 
-        }
-    }
-
+const Template = args => <ActivityListItemView {...args} />
+const activity = structuredClone(ActivityLarge)
+const display = {
+    id: 'preview', title: 'Morning ride · Passo Pordoi', dateTime: '18.10.2026 · 07:30',
+    dateTimeISO: '2026-10-18T10:30:00Z', duration: '1h 5min', distance: '32.5 km', ascent: '772 m', activity, ftp: 240,
+    uploads: [{ service: 'strava', name: 'Strava', status: 'success' }, { service: 'intervals', name: 'Intervals.icu', status: 'success' }]
 }
 
-export const WithTitle = Template.bind({});
-WithTitle.args = {    
-    activityInfo: {
-        summary:{...summaryLarge, title:'My Activity'},
-        details: { ...structuredClone(ActivityLarge) }
-    }
+export const Default = Template.bind({})
+Default.args = display
 
-}
+export const Imperial = Template.bind({})
+Imperial.args = { ...display, distance: '20.2 mi', ascent: '2533 ft' }
 
-const activityWithRouteTitle = structuredClone(ActivityLarge)
-activityWithRouteTitle.route.title = 'My Route'
-export const WithRouteTitle = Template.bind({});
-WithRouteTitle.args = {    
-    activityInfo: { 
-        summary: summaryLarge,
-        details: activityWithRouteTitle
-    }
+export const WithTitle = Template.bind({})
+WithTitle.args = { ...display, title: 'My Activity' }
 
-}
+export const NoLogs = Template.bind({})
+NoLogs.args = { ...display, activity: undefined }
 
-export const NoLogs = Template.bind({});
-NoLogs.args = {
-    activityInfo: {
-        summery: activities[0]
-    }
-}
+export const Loading = Template.bind({})
+Loading.args = { ...display, activity: undefined, loading: true }
 
-export const NoActivity = Template.bind({});
-NoActivity.args = {
+export const NoActivity = Template.bind({})
+NoActivity.args = {}
 
-}
-
-
-export const NotVisible = Template.bind({});
-NotVisible.args = {    
-    outsideFold:true,
-    activityInfo: { 
-        summary: summaryLarge,
-        details: { ...structuredClone(ActivityLarge) }
-    }
-
-}
+export const NotVisible = Template.bind({})
+NotVisible.args = { outsideFold: true }
