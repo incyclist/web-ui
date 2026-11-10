@@ -1,7 +1,7 @@
 import React from 'react';
 import { PairingScreen } from './screen';
 import { helperNoTrainer, helperTrainerUnavailable, helperTrainerUnavailableWithFallback } from '../../components/modules/PairingInfo/PairingHelperPanel/PairingHelperPanel.mock';
-import { conflictFromDetection } from '../../components/modules/PairingInfo/PairingConflictCard/PairingConflictCard.mock';
+import { conflictFromDetection } from '../../components/modules/PairingInfo/ConflictStepDialog/ConflictStepDialog.mock';
 
 export default {
     component: PairingScreen,
@@ -197,7 +197,7 @@ FallbackActive.args = {
     buttons: [ { label:'OK', primary:true } ],
 };
 
-// a device found by the search wants slots that already hold other devices
+// a device found by the search wants slots that already hold other devices: a dialog over the page
 export const ConflictFound = Template.bind({});
 ConflictFound.args = {
     capabilities: paired,

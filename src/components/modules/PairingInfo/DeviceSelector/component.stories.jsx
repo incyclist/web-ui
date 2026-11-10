@@ -1,6 +1,6 @@
 import React from 'react';
 import { DeviceSelector } from './component';
-import { conflictFromPick } from '../PairingConflictCard/PairingConflictCard.mock';
+import { conflictFromPick } from '../ConflictStepDialog/ConflictStepDialog.mock';
 
 export default {
     component: DeviceSelector,

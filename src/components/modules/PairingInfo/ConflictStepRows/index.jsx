@@ -27,7 +27,8 @@ const RowTitle = styled.div`
  * the one the service hands over ('keep' until the rider picks otherwise); a pick is only reported,
  * via `onChoice(capability, choice)`, and shows once the service hands the new choice back.
  *
- * Shared by the conflict card beside the tiles and the second step of the device list.
+ * Rendered by ConflictStepDialog, for a device found by the search and for the second step of the
+ * device list alike.
  */
 export const ConflictStepRows = ({ rows, onChoice }) => {
     if (!rows?.length)

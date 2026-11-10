@@ -1,4 +1,5 @@
-// Story data for a device-selection conflict, in the shape the desktop pairing page service sends.
+// Story and test data for a device-selection conflict, in the shape the desktop pairing page service
+// sends - both as `pendingConflict` (a device found by the search) and as a device list's `conflictStep`.
 
 const noop = () => {}
 
@@ -11,22 +12,29 @@ const row = (capability, capabilityTitle, currentName, deviceName, choice = 'kee
     replaceLabel: `Use ${deviceName}`,
 })
 
-/** A device found by the search that wants slots already held by other devices. */
-export const conflictFromDetection = ({ queued = 0, choice = 'keep' } = {}) => {
+/**
+ * A device found by the search that wants slots already held by other devices.
+ *
+ * @param queued how many more conflicts wait behind this one
+ * @param choice the choice the first row carries
+ * @param single only the first row
+ */
+export const conflictFromDetection = ({ queued = 0, choice = 'keep', single = false, id = 'detection-1' } = {}) => {
     const deviceName = 'Wahoo KICKR'
+    const rows = [
+        row('power', 'Power', 'Assioma Duo', deviceName, choice),
+        row('speed', 'Speed', 'Garmin Speed', deviceName),
+    ]
     const conflict = {
-        id: 'detection-1',
+        id,
         origin: 'detection',
         deviceName,
         title: `${deviceName} can also measure more`,
         subline: {
-            full: 'Cadence was free and now uses it. Choose for the rest; nothing changes until you do.',
-            short: 'Nothing changes until you choose.',
+            full: `We just found your ${deviceName}. Nothing changes until you choose. Cadence was free and now uses ${deviceName}.`,
+            short: `Just found ${deviceName}. Nothing changes until you choose.`,
         },
-        rows: [
-            row('power', 'Power', 'Assioma Duo', deviceName, choice),
-            row('speed', 'Speed', 'Garmin Speed', deviceName),
-        ],
+        rows: single ? rows.slice(0, 1) : rows,
         queued,
         onChoice: noop,
         onDone: noop,

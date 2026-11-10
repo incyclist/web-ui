@@ -2,13 +2,17 @@ import React, { useEffect, useRef, useState } from 'react';
 import MainPage from '../../components/molecules/MainPage';
 import {PageTitle} from '../../components/atoms/Title';
 import styled, { css } from 'styled-components';
-import { PairingConflictCard, PairingHelperPanel, PairingStatusLine, SearchingDevice, SelectedDevice } from '../../components/modules/PairingInfo';
+import { ConflictStepDialog, PairingHelperPanel, PairingStatusLine, SearchingDevice, SelectedDevice } from '../../components/modules/PairingInfo';
 import {InterfaceInfo}  from '../../components/modules/PairingInfo/InterfaceSettings/interface-info';
 import { Button } from '../../components/atoms/Buttons/Button';
 import { getStatusLinkHandler, isHelperShown } from './utils';
 
 // the helper panel's width: about a third of the page, never narrower than its text needs
 const PANEL_WIDTH = 'max(280px, 28vw)'
+
+// a conflict found by the search can pop up while the rider is about to click something else: its
+// buttons ignore clicks for this long after it appears (Esc and a click outside never wait)
+const CONFLICT_ARM_DELAY = 500
 
 // while the helper is closed, the label is a column left of the row's tiles
 const RowLabel = styled.div`
@@ -162,14 +166,14 @@ const Interfaces = styled.div`
 `
 
 // Purely a renderer of the page service's display props: tile order/role, row labels, status, helper,
-// conflict card and button layout all come from the props - nothing is derived here beyond what
-// depends on the page's own size (the resize listener and the narrower layout while a panel is shown).
+// conflict and button layout all come from the props - nothing is derived here beyond what depends on
+// the page's own size (the resize listener and the narrower layout while the helper is shown).
 // Tile, interface, link, helper and conflict clicks call each item's own bound handler (the service
 // already logs them), the same way a selected tile's onUnselect/onUse come straight from its own props.
 //
-// The panel beside the tiles shows either the conflict card or the helper, never both. The card is
-// shown whenever the service hands one over - the service already holds it back while the helper or
-// a device list is open.
+// The panel beside the tiles only ever holds the helper. A conflict found by the search is shown in
+// the same modal dialog a pick in the Resistance list uses for its conflicts, whenever the service
+// hands one over - the service already holds it back while the helper or a device list is open.
 export const PairingScreen = ( {capabilities,interfaces,connectRetry,status, buttons, helper, pendingConflict}) => {
 
     const ref = useRef(null);
@@ -188,9 +192,7 @@ export const PairingScreen = ( {capabilities,interfaces,connectRetry,status, but
     const top = capabilities?.top ?? []
     const bottom = capabilities?.bottom ?? []
     const rowLabels = capabilities?.rowLabels
-    const conflictShown = Boolean(pendingConflict)
-    const helperShown = !conflictShown && isHelperShown(helper)
-    const panelShown = conflictShown || helperShown
+    const panelShown = isHelperShown(helper)
     const onStatusLink = getStatusLinkHandler(status, helper)
 
     const onResize = () =>  {
@@ -229,13 +231,13 @@ export const PairingScreen = ( {capabilities,interfaces,connectRetry,status, but
                 </Main>
                 {panelShown ?
                     <HelperSlot>
-                        {conflictShown ?
-                            <PairingConflictCard conflict={pendingConflict} /> :
-                            <PairingHelperPanel helper={helper} />
-                        }
+                        <PairingHelperPanel helper={helper} />
                     </HelperSlot>
                 : null}
             </Body>
+            {pendingConflict ?
+                <ConflictStepDialog id='PairingConflict' conflict={pendingConflict} armDelay={CONFLICT_ARM_DELAY} />
+            : null}
             {interfaces?.length ?
                 <Interfaces>
                     { interfaces.map( (info,idx)=>

@@ -1,8 +1,8 @@
 import React from 'react'
-import { describe, test, expect, vi } from 'vitest'
-import { render, screen, fireEvent } from '@testing-library/react'
+import { describe, test, expect, vi, afterEach } from 'vitest'
+import { render, screen, fireEvent, act } from '@testing-library/react'
 import { PairingScreen } from './screen'
-import { conflictFromDetection } from '../../components/modules/PairingInfo/PairingConflictCard/PairingConflictCard.mock'
+import { conflictFromDetection } from '../../components/modules/PairingInfo/ConflictStepDialog/ConflictStepDialog.mock'
 
 const tile = (overrides = {}) => ({
     title: 'Resistance',
@@ -281,56 +281,106 @@ describe('PairingScreen', () => {
 
     describe('a conflict found by the search', () => {
 
-        const conflict = (overrides = {}) => ({ ...conflictFromDetection(), onChoice: vi.fn(), onDone: vi.fn(), onDismiss: vi.fn(), ...overrides })
+        const conflict = (options, overrides = {}) => ({ ...conflictFromDetection(options), onChoice: vi.fn(), onDone: vi.fn(), onDismiss: vi.fn(), ...overrides })
+        const nextTick = () => act(() => new Promise(done => process.nextTick(done)))
 
-        test('is shown as a card beside the tiles whenever the service hands it over', () => {
-            const c = conflict()
-            render(<PairingScreen capabilities={{ top: [tile()], bottom: [] }} pendingConflict={c} buttons={[{ label: 'OK', primary: true, onClick: vi.fn() }]} />)
-
-            expect(screen.getByRole('complementary', { name: c.title })).toBeTruthy()
-            expect(screen.getByText('Resistance')).toBeTruthy()
+        afterEach(() => {
+            vi.useRealTimers()
         })
 
-        test('never blocks OK', () => {
-            const onOK = vi.fn()
-            render(<PairingScreen capabilities={{ top: [], bottom: [] }} pendingConflict={conflict()} buttons={[{ label: 'OK', primary: true, onClick: onOK }]} />)
+        test('is shown as a dialog whenever the service hands it over, with its title, full subline, rows and queued count', () => {
+            const c = conflict({ queued: 1 })
+            render(<PairingScreen capabilities={{ top: [tile()], bottom: [] }} pendingConflict={c} buttons={[{ label: 'OK', primary: true, onClick: vi.fn() }]} />)
 
-            fireEvent.click(screen.getByRole('button', { name: 'OK' }))
-
-            expect(onOK).toHaveBeenCalledTimes(1)
+            expect(screen.getByRole('dialog', { name: c.title })).toBeTruthy()
+            expect(screen.getByText(c.subline.full)).toBeTruthy()
+            expect(screen.queryByText(c.subline.short)).toBeNull()
+            expect(screen.getAllByRole('radiogroup')).toHaveLength(2)
+            expect(screen.getByText('1 more')).toBeTruthy()
+            expect(screen.getByText('Resistance')).toBeTruthy()
         })
 
         test('is not shown without one', () => {
             render(<PairingScreen capabilities={{ top: [], bottom: [] }} />)
 
-            expect(screen.queryByRole('complementary')).toBeNull()
+            expect(screen.queryByRole('dialog')).toBeNull()
+            expect(document.querySelector('.dialog')).toBeNull()
         })
 
-        test('takes the helper\'s place instead of showing next to it', () => {
+        test('never goes into the panel beside the tiles, and the tiles keep their full layout', () => {
+            const rowLabels = { top: { text: 'TO RIDE' }, bottom: { text: 'OPTIONAL' } }
+            const { container } = render(<PairingScreen capabilities={{ top: [tile()], bottom: [], rowLabels }} helper={helper({ phase: 'hidden' })} pendingConflict={conflict()} />)
+
+            expect(screen.queryByRole('complementary')).toBeNull()
+            expect(getComputedStyle(container.querySelector('.top')).paddingLeft).not.toBe('1vw')
+            expect(getComputedStyle(screen.getByText('TO RIDE').parentElement).flexDirection).toBe('column')
+        })
+
+        test('the panel beside the tiles only follows the helper', () => {
             const c = conflict()
             render(<PairingScreen capabilities={{ top: [], bottom: [] }} helper={helper()} pendingConflict={c} />)
 
             expect(screen.getAllByRole('complementary')).toHaveLength(1)
-            expect(screen.getByRole('complementary', { name: c.title })).toBeTruthy()
+            expect(screen.getByRole('complementary', { name: "Can't find your trainer?" })).toBeTruthy()
         })
 
-        test('the rows give up the label column for the card, as they do for the helper', () => {
-            const rowLabels = { top: { text: 'TO RIDE' }, bottom: { text: 'OPTIONAL' } }
-            const { container } = render(<PairingScreen capabilities={{ top: [tile()], bottom: [], rowLabels }} pendingConflict={conflict()} />)
+        test('covers the whole page, so a click where OK sits lands outside the dialog instead of on OK', () => {
+            render(<PairingScreen capabilities={{ top: [], bottom: [] }} pendingConflict={conflict()} buttons={[{ label: 'OK', primary: true, onClick: vi.fn() }]} />)
 
-            expect(getComputedStyle(container.querySelector('.top')).paddingLeft).toBe('1vw')
-            expect(getComputedStyle(screen.getByText('TO RIDE').parentElement).flexDirection).toBe('row')
+            const layer = getComputedStyle(document.querySelector('.dialog').parentElement)
+            expect(layer.position).toBe('fixed')
+            expect([layer.top, layer.bottom, layer.left, layer.right]).toEqual(['0px', '0px', '0px', '0px'])
+            expect(Number(layer.zIndex)).toBeGreaterThan(0)
         })
 
-        test('the card\'s Done and close buttons call the conflict\'s own handlers', () => {
+        test('has no close button', () => {
+            render(<PairingScreen capabilities={{ top: [], bottom: [] }} pendingConflict={conflict()} />)
+
+            expect(screen.queryByRole('button', { name: 'Close' })).toBeNull()
+            expect(screen.queryByText('✕')).toBeNull()
+        })
+
+        test('Keep, Use and Done ignore clicks for a moment after the dialog appears, then call the conflict\'s own handlers', () => {
+            vi.useFakeTimers()
             const c = conflict()
             render(<PairingScreen capabilities={{ top: [], bottom: [] }} pendingConflict={c} />)
 
+            fireEvent.click(screen.getAllByRole('radio', { name: 'Use Wahoo KICKR' })[0])
             fireEvent.click(screen.getByRole('button', { name: 'Done' }))
-            fireEvent.click(screen.getByRole('button', { name: 'Close' }))
+            expect(c.onChoice).not.toHaveBeenCalled()
+            expect(c.onDone).not.toHaveBeenCalled()
 
+            act(() => { vi.advanceTimersByTime(500) })
+
+            fireEvent.click(screen.getAllByRole('radio', { name: 'Use Wahoo KICKR' })[0])
+            fireEvent.click(screen.getByRole('button', { name: 'Done' }))
+            expect(c.onChoice).toHaveBeenCalledWith('power', 'replace')
             expect(c.onDone).toHaveBeenCalledTimes(1)
+            expect(c.onDismiss).not.toHaveBeenCalled()
+        })
+
+        test('Esc calls the conflict\'s onDismiss right away, even while the buttons are still held back', async () => {
+            vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+            const c = conflict()
+            render(<PairingScreen capabilities={{ top: [], bottom: [] }} pendingConflict={c} />)
+
+            fireEvent.keyUp(window, { key: 'Escape', keyCode: 27 })
+            await nextTick()
+
             expect(c.onDismiss).toHaveBeenCalledTimes(1)
+            expect(c.onDone).not.toHaveBeenCalled()
+        })
+
+        test('a click outside calls the conflict\'s onDismiss right away, even while the buttons are still held back', async () => {
+            vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+            const c = conflict()
+            render(<PairingScreen capabilities={{ top: [], bottom: [] }} pendingConflict={c} />)
+
+            fireEvent.click(document.querySelector('.dialog').parentElement)
+            await nextTick()
+
+            expect(c.onDismiss).toHaveBeenCalledTimes(1)
+            expect(c.onDone).not.toHaveBeenCalled()
         })
     })
 
@@ -357,7 +407,7 @@ describe('PairingScreen', () => {
                 capabilities: { top: [tile({ emptyFooter: 'Not found' })], bottom: [] },
                 buttons: [{ label: 'Search again', primary: true, onClick: vi.fn() }, { label: 'Skip', primary: false, onClick: vi.fn() }],
             },
-            'conflict card shown': {
+            'conflict dialog shown': {
                 capabilities: { top: [], bottom: [] },
                 pendingConflict: { ...conflictFromDetection({ queued: 1 }) },
                 buttons: [{ label: 'OK', primary: true, onClick: vi.fn() }, { label: 'Search again', primary: false, onClick: vi.fn() }],

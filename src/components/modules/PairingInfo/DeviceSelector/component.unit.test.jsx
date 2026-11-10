@@ -1,7 +1,7 @@
 import React from 'react'
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
-import { conflictFromPick } from '../PairingConflictCard/PairingConflictCard.mock'
+import { conflictFromPick } from '../ConflictStepDialog/ConflictStepDialog.mock'
 
 const { dialogProps } = vi.hoisted(() => ({ dialogProps: [] }))
 
@@ -112,6 +112,34 @@ describe('DeviceSelector', () => {
 
             await waitFor(() => expect(s.onDismiss).toHaveBeenCalledTimes(1))
             expect(onCancel).not.toHaveBeenCalled()
+        })
+
+        // the step only ever opens in direct answer to the rider's own pick, so unlike a conflict
+        // found by the search it doesn't hold its buttons back for a moment
+        test('answers right away: a choice and Done straight after it opens are not held back', () => {
+            vi.useFakeTimers()
+            try {
+                const s = step()
+                render(<DeviceSelector capability="control" devices={devices} conflictStep={s} />)
+
+                fireEvent.click(screen.getByRole('radio', { name: 'Use Tacx Neo 2T' }))
+                fireEvent.click(screen.getByRole('button', { name: 'Done' }))
+
+                expect(s.onChoice).toHaveBeenCalledWith('power', 'replace')
+                expect(s.onDone).toHaveBeenCalledTimes(1)
+            }
+            finally {
+                vi.useRealTimers()
+            }
+        })
+
+        test('is shown in the device list\'s own dialog, with no close button', () => {
+            render(<DeviceSelector capability="control" devices={devices} conflictStep={step()} />)
+
+            expect(lastDialog().id).toBe('DeviceSelector')
+            expect(lastDialog().log).toMatchObject({ capability: 'control' })
+            expect(screen.queryByRole('button', { name: 'Close' })).toBeNull()
+            expect(screen.getAllByRole('button').map(b => b.textContent)).toEqual(['Done'])
         })
 
         test('offers no "try again"', () => {
