@@ -1,229 +1,112 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { AppThemeProvider } from '../../../../theme';
-import { Container, DataContainer, DeleteIcon, DetailsContainer, Image, ImageContainer, ImageLabel, Title } from './atoms';
-import { ActivityPreview } from '../ActivityPreview';
-import { Dynamic } from '../../../atoms/Dynamic';
-import { Column, Row, Text } from '../../../atoms';
-import { formatDateTime, useActivityList, useUserSettings } from 'incyclist-services';
-import styled from 'styled-components';
-import { useCallback } from 'react';
-import { useHoverObserver } from '../../../../hooks/ui/useHover.jsx';
+import React, { useEffect, useState } from 'react'
+import { EventLogger } from 'gd-eventlog'
+import { formatDateTime, useActivityList, useAppsService, useUnitConverter, useUserSettings } from 'incyclist-services'
+import { ErrorBoundary } from '../../../atoms'
+import { ActivityListItemView } from './ActivityListItemView'
 
-const OutsideFold = styled(Container)`
-    opacity: 0.1;
-`
-
-export const ActivityListItem = ({ onClick,onDelete, activityInfo, outsideFold}) => { 
-
-
-    const initialized = useRef(false)
-    const [observer,setObserver] = useState(null)
-    const service = useActivityList()
-    const userSettings = useUserSettings()
-
-    const {id,distance: rideDistance,startTime,rideTime,totalElevation:summaryElavation} = activityInfo?.summary??{}
-    const {logs,totalElevation:detailsElevation} = activityInfo?.details??{}
-    const containerRef = useRef()
-    const [hoverObserverRef,setHoverObserver] = useHoverObserver(containerRef)
-    const totalElevation = summaryElavation??detailsElevation
-    
-
-    const onDeleteHandler = (event) => {
-        
-        event.stopPropagation();
-        if (typeof (onDelete)==='function')
-            onDelete()
-    }
- 
-    const getFtp = ()=>{
-        try {
-            return userSettings.get('user')?.ftp??200
-        }
-        catch{
-            return 200
-        }
-    }
-
-    const getDetails = useCallback( (id) =>{
-        try {
-            return service.getActivityDetails(id)        
-        }
-        catch(err) {
-            console.log('~~~ ERROR',err, service)
-            return null;
-        }
-    },[service])
-
-    const getTitle = (d) => {
-        const {summary} = activityInfo??{}
-        const details = d ?? activityInfo?.details
-        if (summary?.title!=='Incyclist Ride')
-            return summary?.title
-        return details?.route?.title??details?.route?.name??'Incyclist Ride'         
-    }
-
-    const getDateTime = () => {
-        let time = ''
-        let date = ''
-        if (startTime) {
-            const start = new Date(startTime)
-            time = formatDateTime(start,'%H:%M')
-            date = formatDateTime(start,'%d.%m.%Y')
-        }
-        return {date,time}
-    }
-    const getDuration= ()=>{
-        let duration = ''
-        if (rideTime) {
-            const hours = Math.floor(rideTime / 3600)
-            const minutes = Math.floor((rideTime % 3600) / 60)
-            if (hours > 0)
-                duration = `${hours}h ${minutes}min`
-            else
-                duration = `${minutes}min`
-        }
-        return duration
-    }
-
-    const formatted = (v) => {
-        const {value,unit} = v
-        return `${value}${unit}`
-    }
-
-    const getElevationText = (details)=>{
-        try {
-            const elevation = details ? details.totalElevation : totalElevation
-            if (elevation==undefined)
-                return ''
-
-            if (typeof elevation === 'number')
-                return elevation && !isNaN(elevation) ? `${(elevation).toFixed(0)}m ` : '';
-
-            if (elevation.value!==undefined && elevation.unit) {
-                return formatted(elevation)
-            }
-        }
-        catch {}
-        return ''
-
-    }
-
-    const getDistanceText = () => {
-        try {
-            if (rideDistance===undefined || rideDistance===null)
-                return ''
-
-            if (typeof rideDistance === 'number')
-                return rideDistance && !isNaN(rideDistance) ? `${(rideDistance / 1000).toFixed(1)}km ` : '';        
-            if (rideDistance.value!==undefined && rideDistance.unit) {
-                return formatted(rideDistance)
-            }
-
-        }
-        catch {}
-        return ''
-    }
-
-                                    
-    const onContainerClicked = (e) =>{        
-        if (onClick)
-            onClick(id)
-    }
-
-    useEffect( ()=> {
-        if (initialized.current)
-            return
-
-        if (!outsideFold) {
-            setHoverObserver(containerRef)
-        }
-
-        if (!logs && !outsideFold) {
-            if (id!==undefined) {
-                setObserver( getDetails(id))
-            }
-        }
-        initialized.current = !outsideFold
-    },[getDetails, id, logs, outsideFold, setHoverObserver])
-
-    // reduce rendering time when commponent is not visible (below fold), just reserve required space
-    if (outsideFold) {
-        return (
-            <AppThemeProvider>
-                <OutsideFold opacity='0.1'  height={'7vh'} onClick={ onContainerClicked}></OutsideFold>        
-            </AppThemeProvider>
-        )
-    }
-
-    if (!activityInfo || !activityInfo.summary) 
-        return null
-
-
-    const TitleElement = ({text}) => <Title>{text}</Title>
-
-    const title = getTitle()
-    const {date,time} = getDateTime()
-    const duration = getDuration()
-    const distanceText = getDistanceText()
-    const elevationText = getElevationText()
-    const ftp = getFtp()
-    
-
-    return (
-        <AppThemeProvider>
-            <Container  height={'7vh'} onClick={ onContainerClicked} ref={containerRef}>
-                <ImageContainer>
-                        <Dynamic observer={observer} events={'loaded,updated'} prop='activity' >
-                            <ActivityPreview activity={ activityInfo?.details } ftp={ftp}/>
-                        </Dynamic> 
-                </ImageContainer>
-                <DataContainer>
-                    <Row height='3.5vh' width='100%'> 
-                    <Dynamic observer={observer} events={'loaded,updated'} prop='text' transform={getTitle} >
-                            <TitleElement text={title}/>
-                        </Dynamic> 
-                        
-                    </Row>
-                    <Row height='3.5vh' width='100%' position='relative'> 
-                        <Column width='1vw'/>
-                        <Column width='10ch' justify='center' align='center'> <Text text={date} /> </Column>
-                        <Column width='1vw'/>
-                        <Column width='5ch' justify='center' align='center'> <Text text={time} /> </Column>
-                        <Column width='1vw'/>
-                        <Column width='10ch' justify='center' align='center'> <Text text={duration} /> </Column>
-                    </Row>
-
-                </DataContainer>
-
-                <DetailsContainer>
-                    <DataContainer width='3vw' justify='end'    align='center' >
-                            <Dynamic observer={hoverObserverRef.current} event='hovered' prop='visible'>
-                                <DeleteIcon onClick={onDeleteHandler} logContext={{id,title}} />
-                            </Dynamic>
-                    </DataContainer>
-                    <DataContainer width='5vw' justify='start' align='center'>
-                            <Row><Image src='images/length.gif' color='white' width='20px' /></Row>
-                            <Row><ImageLabel text='Distance' /></Row>
-                            <Row><Text align='center' text={distanceText} /></Row>
-                    </DataContainer>
-
-                    <DataContainer width='5vw' justify='start' align='center'>
-                            <Row><Image src='images/up.gif' color='white' width='20px' /></Row>
-                            
-                            <Row><ImageLabel text='Elevation' /></Row>
-                            <Row>
-                                <Dynamic observer={observer} events='loaded,updated' transform={getElevationText} prop='text'>
-                                    <Text align='center' text={elevationText} />
-                                </Dynamic>
-                            </Row>
-                    </DataContainer>
-
-                </DetailsContainer>
-
-
-            </Container>        
-        </AppThemeProvider>
-    )
+const DETAILS_TIMEOUT_MS = 10000
+const finite = value => value !== null && value !== undefined && value !== '' && Number.isFinite(Number(value))
+const formatDuration = seconds => {
+    if (!finite(seconds)) return '—'
+    const hours = Math.floor(seconds / 3600)
+    const minutes = Math.floor((seconds % 3600) / 60)
+    return hours ? `${hours}h ${minutes}min` : `${minutes}min`
 }
 
+const ActivityListItemContent = ({ onClick, onDelete, activityInfo, outsideFold }) => {
+    const service = useActivityList()
+    const apps = useAppsService()
+    const settings = useUserSettings()
+    const converter = useUnitConverter()
+    const [logger] = useState(() => new EventLogger('ActivityListItem'))
+    const { summary, details: suppliedDetails } = activityInfo ?? {}
+    const id = summary?.id
+    const [loaded, setLoaded] = useState(null)
+    const [failedId, setFailedId] = useState(null)
+    const details = loaded?.id === id ? { ...suppliedDetails, ...loaded?.details } : suppliedDetails
+    const suppliedLogs = suppliedDetails?.logs
+    const loadedId = loaded?.id
 
+    useEffect(() => {
+        if (outsideFold || id == null || Array.isArray(suppliedLogs) || loadedId === id) return
+        setFailedId(null)
+        let active = true
+        let observer
+        const timeout = setTimeout(() => {
+            if (active) {
+                setFailedId(id)
+                logger.logEvent({ message: 'activity details timed out', activityId: id })
+            }
+        }, DETAILS_TIMEOUT_MS)
+        const onLoaded = next => {
+            if (!active) return
+            clearTimeout(timeout)
+            setLoaded({ id, details: next })
+        }
+        const onError = () => {
+            if (!active) return
+            clearTimeout(timeout)
+            setFailedId(id)
+        }
+        try {
+            observer = service.getActivityDetails(id)
+            if (!observer?.on) onError()
+            else {
+                observer.on('loaded', onLoaded)
+                observer.on('updated', onLoaded)
+                observer.on('load-error', onError)
+            }
+        } catch { onError() }
+        return () => {
+            active = false
+            clearTimeout(timeout)
+            observer?.off?.('loaded', onLoaded)
+            observer?.off?.('updated', onLoaded)
+            observer?.off?.('load-error', onError)
+        }
+    }, [outsideFold, id, suppliedLogs, service, loadedId, logger])
+
+    if (outsideFold) return <ActivityListItemView outsideFold />
+    if (!summary) return null
+
+    const formatMetric = (value, dimension, digits) => {
+        if (value?.value != null && value.unit) return `${value.value} ${value.unit}`
+        if (!finite(value)) return '—'
+        const converted = converter.convert(Number(value), dimension, { digits })
+        const unit = converter.getUnit(dimension)
+        return finite(converted) && unit ? `${Number(converted).toFixed(digits)} ${unit}` : '—'
+    }
+    const start = summary.startTime != null ? new Date(summary.startTime) : null
+    const validStart = start && !Number.isNaN(start.getTime())
+    const dateTime = validStart ? `${formatDateTime(start, '%d.%m.%Y')} · ${formatDateTime(start, '%H:%M')}` : 'Date unavailable'
+    const uploads = (Array.isArray(summary.uploadStatus) ? summary.uploadStatus : [])
+        .filter(upload => upload?.service && ['success', 'failure'].includes(upload.status))
+        .map(upload => {
+            let name = upload.service
+            try { name = apps.getName(upload.service) } catch {}
+            return { ...upload, name }
+        })
+    let ftp = 200
+    try { ftp = settings.get('user')?.ftp ?? 200 } catch {}
+    const logs = Array.isArray(details?.logs) ? details.logs.filter(log => log && finite(log.time) && finite(log.power)) : []
+    const activity = logs.length ? { ...details, logs } : undefined
+    const loading = id != null && !Array.isArray(suppliedLogs) && loadedId !== id && failedId !== id
+
+    const onOpen = (source, key) => {
+        if (source === 'card') logger.logEvent({ message: 'tile clicked', activityId: id, eventSource: 'user' })
+        if (source === 'keyboard') logger.logEvent({ message: 'key pressed', key, activityId: id, eventSource: 'user' })
+        onClick?.(id)
+    }
+
+    return <ActivityListItemView
+        id={id} title={summary.title || 'Untitled activity'} dateTime={dateTime}
+        dateTimeISO={validStart ? start.toISOString() : undefined}
+        duration={formatDuration(summary.rideTime)} distance={formatMetric(summary.distance ?? details?.distance, 'distance', 1)}
+        ascent={formatMetric(summary.totalElevation ?? details?.totalElevation, 'elevation', 0)}
+        uploads={uploads} activity={activity} ftp={ftp} loading={loading}
+        onOpen={onClick ? onOpen : undefined} onDelete={onDelete} />
+}
+
+export const ActivityListItem = props => <ErrorBoundary key={props.activityInfo?.summary?.id} hideOnError>
+    <ActivityListItemContent {...props} />
+</ErrorBoundary>
