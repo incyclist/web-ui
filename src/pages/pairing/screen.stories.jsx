@@ -1,6 +1,7 @@
 import React from 'react';
 import { PairingScreen } from './screen';
-import { helperNoTrainer, helperTrainerUnavailable } from '../../components/modules/PairingInfo/PairingHelperPanel/PairingHelperPanel.mock';
+import { helperNoTrainer, helperTrainerUnavailable, helperTrainerUnavailableWithFallback } from '../../components/modules/PairingInfo/PairingHelperPanel/PairingHelperPanel.mock';
+import { conflictFromDetection } from '../../components/modules/PairingInfo/ConflictStepDialog/ConflictStepDialog.mock';
 
 export default {
     component: PairingScreen,
@@ -159,4 +160,50 @@ TrainerUnreachableHelperOpen.args = {
     status: trainerUnreachable,
     helper: helperTrainerUnavailable('trainer_unavailable'),
     buttons: [ { label:'Skip', primary:true } ],
+};
+
+const powerMeter = tile({ title:'Power', capability:'power', deviceName:'Assioma Duo', connectState:'connected', unit:'W', value:180 })
+
+// the trainer can't be reached, but a separate power meter is connected: the helper offers to ride on it
+export const TrainerUnreachableFallbackOffered = Template.bind({});
+TrainerUnreachableFallbackOffered.args = {
+    capabilities: { ...trainerUnreachableRows(true), top: [ trainerUnreachableRows(true).top[0], powerMeter, trainerUnreachableRows(true).top[2] ] },
+    interfaces,
+    status: trainerUnreachable,
+    helper: helperTrainerUnavailableWithFallback(),
+    buttons: [ { label:'Skip', primary:true } ],
+};
+
+// the rider chose to ride on the power meter: the trainer's tiles are dimmed, a click on Resistance takes it back
+export const FallbackActive = Template.bind({});
+FallbackActive.args = {
+    capabilities: {
+        top: [
+            tile({ title:'Resistance', capability:'control', deviceName:'Tacx Flux', connectState:'failed', trainerRole:'trainer', roleLabel:'Your trainer',
+                footerText:{ full:'Tap to use again', short:'Tap to use again' }, dimmed:true }),
+            powerMeter,
+            tile({ title:'Speed', capability:'speed', deviceName:'Tacx Flux', connectState:'failed', footerText:{ full:'Not used', short:'Not used' }, dimmed:true }),
+        ],
+        bottom: [
+            tile({ title:'Heartrate', capability:'heartrate', helpText:'Heart-rate monitor', emptyFooter:'Optional', role:'optional' }),
+            tile({ title:'Cadence', capability:'cadence', deviceName:'Tacx Flux', connectState:'failed', footerText:{ full:'Not used', short:'Not used' }, dimmed:true, role:'optional' }),
+            tile({ title:'Controller', capability:'app_control', helpText:'Remote buttons, e.g. Zwift Play', emptyFooter:'Optional', role:'optional' }),
+        ],
+        rowLabels,
+    },
+    interfaces,
+    status: { id:'S2', dot:'green', text:'Ready to ride' },
+    helper: { ...helperTrainerUnavailable(), phase:'hidden' },
+    buttons: [ { label:'OK', primary:true } ],
+};
+
+// a device found by the search wants slots that already hold other devices: a dialog over the page
+export const ConflictFound = Template.bind({});
+ConflictFound.args = {
+    capabilities: paired,
+    interfaces,
+    readyToStart: true,
+    status: { id:'S2', dot:'green', text:'Ready to ride' },
+    pendingConflict: conflictFromDetection({ queued: 1 }),
+    buttons: [ { label:'OK', primary:true } ],
 };

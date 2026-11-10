@@ -82,7 +82,7 @@ const Value = styled.div`
 
 // The line that says how the tile relates to the trainer sits above the device name on the
 // trainer's own tile ("Your trainer"), below it on a tile the trainer fills ("via your trainer")
-export const SelectedDevice = ( {title, capability, value, unit, deviceName, imageUrl, connectState, disabled, footer, footerText, stateText, roleLabel, trainerRole, awaited, compact, onClick,onUnselect, onUse }) => {
+export const SelectedDevice = ( {title, capability, value, unit, deviceName, imageUrl, connectState, disabled, dimmed, footer, footerText, stateText, roleLabel, trainerRole, awaited, compact, onClick,onUnselect, onUse }) => {
 
     const onContainerClicked = (e) =>{
         if (onClick)
@@ -100,9 +100,12 @@ export const SelectedDevice = ( {title, capability, value, unit, deviceName, ima
     }
 
     // T16: switched off by the rider, but the device is still remembered - shown muted, with no
-    // value, and the toggle in the off position (onUse turns it back on, with no new scan)
+    // value, and the toggle in the off position (onUse turns it back on, with no new scan).
+    // Dimmed: kept, but not used while the ride falls back to another device - the same muted look
+    // and no value, but no toggle at all; a click on the tile calls onClick like on any other tile
+    const muted = disabled || dimmed
     const failed = connectState==='failed'
-    const background = disabled ? style.searching.background : failed ? style.failed.background : style.selected.background
+    const background = muted ? style.searching.background : failed ? style.failed.background : style.selected.background
 
     const role = roleLabel ? <RoleLabel>{roleLabel}</RoleLabel> : null
     const roleFirst = trainerRole==='trainer'
@@ -115,7 +118,7 @@ export const SelectedDevice = ( {title, capability, value, unit, deviceName, ima
                 <div>{deviceName}</div>
                 {roleFirst ? null : role}
             </DeviceName>
-            {!disabled && value!==undefined && value!==null && !isNaN(value)?
+            {!muted && value!==undefined && value!==null && !isNaN(value)?
             <Info>
                 <Value>{value}</Value>
                 <Unit>{unit}</Unit>
@@ -123,7 +126,7 @@ export const SelectedDevice = ( {title, capability, value, unit, deviceName, ima
             : null}
 
 
-            <ConnectionStatus state={connectState} disabled={disabled} footer={footer} footerText={footerText} stateText={stateText} compact={compact} onUnselect={onUnselectClicked} onUse={onUseClicked} />
+            <ConnectionStatus state={connectState} disabled={disabled} dimmed={dimmed} footer={footer} footerText={footerText} stateText={stateText} compact={compact} onUnselect={onUnselectClicked} onUse={onUseClicked} />
             {awaited && <AwaitedFrame data-testid="awaited-frame" />}
         </Container>
     )
