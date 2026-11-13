@@ -13,14 +13,16 @@ export const UrlLink = (props) => {
     const {text,url,onClick,onOpened,logger = new EventLogger('Incyclist')} = props;
 
     const onOpen = (e) => {
-        e.preventDefault(); 
         if (logger)
             logger.logEvent({message:'external link clicked',url,eventSource:'user'})
 
-        if (onClick && typeof(onClick)==='function')
+        if (onClick && typeof(onClick)==='function') {
+            e.preventDefault();
             return onClick(url)
+        }
 
         if ( hasFeature('shell.openExternal')) {
+            e.preventDefault();
             api.shell.openExternal(url)
             if (onOpened)
                 onOpened()
@@ -28,6 +30,6 @@ export const UrlLink = (props) => {
     }
 
     return <AppThemeProvider>    
-        <Anchor onClick={ (e)=> { onOpen(e) } } href='#' target='_blank'>{text||url}</Anchor>
+        <Anchor onClick={ (e)=> { onOpen(e) } } href={url} target='_blank' rel='noopener noreferrer'>{text||url}</Anchor>
     </AppThemeProvider>
 }

@@ -8,6 +8,7 @@ import { EditNumber,Button, Row, CheckBox, EditText, Column,Text, LinkButton} fr
 import { DynamicCoachList,DynamicCoachEdit } from '../../Coaches';
 import { RIDE_MODES, RIDEVIEW } from './consts';
 import { isValidGoogleMapsKeyFormat, maskGoogleMapsKey } from './validations';
+import { MapsApiKeyInfo } from './MapsApiKeyInfo';
 
 export const ContentArea = styled.div`
     position:relative;
@@ -313,6 +314,7 @@ export const RideSettingsView = ( props)=> {
                         <EditText label='Maps API Key'  labelPosition='before' labelWidth='15ch' maxLength={39}
                             validate={validateMapsApiKey} value={mapsApiKey} noLog onValueChange={onMapsApiKeyChanged}
                             autoFocus={focusMapsKey} mask={maskGoogleMapsKey} />
+                        <MapsApiKeyInfo />
                     </Row>
                     <HintIndent>
                         <Hint>
