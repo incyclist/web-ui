@@ -2,13 +2,12 @@ import React, { useEffect, useLayoutEffect, useState } from 'react'
 import styled from 'styled-components'
 import { autoUpdate, flip, FloatingFocusManager, FloatingPortal, offset, shift,
     useClick, useDismiss, useFloating, useInteractions, useRole } from '@floating-ui/react'
-import { Pill } from '../../../atoms/Pill'
-import { UrlLink } from '../../../atoms/Links/UrlLink'
+import { Button, Pill, UrlLink } from '../../../atoms'
 
 const supportsPopover = typeof HTMLElement !== 'undefined'
     && 'popover' in HTMLElement.prototype && typeof HTMLElement.prototype.showPopover === 'function'
 
-const InfoButton = styled.button`
+const InfoButton = styled(Button)`
     background: none;
     border: none;
     padding: 0;
@@ -82,8 +81,8 @@ export const MapsApiKeyInfo = () => {
     }, [isOpen, elements.floating])
 
     return <>
-        <InfoButton ref={refs.setReference} type='button'
-            {...getReferenceProps({ 'aria-label': 'About Maps API Key' })}>
+        <InfoButton ref={refs.setReference} id='maps-api-key-info' noBorder no3D height='auto'
+            {...getReferenceProps({ 'aria-label': 'Info about Maps API Key' })}>
             <Pill status='info' text='Info' fontSize='max(12px, 1.3vh)' />
         </InfoButton>
         {isOpen ? <FloatingPortal>
