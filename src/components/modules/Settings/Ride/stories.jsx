@@ -98,3 +98,11 @@ MapsKeySavedPendingRestart.args = {
     mapsApiKey: 'AIzaSyB0123456789012345678901234567890',
     mapsKeyPendingRestart: true,
 }
+
+export const MapsApiKeyHelp = Template.bind({});
+MapsApiKeyHelp.args = {
+    rideView: RIDEVIEW.STREETVIEW,
+}
+MapsApiKeyHelp.play = async ({ canvas, userEvent }) => {
+    await userEvent.click(canvas.getByRole('button', { name: 'Info about Maps API Key' }))
+}
