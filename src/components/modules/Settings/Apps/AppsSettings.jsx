@@ -1,107 +1,96 @@
 import { useAppsService } from "incyclist-services"
-import React,{ useEffect, useState } from "react"
-import styled from "styled-components";
-import { AppThemeProvider } from "../../../../theme";
-import { Row  } from "../../../atoms";
-import { AppsItem } from "../../../molecules/Apps/AppsItem";
-import { StravaSettings } from "./Strava";
-import { KomootSettings } from "./Komoot/KomootSettings";
-import {IntervalsSettings} from './Intervals/IntervalsSettings'
-
+import React, { useCallback, useEffect, useRef, useState } from "react"
+import styled from "styled-components"
+import { EventLogger } from "gd-eventlog"
+import { AppThemeProvider } from "../../../../theme"
+import { AppsItem } from "../../../molecules/Apps/AppsItem"
+import { KomootSettings } from "./Komoot/KomootSettings"
+import { OAuthAppSettings } from "./OAuthAppSettings"
 
 export const ContentArea = styled.div`
     position:relative;
     width: ${props=> props.width || 'calc(100% - 2vw)'};
-    // height: ${props=>props.height || 'calc(100% - 2vh)'};
     text-align: left ;
     margin:auto;
     display: flex;
     flex-direction:column;
-    padding-left: 1vw;
-    padding-right: 1vw;
-    padding-top: 1vh;
-    padding-bottom: 1vh;
     padding:1vw;
     top:0;
     left:0;
     background: ${props => props.background || props.theme.dialogContent.background || 'white'};
 `;
 
-const getMapping = (service) => {
-    const mapping = {
-        strava: StravaSettings,
-        komoot: KomootSettings,
-        intervals: IntervalsSettings
-    }
-    const C = mapping[service]
-    return C
+const Empty = styled.div`
+    padding: 1vh 1vw;
+`
+
+// Apps that are connected through an image button instead of a text button
+const CONNECT_IMAGES = {
+    strava: 'images/btn_strava_connectwith_orange.svg'
 }
 
-const SettingsPage = ( {service,onBack} ) => {
+const renderApp = (app) => {
+    if (app.key === 'komoot')
+        return <KomootSettings />
 
-    const C = getMapping(service)
-    if (!C)
-        return null
-
-    return <C onBack={onBack}/>
-
+    return <OAuthAppSettings appKey={app.key} name={app.name} connectImage={CONNECT_IMAGES[app.key]} />
 }
-
 
 export const AppsSettings = ( ) => {
     const service = useAppsService()
-    const [state,setState] = useState(null)
+    const logger = useRef(new EventLogger('AppsSettings')).current
+
+    const [apps, setApps] = useState(null)
+    const [expandedKey, setExpandedKey] = useState(null)
+
+    // keeps the connection status of the entries up to date, whenever an app was (dis)connected
+    const refresh = useCallback( ()=>{
+        setApps( service.openSettings() )
+    },[service])
 
     useEffect( ()=>{
-        if (state?.initialized)
-            return;
+        refresh()
+        service.on('connected', refresh)
+        service.on('disconnected', refresh)
 
-        const apps = service.openSettings()
-        
+        return ()=>{
+            service.off('connected', refresh)
+            service.off('disconnected', refresh)
+        }
+    },[service, refresh])
 
-        setState({apps, initialized:true})
-    },[service, state])
-
-    const onClick=(key) => {
-        setState( current=> ({...current, selected:key}) )
+    const onToggle = (key) => {
+        const expanded = expandedKey!==key
+        logger.logEvent({message:'app toggled', app:key, expanded, eventSource:'user'})
+        setExpandedKey( expanded ? key : null)
     }
 
-    const onBack=()=>{
-        setState( current=> ({...current, selected:null}) )
-    }
+    if (!apps)
+        return null
 
-    if (!state?.initialized )
-        return null;
-
-    if (state.selected && getMapping(state.selected))
-        return <SettingsPage service={state.selected} onBack={onBack}/>
-    
-    return <AppsSettingsView apps={state.apps} onClick={onClick}/>
-    
-
-
+    return <AppsSettingsView apps={apps} expandedKey={expandedKey} onToggle={onToggle} renderApp={renderApp}/>
 }
 
-export const AppsSettingsView = ({apps,onClick}) => {
+/**
+ * List of all apps (same UX as in the mobile app): every entry shows the name and the connection status
+ * and expands to the settings of the app. Only one entry is expanded at a time.
+ */
+export const AppsSettingsView = ({apps, expandedKey, onToggle, renderApp}) => {
 
-    const onClickHandler = (name) => {
-        if (onClick && typeof onClick==='function') {
-            onClick(name)
-        }
-    }
-    
     return (
         <AppThemeProvider>
             <ContentArea>
-                { apps?.length ? 
-                    apps.map( (app) => <Row key={app.key}>
-                        <AppsItem {...app} onClick={()=>onClickHandler(app.key)} />
-                    </Row> ) :
-                    <Row>No Apps available</Row>
+                { apps?.length ?
+                    apps.map( (app) =>
+                        <AppsItem key={app.key} name={app.name} isConnected={app.isConnected}
+                            expanded={expandedKey===app.key}
+                            onClick={()=>onToggle?.(app.key)}>
+                            {renderApp?.(app)}
+                        </AppsItem>
+                    ) :
+                    <Empty>No Apps available</Empty>
                 }
-
             </ContentArea>
         </AppThemeProvider>
     )
-    
 }

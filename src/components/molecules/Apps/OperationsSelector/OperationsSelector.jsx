@@ -1,14 +1,16 @@
 import React from 'react'
-import { CheckBox, Column, Row, Text, View } from "../../../atoms"
+import { CheckBox, Column, Row } from "../../../atoms"
+
+// same wording as in the mobile app
+const textMapping = {
+    ActivityUpload: 'Activity Upload',
+    WorkoutUpload: 'Workout Upload',
+    WorkoutDownload: 'Workout Download',
+    RouteDownload: 'Route Download',
+    ActivityDownload: 'Activity Download'
+}
 
 export const OperationsSelector = ({operations, onChanged})=> {
-    const textMapping = {
-        ActivityUpload: 'Upload Activities',
-        WorkoutUpload: 'Upload Workouts',
-        WorkoutDownload: 'Download Workouts',
-        ActivityDownload: 'Download Activities as Routes',
-        RouteDownload: 'Download Planned Routes'
-    }
 
     const onValueChange = ( operation, checked)=> {
         if (onChanged) {
@@ -21,21 +23,13 @@ export const OperationsSelector = ({operations, onChanged})=> {
     if (!options.length)
         return null
 
-    return <View padding='1vh 1vw '>
-        <Row >
-            <Text>Used to:</Text>
-        </Row>
-        <Row>
-            <Column>
-            {options.map( op=>
-                <Row>
-                    <CheckBox key={op?.operation} label={textMapping[op?.operation]} checked={op.enabled} 
-                            onValueChange={ (checked)=>{onValueChange(op.operation,checked)}} 
-                            />
-                </Row>
-            )}
-            </Column>
-        </Row>
-
-    </View>
+    return <Column>
+        {options.map( op=>
+            <Row key={op?.operation}>
+                <CheckBox label={textMapping[op?.operation] ?? op?.operation} checked={op.enabled}
+                    onValueChange={ (checked)=>{onValueChange(op.operation,checked)}}
+                    />
+            </Row>
+        )}
+    </Column>
 }
