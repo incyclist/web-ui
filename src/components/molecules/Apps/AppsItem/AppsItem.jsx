@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useId } from 'react'
 import styled from 'styled-components'
 import { ChevronRightIcon } from '@primer/octicons-react'
 import { AppThemeProvider } from '../../../../theme'
@@ -7,27 +7,41 @@ const Container = styled.div`
     border-bottom: 1px solid rgba(128, 128, 128, 0.4);
 `
 
-const Header = styled.div`
+// The header is a native button (accordion pattern): it gets keyboard handling (Enter, Space) and focus behaviour from the browser.
+// It is deliberately not the Button atom: that one is an action button (filled, 3D hover), whereas this is a list row that discloses a section
+const Header = styled.button`
     display: flex;
     align-items: center;
     justify-content: space-between;
+    width: 100%;
+    box-sizing: border-box;
+    margin: 0;
     padding: 1.6vh 1vw;
+    border: none;
+    border-radius: 0;
+    font: inherit;
     font-size: 2.4vh;
     font-weight: 500;
+    text-align: left;
     cursor: pointer;
     user-select: none;
     color: ${props => props.theme.list.normal.text};
     background: ${props => props.theme.list.normal.background};
 
-    &:hover,
+    &:hover {
+        color: ${props => props.theme.list.hover.text};
+        background: ${props => props.theme.list.hover.background};
+    }
+
     &:focus-visible {
         color: ${props => props.theme.list.hover.text};
         background: ${props => props.theme.list.hover.background};
-        outline: none;
+        outline: 2px solid currentColor;
+        outline-offset: -4px;
     }
 `
 
-const Name = styled.div`
+const Name = styled.span`
     display: flex;
     align-items: center;
 `
@@ -59,24 +73,21 @@ const Body = styled.div`
  */
 export const AppsItem = ({ name, isConnected = false, expanded = false, onClick, children }) => {
 
-    const onKeyDown = (e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault()
-            onClick?.()
-        }
-    }
+    const id = useId()
+    const headerId = `${id}-header`
+    const panelId = `${id}-panel`
 
     return <AppThemeProvider>
         <Container>
-            <Header role='button' tabIndex={0} aria-expanded={expanded} onClick={() => onClick?.()} onKeyDown={onKeyDown}>
+            <Header id={headerId} type='button' aria-expanded={expanded} aria-controls={expanded ? panelId : undefined} onClick={() => onClick?.()}>
                 <Name>
                     <span>{name}</span>
                     <Status role='img' aria-label={isConnected ? 'Connected' : 'Not connected'} $connected={isConnected} />
                 </Name>
-                <Chevron $expanded={expanded}><ChevronRightIcon size={24} /></Chevron>
+                <Chevron $expanded={expanded} aria-hidden='true'><ChevronRightIcon size={24} /></Chevron>
             </Header>
 
-            {expanded ? <Body>{children}</Body> : null}
+            {expanded ? <Body id={panelId} role='region' aria-labelledby={headerId}>{children}</Body> : null}
         </Container>
     </AppThemeProvider>
 }

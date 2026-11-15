@@ -6,6 +6,31 @@ import { useUnmountEffect } from '../../../../../hooks'
 
 const SERVICE = 'komoot'
 
+/**
+ * Reports the changes of the operations that were made while the settings were open (other services are interested in them).
+ *
+ * @param prev settings when the panel was opened
+ * @param current settings when the panel is closed
+ */
+const syncOperations = (service, prev, current) => {
+    const prevOperations = prev?.operations ?? []
+    const currentOperations = current?.operations ?? []
+
+    if (prev?.isConnected && !current?.isConnected) {
+        prevOperations.forEach(op => { service.enableOperation(SERVICE, op.operation, false, true) })
+    }
+    else if (!prev?.isConnected && current?.isConnected) {
+        currentOperations.filter(op => op.enabled).forEach(op => { service.enableOperation(SERVICE, op.operation, true, true) })
+    }
+    else if (current?.isConnected) {
+        currentOperations.forEach((op, idx) => {
+            if (op.enabled !== prevOperations[idx]?.enabled)
+                service.enableOperation(SERVICE, op.operation, op.enabled, true)
+        })
+    }
+    // not connected when opened and not connected when closed (e.g. connected and disconnected again): nothing has changed
+}
+
 export const KomootSettings = ()=> {
 
     const [connecting,setConnecting] = useState(false)
@@ -53,7 +78,7 @@ export const KomootSettings = ()=> {
 
     const onDisconnect = ()=>{
         service.disconnect(SERVICE)
-        setSettings( {isConnected:false})
+        setSettings( current=> ({...current, isConnected:false}))
     }
 
     const onOperationsChanged = (operation, enabled) => {
@@ -64,32 +89,7 @@ export const KomootSettings = ()=> {
     }
 
     useUnmountEffect( ()=>{
-
-        const prev = initialSettingsRef.current
-        const current = settings
-
-        if (prev.isConnected && !current.isConnected) {
-            const {operations} = prev
-            operations.forEach( op=> {  service.enableOperation(SERVICE,op.operation,false,true)})
-        }
-        else if (!prev.isConnected && current.isConnected) {
-            const {operations} = current
-            operations.forEach( op=> {  
-                if (op.enabled)
-                    service.enableOperation(SERVICE,op.operation,true,true
-                )})
-        }
-        else {
-            const {operations} = current
-            operations.forEach( (op,idx)=> {  
-                const prevOp = prev.operations[idx]
-                if (op.enabled!==prevOp.enabled)
-                    service.enableOperation(SERVICE,op.operation,op.enabled,true
-                )})
-
-        }
-        
-
+        syncOperations(service, initialSettingsRef.current, settings)
     })
 
     return <>

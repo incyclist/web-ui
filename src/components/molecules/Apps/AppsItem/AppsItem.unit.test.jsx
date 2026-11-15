@@ -44,22 +44,45 @@ describe('AppsItem', () => {
         expect(onClick).toHaveBeenCalledTimes(1)
     })
 
-    test.each(['Enter', ' '])('calls onClick on keyboard key "%s"', (key) => {
-        const onClick = vi.fn()
-        render(<AppsItem name='Strava' onClick={onClick} />)
+    // keyboard handling (Enter, Space) is provided by the browser for a native button
+    test('the header is a native button', () => {
+        render(<AppsItem name='Strava' />)
 
-        fireEvent.keyDown(screen.getByRole('button'), { key })
-
-        expect(onClick).toHaveBeenCalledTimes(1)
+        const header = screen.getByRole('button')
+        expect(header.tagName).toBe('BUTTON')
+        expect(header.getAttribute('type')).toBe('button')
     })
 
-    test('ignores other keys', () => {
-        const onClick = vi.fn()
-        render(<AppsItem name='Strava' onClick={onClick} />)
+    test('the expanded settings are a region that is labelled by and controlled from the header', () => {
+        render(<AppsItem name='Strava' expanded={true}><div>settings</div></AppsItem>)
 
-        fireEvent.keyDown(screen.getByRole('button'), { key: 'a' })
+        const header = screen.getByRole('button')
+        const region = screen.getByRole('region')
 
-        expect(onClick).not.toHaveBeenCalled()
+        expect(region.getAttribute('id')).toBe(header.getAttribute('aria-controls'))
+        expect(region.getAttribute('aria-labelledby')).toBe(header.getAttribute('id'))
+        expect(region.textContent).toContain('settings')
+    })
+
+    test('collapsed: there is no region and nothing is controlled', () => {
+        render(<AppsItem name='Strava' />)
+
+        expect(screen.queryByRole('region')).toBeNull()
+        expect(screen.getByRole('button').hasAttribute('aria-controls')).toBe(false)
+    })
+
+    test('every entry has its own ids', () => {
+        render(<><AppsItem name='A' expanded={true} /><AppsItem name='B' expanded={true} /></>)
+
+        const [a, b] = screen.getAllByRole('button')
+        expect(a.getAttribute('id')).not.toBe(b.getAttribute('id'))
+        expect(a.getAttribute('aria-controls')).not.toBe(b.getAttribute('aria-controls'))
+    })
+
+    test('the name of the button contains the name of the app', () => {
+        render(<AppsItem name='Strava' isConnected={true} />)
+
+        expect(screen.getByRole('button', { name: /Strava/ })).toBeDefined()
     })
 
     test('does not fail without onClick', () => {

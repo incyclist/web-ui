@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { EventLogger } from 'gd-eventlog'
 import { useAppsService } from 'incyclist-services'
 import { hasFeature } from '../../../../utils/electron/integration'
@@ -15,6 +15,23 @@ export const OAuthAppSettings = ({ appKey, name, connectImage }) => {
 
     const [connecting, setConnecting] = useState(false)
     const [settings, setSettings] = useState(() => service.openAppSettings(appKey))
+
+    // The panel is closed (and opened again) while a connection can still be in progress, so the state of the service
+    // has to be followed: otherwise a connection that finishes while the panel was closed is not shown
+    useEffect(() => {
+        const refresh = (app) => {
+            if (app === appKey)
+                setSettings(current => ({ ...current, ...service.openAppSettings(appKey) }))
+        }
+
+        service.on('connected', refresh)
+        service.on('disconnected', refresh)
+
+        return () => {
+            service.off('connected', refresh)
+            service.off('disconnected', refresh)
+        }
+    }, [service, appKey])
 
     const onConnect = async () => {
         if (!hasFeature('oauth'))
@@ -45,7 +62,7 @@ export const OAuthAppSettings = ({ appKey, name, connectImage }) => {
 
     const onDisconnect = () => {
         service.disconnect(appKey)
-        setSettings({ isConnected: false })
+        setSettings(current => ({ ...current, isConnected: false }))
     }
 
     const onOperationsChanged = (operation, enabled) => {
