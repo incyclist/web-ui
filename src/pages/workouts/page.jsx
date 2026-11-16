@@ -9,6 +9,7 @@ import { getResponsiveHorizontal } from "./utils"
 import { useWindowDimensions, usePageLogger } from "../../hooks"
 import { usePageService } from "../../hooks/pages"
 import { WorkoutDetailsDialog } from "../../components/modules/workout/selection/WorkoutDetails"
+import { ScheduledWorkoutPrompt } from "../../components/modules/workout/ScheduledWorkoutPrompt"
 import { Button, CheckBox, Column, Row, Overlay } from "../../components/atoms"
 
 const PAGE_ID = 'WorkoutsList'
@@ -136,6 +137,8 @@ export const WorkoutsPage = () => {
             onSlideChanged={onSlideChanged} />
 
         {detailWorkoutId ? <WorkoutDetailsDialog id={detailWorkoutId} /> : null}
+
+        <ScheduledWorkoutPrompt />
 
         {createInfo ? <CreateInfoOverlay markAsSeenDefault={createInfo.markAsSeenDefault}
             onClose={(markAsSeen) => service.onCreateInfoClosed(markAsSeen)} /> : null}

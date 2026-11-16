@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { useDevicePairing, useFreeRideService, useRouteList } from "incyclist-services";
+import { getRoutesPageService, useDevicePairing, useFreeRideService, useRouteList } from "incyclist-services";
 import { useNavigate  } from "react-router";
 import { RouteListScreen } from "./screen";
 import { usePageLogger, useUnmountEffect } from "../../hooks";
@@ -8,9 +8,20 @@ import { RouteDetailsDialog } from "../../components/modules/routeSelection/Rout
 import { FreeRideSettingsDialog } from "../../components/modules/routeSelection/FreeRideSettings";
 import { ImportRoutesDialog } from "../../components/modules/routeSelection/ImportRoutesDialog";
 import { ErrorBoundary } from "../../components/atoms/ErrorBoundary";
+import { ScheduledWorkoutPrompt } from "../../components/modules/workout/ScheduledWorkoutPrompt";
 import { clearPanelFilters, countActiveFilters, getNoMatchHint, getRouteCountText, hasActiveFilters, removeFilter } from "./utils";
 
 const PAGE_ID = 'Routes'
+
+/** id of the workout currently attached to the route, if any (never throws) */
+const readAttachedWorkoutId = (routeId) => {
+    try {
+        return getRoutesPageService().getRouteDetailsProps(routeId)?.attachedWorkout?.id
+    }
+    catch {
+        return undefined
+    }
+}
 
 /** cards of a given type that are not part of the searchable route set (Free Ride, in-flight imports) */
 const findSpecialCards = (service, type) => {
@@ -172,7 +183,8 @@ export const RouteListPage =  () => {
         refStarting.current = true
 
         const {id,title,videoUrl,type} = settings??{}
-        logger.logEvent( {message:'Attempting to start a ride',id,title,videoUrl,type,readyToStart:pairing.isReadyToStart(), } )
+        const workoutId = readAttachedWorkoutId(id)
+        logger.logEvent( {message:'Attempting to start a ride',id,title,videoUrl,type,readyToStart:pairing.isReadyToStart(), ...(workoutId ? {workoutId} : {}) } )
 
         const next =  pairing.isReadyToStart() ? '/rideOK'  : '/pairingStart'
         navigate( next, { state: { source:'/routes' } })
@@ -342,6 +354,7 @@ export const RouteListPage =  () => {
             closePage={closePage}
         />
         <DialogLauncher ref={ref}/>
+        <ScheduledWorkoutPrompt />
         { showFreeRideNA && <FreeRideNotAvailable onClose={ ()=>{setShowFreeRideNA(false)}} />}
         {importDialogOpen ? <ImportRoutesDialog onClose={onCloseImportDialog}/> : null}
     </ErrorBoundary>)
