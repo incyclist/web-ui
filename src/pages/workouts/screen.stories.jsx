@@ -48,7 +48,7 @@ export const Default = Template.bind({})
 Default.args = { lists: [myWorkouts] }
 
 export const WithScheduled = Template.bind({})
-WithScheduled.args = { lists: [scheduled, myWorkouts] }
+WithScheduled.args = { upcoming: scheduled, lists: [myWorkouts] }
 
 export const Empty = Template.bind({})
 Empty.args = { lists: [] }

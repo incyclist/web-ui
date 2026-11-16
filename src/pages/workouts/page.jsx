@@ -125,10 +125,10 @@ export const WorkoutsPage = () => {
     const onDelete = useCallback((id) => { service.onDelete(id) }, [service])
     const onRetry = useCallback((id) => { service.onRetry(id) }, [service])
 
-    const { loading = true, lists = [], detailWorkoutId, createInfo } = props ?? {}
+    const { loading = true, lists = [], upcoming = null, displayType = 'tiles', detailWorkoutId, createInfo } = props ?? {}
 
     return <>
-        <WorkoutsScreen lists={lists} loading={loading} {...screenProps}
+        <WorkoutsScreen lists={lists} upcoming={upcoming} displayType={displayType} loading={loading} {...screenProps}
             closePage={closePage}
             onOK={onOK}
             onDelete={onDelete}

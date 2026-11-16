@@ -156,9 +156,16 @@ const WorkoutList = ({ list, cardSize, itemsFit, responsive, onOK, onDelete, onR
 }
 
 export const WorkoutsScreen =
-    ({ loading, cardSize, offset = 0, responsive, itemsFit, width, height, lists,
+    // displayType: only the tile view exists for now; a list view and a toggle will follow in a separate UI change
+    ({ loading, cardSize, offset = 0, responsive, itemsFit, width, height, lists, upcoming = null,
+        // eslint-disable-next-line no-unused-vars
+        displayType = 'tiles',
         onInitialized, onUpdated, onSlideChange, onSlideChanged, onOK, closePage, onDelete, onRetry }) => {
     const swipeDisabled = useRef(false);
+
+    // upcoming (scheduled) workouts come first; keyed by list id so the section mounts/unmounts
+    // cleanly (and releases its observer subscription) when it appears or disappears
+    const allLists = useMemo(() => [...(upcoming ? [upcoming] : []), ...(lists ?? [])], [upcoming, lists])
     const refDiv = useRef(null);
 
 
@@ -258,7 +265,7 @@ export const WorkoutsScreen =
                     <AppThemeProvider>
                         <ListContainer width='100%' height='100%' ref={refDiv}>
                         {  !loading && cardSize && lists ?
-                            lists.map( list => <WorkoutList key={list.id} list={list} cardSize={cardSize} itemsFit={itemsFit} responsive={responsive}
+                            allLists.map( list => <WorkoutList key={list.id} list={list} cardSize={cardSize} itemsFit={itemsFit} responsive={responsive}
                                 onOK={onOK} onDelete={onDelete} onRetry={onRetry}
                                 onInitialized={onInitialized} onUpdated={onUpdated} onSlideChange={onSlideChange} onSlideChanged={onSlideChanged}
                                 setScrolling={setScrolling} />)

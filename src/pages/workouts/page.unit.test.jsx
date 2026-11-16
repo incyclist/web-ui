@@ -65,6 +65,22 @@ describe('WorkoutsPage', () => {
         expect(screen.getByText('screen:myWorkouts')).toBeTruthy()
     })
 
+    test('forwards upcoming and displayType to the screen', () => {
+        const upcoming = { id: 'scheduled', title: 'Scheduled Workouts', cards: [] }
+        service.getPageDisplayProperties.mockReturnValue(props({ upcoming, displayType: 'list' }))
+        renderPage()
+        const p = screenCalls.at(-1)
+        expect(p.upcoming).toBe(upcoming)
+        expect(p.displayType).toBe('list')
+    })
+
+    test('defaults upcoming to null and displayType to tiles', () => {
+        renderPage()
+        const p = screenCalls.at(-1)
+        expect(p.upcoming).toBeNull()
+        expect(p.displayType).toBe('tiles')
+    })
+
     test('shows the loading state while the service is loading', () => {
         service.getPageDisplayProperties.mockReturnValue(props({ loading: true, lists: [] }))
         renderPage()
