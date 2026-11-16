@@ -128,6 +128,12 @@ export const Dialog = (props) => {
             logger.logEvent({message:'Dialog closed',dialog, ...additionalLogs})
             logger.set({dialog:null})
         }
+
+        // lets hooks that wait for "no dialog open" (e.g. the scheduled workout prompt) know that a dialog went away
+        try {
+            window.dispatchEvent(new CustomEvent('incyclist-dialog-closed'))
+        }
+        catch { /* not critical */ }
     },[])
 
     useKey(ESC,onEscapePressed,{propagate:false,enableDialog:props.onESC!==undefined, dialog:key})
