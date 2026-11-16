@@ -3,7 +3,7 @@ import { RouteDetails } from "./component"
 import { VideoProcessing } from "../../../../bindings/video"
 import { sleep, valid } from "../../../../utils/coding"
 import { useAppUI } from "../../../../bindings/native-ui"
-import { useActivityList, useOnlineStatusMonitoring, useRouteList, useUserSettings } from "incyclist-services"
+import { getRoutesPageService, useActivityList, useOnlineStatusMonitoring, useRouteList, useUserSettings } from "incyclist-services"
 import { EventLogger } from "gd-eventlog"
 import { useUnmountEffect } from "../../../../hooks"
 
@@ -35,6 +35,17 @@ export const RouteDetailsDialog = (props) => {
     const activities = useActivityList()
     const service = useRouteList()
     const refMounted = useRef(false)
+
+    const readAttachedWorkout = useCallback( () => {
+        try {
+            return getRoutesPageService().getRouteDetailsProps(card.getData()?.description?.id)?.attachedWorkout ?? null
+        }
+        catch(err) {
+            new EventLogger('RouteDetails').logEvent({message:'error',fn:'readAttachedWorkout', error:err.message,stack:err.stack})
+            return null
+        }
+    },[card])
+    const [attachedWorkout,setAttachedWorkout] = useState(readAttachedWorkout)
 
     let convertStart
     let downloadStart
@@ -259,6 +270,19 @@ export const RouteDetailsDialog = (props) => {
 
     }
 
+    // the dialog stays open and keeps the form values - only the attachment is re-read
+    const onClearWorkoutHandler = () => {
+        try {
+            const routeId = card.getData()?.description?.id
+            logger.logEvent({message:'attachment changed', action:'clear', side:'workout', surface:'route-details', routeId, workoutId:attachedWorkout?.id, eventSource:'user'})
+            getRoutesPageService().onClearWorkoutSelection()
+            setAttachedWorkout(readAttachedWorkout())
+        }
+        catch(err) {
+            logger.logEvent({message:'error',fn:'onClearWorkoutHandler', error:err.message,stack:err.stack})
+        }
+    }
+
     const onCancelHandler = (data) =>  {
         card.cancel(data)
         setRoute(null)
@@ -361,13 +385,12 @@ export const RouteDetailsDialog = (props) => {
     const markers = card.getMarkers()
     const dialogProps = propsRef?.current || {}
     const {showLoopOverwrite,showNextOverwrite} = dialogProps
-    const {hasWorkout,totalDistance,totalElevation,xScale,yScale, updateStartPos, updateMarkers,
+    const {totalDistance,totalElevation,xScale,yScale, updateStartPos, updateMarkers,
            smoothingAvailable, smoothingMaxLevel, smoothedElevation, smoothedPoints, smoothedGradient} = propsRef.current||{}
-    const showWorkout = !hasWorkout
     const showPrev = getShowPrev()
     const videoDir = card.getVideoDir()
 
-    const args = {route,totalDistance,totalElevation,xScale,yScale,markers,showLoopOverwrite,showNextOverwrite, ...settings,...convertState,...downloadState, requestVideoDir, convertOngoing:valid(convert), downloadOngoing:valid(download),  convertSupported, ...videoState, isOnline, showWorkout,
+    const args = {route,totalDistance,totalElevation,xScale,yScale,markers,showLoopOverwrite,showNextOverwrite, ...settings,...convertState,...downloadState, requestVideoDir, convertOngoing:valid(convert), downloadOngoing:valid(download),  convertSupported, ...videoState, isOnline, attachedWorkout,
                   showPrev,prevRides,loading,videoDir,onChangeVideoDir,
                   smoothingAvailable, smoothingMaxLevel, smoothedElevation, smoothedPoints, smoothedGradient,
                  onVideoSelected,videoSelectedError}
@@ -376,7 +399,7 @@ export const RouteDetailsDialog = (props) => {
         return null;
 
     return <RouteDetails {...args} 
-    onStart={onStartHandler} onCancel={onCancelHandler}  onAddWorkout={onAddWorkoutHandler}
+    onStart={onStartHandler} onCancel={onCancelHandler}  onAddWorkout={onAddWorkoutHandler} onClearWorkout={onClearWorkoutHandler}
     onDownload={onDownloadHandler} onCancelDownload={onCancelDownloadHandler} 
     onConvert={onConvertHandler} onCancelConvert={onCancelConvertHandler}
     onPrevRidesClicked={onPrevRidesClicked}

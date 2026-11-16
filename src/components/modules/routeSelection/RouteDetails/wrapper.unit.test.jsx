@@ -2,7 +2,8 @@ import React from 'react'
 import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render, act } from '@testing-library/react'
 
-const { mockUserSettings, mockActivities, mockRouteList, mockOnlineStatus, mockAppUI } = vi.hoisted(() => ({
+const { mockUserSettings, mockActivities, mockRouteList, mockOnlineStatus, mockAppUI, mockPageService } = vi.hoisted(() => ({
+    mockPageService: { getRouteDetailsProps: vi.fn(() => ({ routeId: 'route-1', attachedWorkout: null })), onClearWorkoutSelection: vi.fn() },
     mockUserSettings: { get: vi.fn((key, def) => def), set: vi.fn() },
     mockActivities: { getPastActivitiesWithDetails: vi.fn(async () => []) },
     mockRouteList: { getRouteDetails: vi.fn(async () => ({})) },
@@ -14,6 +15,7 @@ vi.mock('incyclist-services', async (importOriginal) => {
     const actual = await importOriginal()
     return {
         ...actual,
+        getRoutesPageService: () => mockPageService,
         useUserSettings: () => mockUserSettings,
         useActivityList: () => mockActivities,
         useRouteList: () => mockRouteList,
@@ -155,7 +157,7 @@ describe('RouteDetailsDialog - Terrain Smoothing plumbing', () => {
         expect(card.start).toHaveBeenCalledTimes(1)
     })
 
-    test('includes smoothingLevel in the settings written on Start With Workout', async () => {
+    test('includes smoothingLevel in the settings written on Add Workout', async () => {
         const card = buildCard()
         await renderWrapper(card)
 
@@ -207,5 +209,42 @@ describe('RouteDetailsDialog - canStart refresh on download completion', () => {
         })
 
         expect(rendered.props.canStart).toBe(true)
+    })
+})
+
+describe('RouteDetailsDialog - workout attachment', () => {
+    const attached = { id: 'w1', title: 'Sweet Spot 3x12' }
+
+    beforeEach(() => { rendered.props = null })
+    afterEach(() => { vi.clearAllMocks() })
+
+    test('passes the attached workout from the page service, regardless of openSettings().hasWorkout', async () => {
+        mockPageService.getRouteDetailsProps.mockReturnValue({ routeId: 'route-1', attachedWorkout: attached })
+        await renderWrapper(buildCard({ props: { hasWorkout: false } }))
+
+        expect(mockPageService.getRouteDetailsProps).toHaveBeenCalledWith('route-1')
+        expect(rendered.props.attachedWorkout).toEqual(attached)
+        expect(rendered.props.showWorkout).toBeUndefined()
+    })
+
+    test('without an attached workout no chip data is passed even if hasWorkout is set', async () => {
+        mockPageService.getRouteDetailsProps.mockReturnValue({ routeId: 'route-1', attachedWorkout: null })
+        await renderWrapper(buildCard({ props: { hasWorkout: true } }))
+
+        expect(rendered.props.attachedWorkout).toBeNull()
+    })
+
+    test('clearing calls the service and re-reads without touching the form or closing the dialog', async () => {
+        mockPageService.getRouteDetailsProps.mockReturnValue({ routeId: 'route-1', attachedWorkout: attached })
+        const card = buildCard()
+        await renderWrapper(card)
+
+        mockPageService.getRouteDetailsProps.mockReturnValue({ routeId: 'route-1', attachedWorkout: null })
+        await act(async () => { rendered.props.onClearWorkout() })
+
+        expect(mockPageService.onClearWorkoutSelection).toHaveBeenCalledTimes(1)
+        expect(rendered.props.attachedWorkout).toBeNull()
+        expect(card.cancel).not.toHaveBeenCalled()
+        expect(card.changeSettings).not.toHaveBeenCalled()
     })
 })
