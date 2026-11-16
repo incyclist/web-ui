@@ -12,7 +12,6 @@ export default {
     argTypes: { 
         onOK: { action: 'OK' },
         onDelete: { action: 'delete' },
-        onUnselect: { action: 'unselecte' },
     },
 };
 
@@ -179,17 +178,6 @@ Default.args = {
     duration: '60s', 
     visible:true,
     workout: wo1,
-    height: 200,
-    ftp:200
-}
-
-export const Selected = Template.bind({});
-Selected.args = {
-    title: 'Test Workout',
-    selected: true,
-    duration: '60s', 
-    visible:true,
-    workout: wo,
     height: 200,
     ftp:200
 }

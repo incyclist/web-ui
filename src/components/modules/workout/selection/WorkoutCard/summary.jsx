@@ -30,8 +30,8 @@ const OutsideFold = styled.div`
 
 export const WorkoutSummary = ( props) => {
   
-    const { visible,title=props?.workout?.title,workout,ftp=200,duration,selected, canDelete=true,
-            width='20vw',height='30vh',onOK,onDelete,onUnselect} = props
+    const { visible,title=props?.workout?.title,workout,ftp=200,duration, canDelete=true,
+            width='20vw',height='30vh',onOK,onDelete} = props
     
     const showDuration = duration!==undefined && duration!==null && typeof(duration)==='string'
     const titleStr = title!==undefined && title!==null && typeof(title)==='string' ? title : ''
@@ -46,7 +46,7 @@ export const WorkoutSummary = ( props) => {
 
     return (
         <AppThemeProvider>
-        <Container width={width} height={height} hidden={!visible} selected={selected} className='workout-card'>
+        <Container width={width} height={height} hidden={!visible}className='workout-card'>
             <ImageContainer>
                 { workout?
                         <Row width='100%' height='100%'>
@@ -73,10 +73,7 @@ export const WorkoutSummary = ( props) => {
 
 
             <ButtonContainer>
-                {selected ? 
-                    <Button text='Unselect' disabled={!workout} logContext={ {title}} onClick={onUnselect}/> :
-                    <Button text='OK' disabled={!workout} logContext={ {title}} onClick={onOK} /> 
-                }
+                <Button text='OK' disabled={!workout} logContext={ {title}} onClick={onOK} />
                 {canDelete?<Icon height={20} margin={0} padding={0} id={'delete'} onClick={onDelete}><Trash/></Icon>:null}
             </ButtonContainer>
 

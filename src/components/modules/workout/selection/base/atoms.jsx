@@ -25,6 +25,11 @@ export const DateText = styled(Row)`
     padding: 0 0 5px 10px;
 `
 
+export const TodayText = styled(DateText)`
+    color: #dd9933;
+    font-weight: 700;
+`
+
 export const DurationLabel = styled(Row)`
     width: 100%;
     font-size: 1.3vh;
@@ -37,7 +42,9 @@ export const Container = styled.div`
     display: flex;
     position: relative;
     flex-direction: column;
-    background: ${props=> props.selected?  props.theme.list.selected.background: 'linear-gradient(darkred,#180457)'};
+    background: linear-gradient(darkred,#180457);
+    box-sizing: border-box;
+    border-left: ${props => props.$today ? '0.3vw solid #dd9933' : 'none'};
     height: ${props => `${props.height}px`};
     width: ${props => `${props.width}px`};
     user-select: none;
