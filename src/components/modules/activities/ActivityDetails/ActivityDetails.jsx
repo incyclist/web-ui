@@ -1,8 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import styled from 'styled-components'
 import { Button, ButtonBar,  Column, Divider, ErrorBoundary, Loader, Row, Text } from '../../../atoms'
-import { Dialog, FreeMap } from '../../../molecules'
-import { formatDateTime, useActivityList} from 'incyclist-services'
+import { Dialog, FreeMap, AttachmentChip } from '../../../molecules'
+import { formatDateTime, getActivitiesPageService, useActivityList} from 'incyclist-services'
 import { ActivityGraph,FilePill,UploadPill,ScreenshotPopup} from '../../../molecules/Activity'
 import { EventLogger } from 'gd-eventlog'
 import { useAppUI } from '../../../../bindings/native-ui'
@@ -26,8 +26,8 @@ const GraphRow = styled(Row)`
 
 export const ActivityDetails = ({activity, units, title,started,duration, distance, elevation,logs, points, 
                                 showMap,startPos,segment,loading,
-                                canStart, canOpen,exports, uploads,                                
-                                onCancel, onStart, onOpen, onOpenUpload, onOpenExport,onDelete, onExport, onUpload}) => { 
+                                canStart, canOpen,exports, uploads, attachedWorkout,
+                                onCancel, onStart, onAddWorkout, onClearWorkout, onOpen, onOpenUpload, onOpenExport,onDelete, onExport, onUpload}) => { 
 
     const [dialogState,setDialogState] = useState(null)
     const logger = useRef(new EventLogger('ActivityDetails')).current
@@ -79,6 +79,14 @@ export const ActivityDetails = ({activity, units, title,started,duration, distan
 
         if (typeof onStart === 'function') {
             onStart()
+        }
+    }
+
+    const onAddWorkoutClicked = async () => {
+        await close();
+
+        if (typeof onAddWorkout === 'function') {
+            onAddWorkout()
         }
     }
 
@@ -257,6 +265,7 @@ export const ActivityDetails = ({activity, units, title,started,duration, distan
         
             <Dialog width='90vw' height='90vh' id='ActivityDetails' log={{title:title}} title={title} /*onOutsideClicked={onUserCancel}*/ zIndex={100} onESC={onCancelClicked}>
             <ContentArea>
+                {canStart && attachedWorkout ? <AttachmentChip label='Workout' name={attachedWorkout.title} onClear={onClearWorkout} margin='0 1vw'/> : null}
                 <Row height='33%'>
                     <Column width='50%' margin='0 1vw 0 1vw'>
                         {showMap ? <FreeMap  
@@ -332,6 +341,7 @@ export const ActivityDetails = ({activity, units, title,started,duration, distan
             </ContentArea>
             <ButtonBar justify='center'>
                 <Button text='Ride Again' onClick={onStartClicked} disabled={!canStart} />
+                {canStart && !attachedWorkout ? <Button text='Add Workout' onClick={onAddWorkoutClicked} /> : null}
                 <Button text='Open' onClick={onOpenClicked} disabled={!canOpen} /> 
                 <Button text='Close' onClick={onCancelClicked} />
                 <Button text='Delete' onClick={onDeleteClicked} margin='0 0 0 4vw' />
@@ -343,13 +353,14 @@ export const ActivityDetails = ({activity, units, title,started,duration, distan
 
 }
 
-export const ActivityDetailsDialog = ({onOpen,onStart})=> {
+export const ActivityDetailsDialog = ({onOpen,onStart,onAddWorkout})=> {
 
     const service = useActivityList()
     const ui = useAppUI()
 
     const [state,setState] = useState(null)
     const [loading,setLoading] = useState(false)
+    const [attachedWorkout,setAttachedWorkout] = useState(null)
     const mountedRef = useRef() 
     const observerRef = useRef()
 
@@ -360,8 +371,20 @@ export const ActivityDetailsDialog = ({onOpen,onStart})=> {
     },[logger])
 
 
+    const readAttachedWorkout = useCallback( () => {
+        try {
+            const activityId = service.getSelected()?.id
+            return getActivitiesPageService().getActivityDetailsProps(activityId)?.attachedWorkout ?? null
+        }
+        catch(err) {
+            logError(err,'readAttachedWorkout')
+            return null
+        }
+    },[logError, service])
+
     const init = useCallback( () => {
         try {
+            setAttachedWorkout(readAttachedWorkout())
             setState( service.openSelected() )
             observerRef.current = service.getObserver()
             observerRef.current.on('updated', (update) => {
@@ -371,7 +394,7 @@ export const ActivityDetailsDialog = ({onOpen,onStart})=> {
         catch(err) {
             logError(err,'init')
         }
-    },[logError, service])
+    },[logError, readAttachedWorkout, service])
 
     useEffect(() => {
         if (mountedRef.current)
@@ -439,6 +462,37 @@ export const ActivityDetailsDialog = ({onOpen,onStart})=> {
     }
 
 
+    const onAddWorkoutHandler = () => {
+        try {
+            const card = service.openRoute()
+            if (!card) {
+                logError(new Error('no route card for selected activity'),'onAddWorkout')
+                return
+            }
+            logger.logEvent({message:'attachment changed', action:'attach', side:'route', surface:'activity-details', eventSource:'user'})
+            card.addWorkout()
+            service.closeSelected()
+            setState(null)
+            if (typeof onAddWorkout === 'function')
+                onAddWorkout()
+        }
+        catch(err) {
+            logError(err,'onAddWorkout')
+        }
+    }
+
+    // the dialog stays open - only the attachment is re-read
+    const onClearWorkoutHandler = () => {
+        try {
+            logger.logEvent({message:'attachment changed', action:'clear', side:'workout', surface:'activity-details', workoutId:attachedWorkout?.id, eventSource:'user'})
+            getActivitiesPageService().onClearWorkoutSelection()
+            setAttachedWorkout(readAttachedWorkout())
+        }
+        catch(err) {
+            logError(err,'onClearWorkout')
+        }
+    }
+
     const onOpenUpload = (upload) => {
         try {
             ui.openBrowserWindow(upload.url)
@@ -473,6 +527,8 @@ export const ActivityDetailsDialog = ({onOpen,onStart})=> {
     if (state) 
         return <ActivityDetails {...state} 
             onCancel={onCancel} onStart={onStartHandler} onDelete={onDelete} onOpen={onOpen} 
+            attachedWorkout={attachedWorkout} onAddWorkout={onAddWorkoutHandler} onClearWorkout={onClearWorkoutHandler}
+           
             onExport={onExport} onOpenExport={onOpenFile}
             onUpload={onUpload} onOpenUpload={onOpenUpload} />
     

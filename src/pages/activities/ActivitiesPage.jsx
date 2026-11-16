@@ -163,7 +163,7 @@ export const ActivitiesPage = () => {
 
 
         service.select(id)
-        openDialog(ActivityDetailsDialog, {onOpen:onOpenHandler,onStart})
+        openDialog(ActivityDetailsDialog, {onOpen:onOpenHandler,onStart,onAddWorkout})
     }
 
 
