@@ -5,7 +5,7 @@ import {RouteSelectorMap} from '../../../molecules/Maps'
 import Loader from 'react-spinners/ClipLoader'
 import { EventLogger } from 'gd-eventlog';
 import { Button,ButtonBar, Column, Row } from '../../../atoms';
-import { FreeRideDirectionButton, FreeRideDialogButton } from '../../../molecules';
+import { FreeRideDirectionButton, FreeRideDialogButton, AttachmentChip } from '../../../molecules';
 import { AppThemeProvider } from '../../../../theme';
 import styled from 'styled-components';
 
@@ -92,6 +92,8 @@ export const FreeRideSettingsView = ({
     position,
     options = [],
     loading,
+    attachedWorkout,
+    onClearWorkout,
     onCancel,
     onChange,
     onStart
@@ -150,7 +152,8 @@ export const FreeRideSettingsView = ({
                         <div style={{ height: 'calc(100% - 6.6vh)', display: 'flex', flexDirection: 'column' }}>
                         <TabContentArea style={{ textAlign: 'left', height: 'auto', flex: '1 1 0', minHeight: 0 }}>
                             <Column width="96%" padding="0 2% 0 2%">
-                                <Row className="map-container" height="96%" padding="2% 0 2% 0">
+                                {attachedWorkout ? <AttachmentChip label="Workout" name={attachedWorkout.title} onClear={onClearWorkout} /> : null}
+                                <Row className="map-container" height={attachedWorkout ? undefined : "96%"} padding="2% 0 2% 0" style={attachedWorkout ? { flex: '1 1 0', minHeight: 0 } : undefined}>
                                     {position ? (
                                         <RouteSelectorMap
                                             zIndex={10}

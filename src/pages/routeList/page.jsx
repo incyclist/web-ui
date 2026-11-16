@@ -275,7 +275,7 @@ export const RouteListPage =  () => {
             logger.logEvent({message:'error', fn:'onFreeRide', error:'free ride card not found'})
             return
         }
-        openDialog( FreeRideSettingsDialog, { onStart, onAddWorkout, card } )
+        openDialog( FreeRideSettingsDialog, { onStart, card } )
     }
 
     const onImportRoutes = () => {
