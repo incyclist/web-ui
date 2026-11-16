@@ -1,4 +1,4 @@
-import React, {useRef, useState } from "react"
+import React, {useEffect, useMemo, useRef, useState } from "react"
 import MainPage from "../../components/molecules/MainPage"
 import { PageTitle,GroupTitle, Loader, Center } from "../../components/atoms"
 import styled from "styled-components"
@@ -9,7 +9,6 @@ import { Carousel } from "../../components/atoms/Carousel"
 import { NavigationBar } from "../../components/molecules/NavigationBar"
 import { AppThemeProvider } from "../../theme"
 import { ActiveImportCard } from "../../components/modules/routeSelection/ActiveImportCard"
-import { valid } from "../../utils/coding"
 import {UploadCard} from '../../components/modules/workout/selection/UploadCard'
 import {WorkoutCard} from '../../components/modules/workout/selection/WorkoutCard'
 import { WorkoutCreateCard } from "../../components/modules/workout/selection/CreateCard"
@@ -76,14 +75,91 @@ export const ListContainer = styled(View)`
 
 `
 
-export const WorkoutsScreen =  /*forwardRef(*/
-    ({ loading, cardSize,offset=0, responsive, itemsFit, width,height, data,key, 
-        onInitialized,onUpdated, onSlideChange, onSlideChanged, onOK, onUnselect,closePage, onDelete,onRetry, onPageSelected}) => {
-    const swipeDisabled = useRef(false);
-    //const [data,setData] = useState(dataProp)
+const CARD_COMPONENTS = {
+    WorkoutImport: UploadCard,
+    ActiveWorkoutImport: ActiveImportCard,
+    WorkoutCreate: WorkoutCreateCard,
+    Workout: WorkoutCard,
+    ScheduledWorkout: ScheduledWorkoutCard
+}
 
+const callback = (fn, listId, e) => {
+    if (!fn)
+        return
+    fn(listId, e)
+}
+
+const WorkoutList = ({ list, cardSize, itemsFit, responsive, onOK, onDelete, onRetry,
+    onInitialized, onUpdated, onSlideChange, onSlideChanged, setScrolling }) => {
+
+    const [cardData, setCardData] = useState(list.cards)
+
+    // the page service hands out a fresh cards array on every page update
+    useEffect(() => { setCardData(list.cards) }, [list.cards])
+
+    useEffect(() => {
+        const observer = list.observer
+        if (!observer)
+            return
+        const onUpdate = (cards) => { if (Array.isArray(cards)) setCardData(cards) }
+        observer.on('update', onUpdate)
+        return () => { observer.off('update', onUpdate) }
+    }, [list.observer])
+
+    const cards = useMemo(() => (cardData ?? []).map((card) => {
+        const Card = CARD_COMPONENTS[card.cardType]
+        if (!Card)
+            return null
+
+        const { observer, selected, ...content } = card.props ?? {}   // selection is no longer part of the UI
+        const innerSize = { ...(cardSize ?? {}) }
+        innerSize.width = cardSize?.width - cardSize?.padding
+        innerSize.padding = 0
+
+        return <CardView className='item' key={card.id} distance={`${(cardSize?.padding ?? 0) / 2}px`}>
+            <Card {...innerSize} {...content}
+                observer={card.observer}
+                hidden={!content.visible}
+                onOK={onOK ? (...args) => { onOK(card.id, ...args) } : undefined}
+                onDelete={onDelete ? () => { onDelete(card.id) } : undefined}
+                onRetry={onRetry ? () => { onRetry(card.id) } : undefined}
+            />
+        </CardView>
+    }).filter(Boolean), [cardData, cardSize, onOK, onDelete, onRetry])
+
+    const header = list.title
+
+    return (
+        <Column className={`list_${list.id}`} >
+            {header ?
+                <Row>
+                    <Column width='50px' />
+                    <Column>
+                        <GroupTitle>{header}</GroupTitle>
+                    </Column>
+                </Row>
+                : null}
+
+            <Row width='100%'>
+                <Carousel cards={cards}
+                    width='100%'
+                    height={`${cardSize.height}px`} renderKey={itemsFit} responsive={responsive}
+                    autoWidth={true}
+                    onInitialized={(e) => { callback(onInitialized, list.id, e) }}
+                    onSlideChange={(e) => { callback(onSlideChange, list.id, e); setScrolling(true) }}
+                    onSlideChanged={(e) => { callback(onSlideChanged, list.id, e); setScrolling(false) }}
+                    onUpdated={(e) => { callback(onUpdated, list.id, e) }}
+                />
+            </Row>
+        </Column>
+    )
+}
+
+export const WorkoutsScreen =
+    ({ loading, cardSize, offset = 0, responsive, itemsFit, width, height, lists,
+        onInitialized, onUpdated, onSlideChange, onSlideChanged, onOK, closePage, onDelete, onRetry }) => {
+    const swipeDisabled = useRef(false);
     const refDiv = useRef(null);
-    let cardBuilders
 
 
     const onScrollUp = (pixels)=> {
@@ -168,183 +244,35 @@ export const WorkoutsScreen =  /*forwardRef(*/
 
     }
     
-    const callback = ( fn, list, e, ) =>{
-        if (!fn)
-            return
 
-        fn(list,e)
-    }
-
-    const initCardBuilders = ()=> {
-        cardBuilders = {
-            WorkoutImport: getImportCard,
-            ActiveWorkoutImport: getImportProgressCard,
-            WorkoutCreate: getCreateCard,
-            Workout: getWorkoutCard,
-            ScheduledWorkout: getScheduledWorkoutCard
-
-        }
-    }
-
-    const getCard = (workoutCard) => {
-
-        if (!cardBuilders)
-            initCardBuilders()
-        const hidden = !workoutCard.isVisible()
-        const innerSize = {...cardSize||{}}
-        innerSize.width = cardSize?.width-cardSize?.padding
-        innerSize.padding=0;
-
-        const stdProps = {hidden,...innerSize}
-        const builder = cardBuilders[workoutCard.getCardType()]
-        if(!builder) {
-            return null
-        }
-        return builder(workoutCard, stdProps)       
-    }
-
-    const getImportCard =(workoutCard, stdProps) => {
-        const title = workoutCard.getTitle()
-        const filters = workoutCard.getFilters()
-        const props = {...stdProps, title,filters,canDelete:false,visible:true}
-        
-        return {Card:UploadCard, props}
-    }
-
-    const getImportProgressCard =(workoutCard, stdProps) => {
-        const displayProps = workoutCard.getDisplayProperties();
-        const canDelete = valid(displayProps.error)
-        
-        const props = {...stdProps,...displayProps,canDelete}
-        return {Card:ActiveImportCard, props}
-    }
-
-    const getWorkoutCard =(workoutCard, stdProps) => {
-        const props = {...stdProps, ...workoutCard.getDisplayProperties() }            
-        return {Card:WorkoutCard, props}
-    }
-    const getScheduledWorkoutCard =(workoutCard, stdProps) => {
-
-
-        const props = {...stdProps, ...workoutCard.getDisplayProperties() }            
-        return {Card:ScheduledWorkoutCard, props}
-    }
-
-    const getCreateCard = (workoutCard, stdProps) => { 
-        const props = {...stdProps, ...workoutCard.getDisplayProperties() }            
-        return {Card:WorkoutCreateCard, props}
-    }
-
-
-
-    const getCards =(list) => {
-        const routeCards = list.getCards() || []
-        const cards = routeCards?.map( (workoutCard,idx) => { 
-
-            const {Card,props: cardProps} = getCard(workoutCard)??{}
-            if (!Card)
-                return null;
-            
-            const onOKClicked  = onOK ? (...args)=>{ onOK(workoutCard,...args) } : undefined
-            const onDeleteClicked  = onDelete ? ()=>{ onDelete(workoutCard) } : undefined
-            const onRetryClicked  = onRetry ? ()=>{ onRetry(workoutCard) } : undefined
-            const onUnselectClicked  = onRetry ? ()=>{ onUnselect(workoutCard) } : undefined
-            
-                    
-            
-            return <CardView className='item' distance={ `${cardSize.padding/2}px`}>
-                        <Card {...cardProps} 
-                            key={idx} 
-                            onOK={onOKClicked}
-                            onUnselect={onUnselectClicked}
-                            onDelete={onDeleteClicked}
-                            onRetry={onRetryClicked}
-                            />
-                    </CardView>
-        })
-        return cards
-
-    }
-
-
-    const WorkoutList = ({ list}) => {
-        const header = list.getTitle()       
-        const [cards,setCards] = useState(getCards(list))
-
-        if (list.observer) {
-            list.observer.on('update', (list) => {
-                setCards(getCards(list))
-            })
-        }
-
-        return (
-            
-            <Column className={`list_${list.getId()}`} >
-                { header?
-                    <Row>
-                        <Column width='50px'/>
-                        <Column>
-                            <GroupTitle>{header}</GroupTitle>    
-                        </Column> 
-            
-                    </Row>
-            
-                    
-                    :null}
-                
-                <Row width='100%'>
-                    <Carousel  cards={cards} 
-                            width='100%'
-                            height={`${cardSize.height}px`}  renderKey={itemsFit} responsive={responsive}    
-                            autoWidth={true}                         
-                            onInitialized={ (e)=> {callback(onInitialized,list,e); } }
-                            onSlideChange={ (e)=> {callback(onSlideChange,list,e); setScrolling(true) } }
-                            onSlideChanged={(e)=> {callback(onSlideChanged,list,e); setScrolling(false)} }
-                            onUpdated={ (e)=> {callback(onUpdated,list,e)} }                            
-                    >
-                        
-                    </Carousel>
-
-                </Row>
-    
-            </Column>
-        )
-    }
-    
     return (
         <MainPage >
 
             <View>
-    
-        
+
                 <NavigationBar closePage={closePage} selected='workouts' />
 
                 <ContentArea width={'100%'} >
-                    <PageTitle>Workouts</PageTitle>   
+                    <PageTitle>Workouts</PageTitle>
 
-                    <AppThemeProvider>                    
+                    <AppThemeProvider>
                         <ListContainer width='100%' height='100%' ref={refDiv}>
-                        {  !loading && cardSize && data    ? 
-                            data.map( (list,idx) => <WorkoutList list={list} key={idx} />)              
-                            : 
+                        {  !loading && cardSize && lists ?
+                            lists.map( list => <WorkoutList key={list.id} list={list} cardSize={cardSize} itemsFit={itemsFit} responsive={responsive}
+                                onOK={onOK} onDelete={onDelete} onRetry={onRetry}
+                                onInitialized={onInitialized} onUpdated={onUpdated} onSlideChange={onSlideChange} onSlideChanged={onSlideChanged}
+                                setScrolling={setScrolling} />)
+                            :
                             null
                         }
                         </ListContainer>
-                    </AppThemeProvider>                    
+                    </AppThemeProvider>
                     { (loading || !cardSize ) ?  <Center><Loader /></Center> :null }
-
-                    
 
                 </ContentArea>
 
             </View>
 
-
-
-            
-            
         </MainPage>
     )
 }
-
-

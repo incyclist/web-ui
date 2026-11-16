@@ -1,39 +1,54 @@
-import React   from 'react';
-import { WorkoutsScreen } from './screen';
-import { WorkoutCreateCard, WorkoutImportCard } from 'incyclist-services';
-import { CardList } from 'incyclist-services';
+import React from 'react'
+import { WorkoutsScreen } from './screen'
 
 export default {
     component: WorkoutsScreen,
-    title: 'Pages/Workouts',   
-    argTypes: { 
+    title: 'Pages/Workouts',
+    argTypes: {
         onOK: { action: 'OK' },
-        onRouteStart: {action: 'RouteStart'},
-        onRouteDownload: {action: 'RouteDownload'},
+        onDelete: { action: 'delete' },
+        onRetry: { action: 'retry' },
     },
-  };
+}
 
-const cardSize = {width:200, height:300}
+const cardSize = { width: 200, height: 300, padding: 0 }
 const responsive = {
-  0: {items:1},
-  400: {items: 2},
-  600: {items: 3},
-  800: {items: 4}
+    0: { items: 1 },
+    400: { items: 2 },
+    600: { items: 3 },
+    800: { items: 4 }
 }
 const Template = args => <WorkoutsScreen {...args} width={800} height={600} cardSize={cardSize} responsive={responsive} />
 
-const myWorkouts = new CardList('myWorkouts','My Workouts')
-myWorkouts.add(new WorkoutImportCard())
-myWorkouts.add(new WorkoutCreateCard())
+const noObserver = { on: () => {}, off: () => {} }
 
-export const Default = Template.bind({});
-Default.args = {
-    data:[
-      myWorkouts
+const workout = (id, title, extra = {}) => ({
+    id, cardType: 'Workout',
+    props: { title, duration: '60min', visible: true, canDelete: true, ...extra }
+})
+
+const myWorkouts = {
+    id: 'myWorkouts', title: 'My Workouts', observer: noObserver,
+    cards: [
+        { id: 'Import', cardType: 'WorkoutImport', props: { title: 'Import Workout', filters: [], visible: true } },
+        { id: 'Create', cardType: 'WorkoutCreate', props: { title: 'Create Workout', visible: true } },
+        workout('w1', 'Sweet Spot'),
     ]
 }
 
-export const Empty = Template.bind({});
-Empty.args = {
-    data:[]
+const scheduled = {
+    id: 'scheduled', title: 'Scheduled', observer: noObserver,
+    cards: [
+        { id: 's1', cardType: 'ScheduledWorkout', props: { title: 'Sweet Spot', duration: '60min', date: new Date(), isToday: true, visible: true } },
+        { id: 's2', cardType: 'ScheduledWorkout', props: { title: 'VO2 Repeats', duration: '35min', date: new Date(Date.now() + 86400000 * 3), isToday: false, visible: true } },
+    ]
 }
+
+export const Default = Template.bind({})
+Default.args = { lists: [myWorkouts] }
+
+export const WithScheduled = Template.bind({})
+WithScheduled.args = { lists: [scheduled, myWorkouts] }
+
+export const Empty = Template.bind({})
+Empty.args = { lists: [] }
