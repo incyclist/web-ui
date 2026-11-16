@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react"
-import { useFreeRideService } from 'incyclist-services'
+import { getRoutesPageService, useFreeRideService } from 'incyclist-services'
 import { EventLogger } from "gd-eventlog"
 
 import { FreeRideSettingsView } from "./FreeRideSettingsView"
@@ -13,7 +13,28 @@ export const FreeRideSettingsDialog = (props) => {
     const service = useFreeRideService()
 
     const logger = new EventLogger('FreeRideSettings')
-    
+
+    const readAttachedWorkout = () => {
+        try {
+            return getRoutesPageService().getRouteDetailsProps(card?.getId())?.attachedWorkout ?? null
+        }
+        catch(err) {
+            logger.logEvent({message:'error', fn:'readAttachedWorkout', error:err.message, stack:err.stack})
+            return null
+        }
+    }
+    const [attachedWorkout,setAttachedWorkout] = useState(readAttachedWorkout)
+
+    const onClearWorkoutHandler = () => {
+        try {
+            logger.logEvent({message:'attachment changed', action:'clear', side:'workout', surface:'free-ride', workoutId:attachedWorkout?.id, eventSource:'user'})
+            getRoutesPageService().onClearWorkoutSelection()
+            setAttachedWorkout(readAttachedWorkout())
+        }
+        catch(err) {
+            logger.logEvent({message:'error', fn:'onClearWorkoutHandler', error:err.message, stack:err.stack})
+        }
+    }
 
     useEffect( ()=>{
         if(initialized)
@@ -85,6 +106,7 @@ export const FreeRideSettingsDialog = (props) => {
 
     return <View {...args} 
     loading={loading} 
+    attachedWorkout={attachedWorkout} onClearWorkout={onClearWorkoutHandler}
     onStart={onStartHandler} onCancel={onCancelHandler} 
     onChange={onChangeHandler}
     />

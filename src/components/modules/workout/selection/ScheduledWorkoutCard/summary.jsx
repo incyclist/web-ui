@@ -3,12 +3,12 @@ import { AppThemeProvider } from '../../../../../theme';
 import { Button, Column, Loader, Row } from '../../../../atoms';
 import { WorkoutGraph } from '../../../../molecules';
 import { Container, DataContainer, DurationLabel, DurationText, ImageContainer,Title,
-         ButtonContainer,LoaderContainer } from '../base/atoms';
+         ButtonContainer,LoaderContainer,TodayText } from '../base/atoms';
 
 export const ScheduledWorkoutSummary = ( props) => {
   
-    const { visible,title=props?.workout?.title,workout,ftp=200,duration,selected, date,
-            width='20vw',height='30vh',onOK,onUnselect} = props
+    const { visible,title=props?.workout?.title,workout,ftp=200,duration, date, isToday,
+            width='20vw',height='30vh',onOK} = props
     
     const showDuration = duration!==undefined && duration!==null && typeof(duration)==='string'
     const titleStr = title!==undefined && title!==null && typeof(title)==='string' ? title : ''
@@ -18,7 +18,7 @@ export const ScheduledWorkoutSummary = ( props) => {
 
     return (
         <AppThemeProvider>
-        <Container width={width} height={height} hidden={!visible} selected={selected} className='workout-card'>
+        <Container width={width} height={height} hidden={!visible} $today={!!isToday}className='workout-card'>
             
             <ImageContainer>
                 { workout?
@@ -47,7 +47,7 @@ export const ScheduledWorkoutSummary = ( props) => {
                     {showDate ? 
                     <Column width='50%'>
                         <DurationLabel>Date</DurationLabel>
-                        <DurationText>{dateStr}</DurationText>
+                        {isToday ? <TodayText>Today</TodayText> : <DurationText>{dateStr}</DurationText>}
                     </Column>
                     :
                     <Column width='50%'>
@@ -61,10 +61,7 @@ export const ScheduledWorkoutSummary = ( props) => {
 
 
             <ButtonContainer>
-                {selected ? 
-                    <Button text='Unselect' disabled={!workout} logContext={ {title}} onClick={onUnselect}/> :
-                    <Button text='OK' disabled={!workout} logContext={ {title}} onClick={onOK} /> 
-                }                
+                <Button text='OK' disabled={!workout} logContext={ {title}} onClick={onOK} />
             </ButtonContainer>
 
         </Container>    

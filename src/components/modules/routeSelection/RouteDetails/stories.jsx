@@ -145,10 +145,15 @@ ShowNextOverwrite.args = {
     showNextOverwrite:true
 };
 
-export const StartWithWorkoutShown = Template.bind({});
-StartWithWorkoutShown.args = {
+export const AddWorkoutShown = Template.bind({});
+AddWorkoutShown.args = {
+    route:new Route(routeDescr)
+};
+
+export const WorkoutAttached = Template.bind({});
+WorkoutAttached.args = {
     route:new Route(routeDescr),
-    showWorkout:true
+    attachedWorkout:{id:'w1',title:'Sweet Spot 3x12'}
 };
 
 export const VideoMissing = Template.bind({});

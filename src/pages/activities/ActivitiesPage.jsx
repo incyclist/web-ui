@@ -5,13 +5,24 @@ import styled from "styled-components"
 import { Column, Row } from "../../components/atoms/layout/View"
 import { NavigationBar } from "../../components/molecules/NavigationBar"
 import { ActivitiesTable } from "../../components/modules/activities"
-import { useActivityList, useDevicePairing } from "incyclist-services"
+import { getActivitiesPageService, useActivityList, useDevicePairing } from "incyclist-services"
 import { usePageLogger, useUnmountEffect } from "../../hooks"
 import { DialogLauncher } from "../../components/molecules"
 import { ActivityDetailsDialog } from "../../components/modules/activities/ActivityDetails"
 import { RouteDetailsDialog } from "../../components/modules/routeSelection/RouteDetails"
 import { useNavigate } from "react-router"
+import { ScheduledWorkoutPrompt } from "../../components/modules/workout/ScheduledWorkoutPrompt"
 
+
+/** id of the workout currently attached (the selection is global), if any (never throws) */
+const readAttachedWorkoutId = (id) => {
+    try {
+        return getActivitiesPageService().getActivityDetailsProps(id)?.attachedWorkout?.id
+    }
+    catch {
+        return undefined
+    }
+}
 
 const View = styled(Row)`
    
@@ -163,7 +174,7 @@ export const ActivitiesPage = () => {
 
 
         service.select(id)
-        openDialog(ActivityDetailsDialog, {onOpen:onOpenHandler,onStart})
+        openDialog(ActivityDetailsDialog, {onOpen:onOpenHandler,onStart,onAddWorkout})
     }
 
 
@@ -172,7 +183,8 @@ export const ActivitiesPage = () => {
             return;
         
         const {id,title,videoUrl} = route??{}
-        logger.logEvent( {message:'Attempting to start a ride',id,title,videoUrl,readyToStart:pairing.isReadyToStart(), } )
+        const workoutId = readAttachedWorkoutId(id)
+        logger.logEvent( {message:'Attempting to start a ride',id,title,videoUrl,readyToStart:pairing.isReadyToStart(), ...(workoutId ? {workoutId} : {}) } )
 
         const next =  pairing.isReadyToStart() ? '/rideOK'  : '/pairingStart'
         navigate( next, { state: { source:'/activities' } })
@@ -232,6 +244,7 @@ export const ActivitiesPage = () => {
             closePage={closePage}
         />
         <DialogLauncher ref={dialogRef}/>
+        <ScheduledWorkoutPrompt />
     </>
 
 }

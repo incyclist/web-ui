@@ -278,10 +278,10 @@ describe('RouteDetails - Terrain Smoothing', () => {
 
         test('hands the selected level to onAddWorkout as well', () => {
             const onAddWorkout = vi.fn()
-            renderDialog({ onSmoothingPreview, onAddWorkout, showWorkout: true })
+            renderDialog({ onSmoothingPreview, onAddWorkout })
 
             fireEvent.click(screen.getByRole('radio', { name: '1' }))
-            fireEvent.click(screen.getByRole('button', { name: 'Start With Workout' }))
+            fireEvent.click(screen.getByRole('button', { name: 'Add Workout' }))
 
             expect(onAddWorkout).toHaveBeenCalledTimes(1)
             expect(onAddWorkout.mock.calls[0][0]).toMatchObject({ smoothingLevel: 1 })
@@ -325,5 +325,40 @@ describe('RouteDetails - Terrain Smoothing', () => {
             expect(offText).toContain(OFF_COPY.toLowerCase())
             expect(onText).toContain(ON_COPY.toLowerCase())
         })
+    })
+})
+
+describe('RouteDetails - workout attachment', () => {
+    const attachedWorkout = { id: 'w1', title: 'Sweet Spot 3x12' }
+
+    test('shows Add Workout and no chip when nothing is attached', () => {
+        renderDialog()
+        expect(screen.getByRole('button', { name: 'Add Workout' })).toBeInTheDocument()
+        expect(screen.queryByText('Workout:')).not.toBeInTheDocument()
+        expect(screen.queryByRole('button', { name: 'Start With Workout' })).not.toBeInTheDocument()
+    })
+
+    test('shows the chip and hides Add Workout when a workout is attached', () => {
+        renderDialog({ attachedWorkout })
+        expect(screen.getByText('Sweet Spot 3x12')).toBeInTheDocument()
+        expect(screen.queryByRole('button', { name: 'Add Workout' })).not.toBeInTheDocument()
+    })
+
+    test('the chip stays visible while a download is in progress', () => {
+        renderDialog({ attachedWorkout, downloadOngoing: true, route: { ...baseRoute, description: { ...baseRoute.description, hasVideo: true, requiresDownload: true } } })
+        expect(screen.getByText('Sweet Spot 3x12')).toBeInTheDocument()
+    })
+
+    test('clicking the chip clear button calls onClearWorkout', () => {
+        const onClearWorkout = vi.fn()
+        renderDialog({ attachedWorkout, onClearWorkout })
+        fireEvent.click(screen.getByRole('button', { name: 'Clear workout' }))
+        expect(onClearWorkout).toHaveBeenCalledTimes(1)
+    })
+
+    test('the loading variant has neither chip nor Add Workout', () => {
+        renderDialog({ attachedWorkout, loading: true })
+        expect(screen.queryByText('Sweet Spot 3x12')).not.toBeInTheDocument()
+        expect(screen.queryByRole('button', { name: 'Add Workout' })).not.toBeInTheDocument()
     })
 })

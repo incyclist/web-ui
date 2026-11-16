@@ -5,7 +5,7 @@ import {FileDirectoryIcon } from '@primer/octicons-react'
 
 import {Button,ButtonBar, Divider, EditNumber, SingleSelect,Column, Overlay, Row,
         Text, Loader, EditText,ErrorBoundary, CheckBox, Image, Center, ErrorText, SegmentedControl } from '../../../atoms'
-import {  Dialog, Dropzone, FreeMap,ElevationGraph, VideoProbe } from '../../../molecules'
+import {  Dialog, Dropzone, FreeMap,ElevationGraph, VideoProbe, AttachmentChip } from '../../../molecules'
 import {VideoPreview } from '../../video'
 import { useUnitConverter } from 'incyclist-services'
 import { EventLogger } from 'gd-eventlog'
@@ -96,7 +96,7 @@ const formatDelta = (smoothed, original) => {
 export const RouteDetails = ( {route, markers,segment, startPos,endPos,realityFactor,downloadProgress,convertOngoing, convertSupported,convertProgress,activeRides, convertError,downloadOngoing, downloadError,canStart=true,isOnline=true, requestVideoDir=false,
                                 showLoopOverwrite=false, showNextOverwrite=false,
                                 videoChecking, videoMissing, onVideoSelected,videoDir, 
-                                loopOverwrite, nextOverwrite,showWorkout,
+                                loopOverwrite, nextOverwrite,attachedWorkout,onClearWorkout,
                                 totalDistance, totalElevation, xScale, yScale,
                                 smoothingLevel, smoothingAvailable=false, smoothingMaxLevel=0, smoothedElevation, smoothedPoints, smoothedGradient, onSmoothingPreview,
                                 showPrev=false,prevRides,onRefresh,onPrevRidesClicked,loading,onChangeVideoDir,
@@ -487,6 +487,7 @@ export const RouteDetails = ( {route, markers,segment, startPos,endPos,realityFa
             <Dialog id='RouteDetails' log={{title:route?.title}} title={route?.title} /*onOutsideClicked={onUserCancel}*/ width="60vw" height="70vh" zIndex={100} onESC={onCancelClicked}>
             {hasVideo && videoUrl && !videoMissing && videoFormat!=='avi' ? <VideoProbe url={videoUrl} routeId={routeDescr?.id} extension={videoFormat}/> : null}
             <ContentArea>
+                {attachedWorkout ? <AttachmentChip label='Workout' name={attachedWorkout.title} onClear={onClearWorkout}/> : null}
 
                 <PreviewRow>
                 <Preview position='left'>
@@ -671,7 +672,7 @@ export const RouteDetails = ( {route, markers,segment, startPos,endPos,realityFa
             <ButtonBar justify='center'>
                 {showStart ? <Button primary={canStart} text='Start' disabled={!canStart} onClick = { onStartClicked}/> : null}
                 <Button text='Cancel' primary={!canStart && !isOnline} onClick = { onCancelClicked}/>
-                {showStart && showWorkout ? <Button primary={false} disabled={!canStart} secondary={true} text='Start With Workout' onClick = { onAddWorkoutClicked}/>: null}
+                {showStart && !attachedWorkout ? <Button primary={false} disabled={!canStart} secondary={true} text='Add Workout' onClick = { onAddWorkoutClicked}/>: null}
                 {showDownloadButton ? <Button primary={!showStart && isOnline} disabled={!isOnline} secondary={showStart} text='Download' onClick = { onDownloadClicked}/> : null}
                 {showConvert ? <Button primary={false} secondary={true} text='Convert' onClick = { onConvertClicked}/> : null}
             </ButtonBar>

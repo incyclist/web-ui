@@ -16,8 +16,11 @@ export const Card = (props) => {
 
         if (!refMounted.current)
             return
+        // selection is no longer part of the card UI, and the observer must not leak into the display state
+        // eslint-disable-next-line no-unused-vars
+        const {selected, observer:_observer, ...content} = updatedProps??{}
         setState( current => {
-            const newState = {...current,...updatedProps}
+            const newState = {...current,...content}
             return newState
         })
     },[])

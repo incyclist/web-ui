@@ -16,7 +16,9 @@ export default {
     onExport: { action: 'export' }, 
     onUpload: { action: 'upload' },  
     onOpenUpload: { action: 'open upload' },
-    onOpenExport: { action: 'open export' }
+    onOpenExport: { action: 'open export' },
+    onAddWorkout: { action: 'add workout' },
+    onClearWorkout: { action: 'clear workout' }
   }
 };
 
@@ -46,4 +48,20 @@ Default.args = {
         
     ],
 
+};
+
+
+export const CanAddWorkout = Template.bind({});
+CanAddWorkout.args = {
+    ...Default.args,
+    canStart: true,
+    canOpen: true,
+};
+
+export const WorkoutAttached = Template.bind({});
+WorkoutAttached.args = {
+    ...Default.args,
+    canStart: true,
+    canOpen: true,
+    attachedWorkout: { id: 'w1', title: 'Sweet Spot 3x12' },
 };

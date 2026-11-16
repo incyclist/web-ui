@@ -54,3 +54,17 @@ NoOption.args = {
     
     
 };
+
+export const WorkoutAttached = Template.bind({});
+
+WorkoutAttached.args = {
+  noTitle: true,
+  noSettings: true,
+
+  position,
+  attachedWorkout: { id: 'w1', title: 'Sweet Spot 3x12' },
+  options: [
+    { color: 'red', text: 'A', path:[position,{lat:26.6865630, lng:-80.0372570} ]  },
+    { color: 'green', text: 'B', path:[position,{lat:26.6865040, lng:-80.0346800} ]  }
+  ]
+};

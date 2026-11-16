@@ -9,10 +9,9 @@ import { Segment, Workout } from 'incyclist-services';
 export default {
     component: ScheduledWorkoutCard,
     title: 'Modules/WorkoutSelection/ScheduledWorkout',
-    argTypes: { 
+    argTypes: {
         onOK: { action: 'OK' },
         onDelete: { action: 'delete' },
-        onUnselect: { action: 'unselect' },
     },
 };
 
@@ -176,7 +175,8 @@ const wo1 = new Workout( {
 export const Default = Template.bind({});
 Default.args = {
     title: 'Test Workout',
-    duration: '60s', 
+    duration: '60s',
+    isToday: false,
     date: new Date('2025-09-04'),
     visible:true,
     workout: wo1,
@@ -184,11 +184,11 @@ Default.args = {
     ftp:200
 }
 
-export const Selected = Template.bind({});
-Selected.args = {
+export const Today = Template.bind({});
+Today.args = {
     title: 'Test Workout',
-    date: new Date('2025-09-04'),
-    selected: true,
+    date: new Date(),
+    isToday: true,
     duration: '60s', 
     visible:true,
     workout: wo,
