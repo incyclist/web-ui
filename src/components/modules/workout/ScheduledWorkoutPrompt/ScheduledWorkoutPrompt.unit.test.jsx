@@ -17,7 +17,7 @@ describe('ScheduledWorkoutPromptView', () => {
         setup()
         expect(screen.getByText('Sweet Spot')).toBeTruthy()
         const labels = screen.getAllByRole('button').map(b => b.textContent)
-        expect(labels).toEqual(['No', 'Check workouts', 'Yes'])
+        expect(labels).toEqual(['Yes', 'Check workouts', 'No'])
     })
 
     test('buttons call their handlers', () => {

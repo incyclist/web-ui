@@ -40,9 +40,9 @@ export const ScheduledWorkoutPromptView = ({ title, onYes, onNo, onCheckWorkouts
             </Body>
 
             <ButtonBar className='message-buttons' justify='center' background='white'>
-                <Button text='No' onClick={onNo} />
-                <Button text='Check workouts' onClick={onCheckWorkouts} />
                 <Button text='Yes' primary autoFocus onClick={onYes} />
+                <Button text='Check workouts' onClick={onCheckWorkouts} />
+                <Button text='No' onClick={onNo} />
             </ButtonBar>
         </Dialog>
     )
