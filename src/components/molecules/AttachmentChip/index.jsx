@@ -31,6 +31,9 @@ const Chip = styled.div`
         flex-shrink: 0;
         float: none;
         cursor: pointer;
+        align-items: center;
+        justify-content: center;
+        margin-left: 0.4vh;
     }
     button:hover {
         background: none;
