@@ -9,6 +9,7 @@ import { getResponsiveHorizontal } from "./utils"
 import { useWindowDimensions, usePageLogger } from "../../hooks"
 import { usePageService } from "../../hooks/pages"
 import { WorkoutDetailsDialog } from "../../components/modules/workout/selection/WorkoutDetails"
+import { WorkoutImportDialog } from "../../components/modules/workout/WorkoutImport"
 import { ScheduledWorkoutPrompt } from "../../components/modules/workout/ScheduledWorkoutPrompt"
 import { Button, CheckBox, Column, Row, Overlay } from "../../components/atoms"
 
@@ -38,7 +39,7 @@ const CreateInfoOverlay = ({ markAsSeenDefault, onClose }) => {
                         <li> Click OK to open the ZwoFactory page </li>
                         <li> Within ZwoFactory, create or select a pre-defined workout</li>
                         <li> Within ZwoFactory, download the workout using the Download button </li>
-                        <li> Go back to Incyclist and import the workout using the Import Card </li>
+                        <li> Go back to Incyclist and import the workout using the Import Workout button </li>
                     </List>
                 </Column>
             </Row>
@@ -63,6 +64,8 @@ export const WorkoutsPage = () => {
     const [screenProps, setScreenProps] = useState(() => service.getScreenProps())
     const [pageState, setPageState] = useState(null)
     const refAutoOpened = useRef(null)
+    const [importOpen, setImportOpen] = useState(false)
+    const [importSource, setImportSource] = useState(null)
 
     const [logger, closePageLogger] = usePageLogger(PAGE_ID, pageState)
 
@@ -121,9 +124,24 @@ export const WorkoutsPage = () => {
         service.onCarouselUpdated(listId, e?.item, e?.itemsInSlide)
     }, [service])
 
-    const onOK = useCallback((id, files) => { service.onCardOK(id, files) }, [service])
+    const onOK = useCallback((id) => { service.onCardOK(id) }, [service])
     const onDelete = useCallback((id) => { service.onDelete(id) }, [service])
-    const onRetry = useCallback((id) => { service.onRetry(id) }, [service])
+
+    const onImportWorkout = useCallback(() => {
+        service.onImportOpen()
+        setImportSource('button')
+        setImportOpen(true)
+    }, [service])
+
+    // the service starts the import (or reports why it was rejected) before the dialog mounts,
+    // so the dialog opens directly in the importing/error phase
+    const onDropFiles = useCallback((files) => {
+        service.onImportFiles(files, 'page-drop')
+        setImportSource('page-drop')
+        setImportOpen(true)
+    }, [service])
+
+    const onImportClose = useCallback(() => { setImportOpen(false) }, [])
 
     const { loading = true, lists = [], upcoming = null, displayType = 'tiles', detailWorkoutId, createInfo } = props ?? {}
 
@@ -132,11 +150,15 @@ export const WorkoutsPage = () => {
             closePage={closePage}
             onOK={onOK}
             onDelete={onDelete}
-            onRetry={onRetry}
+            onImportWorkout={onImportWorkout}
+            onDropFiles={onDropFiles}
+            dropEnabled={!importOpen}
             onInitialized={onInitialized}
             onSlideChanged={onSlideChanged} />
 
         {detailWorkoutId ? <WorkoutDetailsDialog id={detailWorkoutId} /> : null}
+
+        {importOpen ? <WorkoutImportDialog source={importSource} onClose={onImportClose} /> : null}
 
         <ScheduledWorkoutPrompt />
 
