@@ -17,6 +17,10 @@ vi.mock('../../../molecules', async (importOriginal) => {
     }
 })
 
+vi.mock('../../../molecules/WorkoutGraph/WorkoutGraph', () => ({
+    WorkoutGraph: ({ workout, ftp }) => <div data-testid="workout-graph" data-ftp={ftp}>{workout?.name}</div>,
+}))
+
 import { WorkoutImportDialogView, WORKOUT_IMPORT_FILTERS } from './WorkoutImportDialogView'
 
 const outside = () => document.querySelector('.dialog').parentElement
@@ -72,10 +76,11 @@ describe('WorkoutImportDialogView', () => {
     describe('importing', () => {
         const props = { phase: 'importing', knownGroups: [], importing: { fileName: 'ftp-test.zwo' } }
 
-        test('shows title, file name and Cancel', () => {
+        test('shows title, loader, file name and Cancel', () => {
             renderView(props)
             expect(screen.getByText('Importing...')).toBeTruthy()
-            expect(screen.getByText('ftp-test.zwo')).toBeTruthy()
+            expect(screen.getByText('Importing ftp-test.zwo…')).toBeTruthy()
+            expect(document.querySelector('.dialog-content span')).toBeTruthy() // react-spinners loader
             expect(buttons()).toEqual(['Cancel'])
         })
 
@@ -87,23 +92,75 @@ describe('WorkoutImportDialogView', () => {
     })
 
     describe('result', () => {
+        const workout = { name: 'Sweet Spot', steps: [{ type: 'step', duration: 60 }] }
         const props = {
             phase: 'result', knownGroups: ['My Workouts', 'Intervals'],
-            result: { id: 'w1', workoutName: 'Sweet Spot', group: 'My Workouts' },
+            result: { id: 'w1', workoutName: 'Sweet Spot', group: 'My Workouts', workout, ftp: 250 },
         }
+        const noGraphProps = { ...props, result: { id: 'w1', workoutName: 'Sweet Spot', group: 'My Workouts' } }
 
-        test('shows title, message, category and Done', () => {
+        test('shows title, success header, category, graph and both buttons', () => {
             renderView(props)
-            expect(screen.getByText('Import Result')).toBeTruthy()
+            expect(screen.getByText('Import Successful')).toBeTruthy()
             expect(screen.getByText('"Sweet Spot" has been added to your library')).toBeTruthy()
             expect(screen.getByText('Category')).toBeTruthy()
-            expect(buttons()).toContain('Done')
+            expect(screen.getByTestId('status-success')).toBeTruthy()
+            expect(screen.getByTestId('workout-graph')).toBeTruthy()
+            expect(buttons()).toEqual(['Import another', 'Done'])
+        })
+
+        test('graph uses the FTP from the props, 200 if missing', () => {
+            renderView(props)
+            expect(screen.getByTestId('workout-graph').getAttribute('data-ftp')).toBe('250')
+        })
+
+        test('graph defaults the FTP to 200', () => {
+            renderView({ ...props, result: { ...props.result, ftp: undefined } })
+            expect(screen.getByTestId('workout-graph').getAttribute('data-ftp')).toBe('200')
+        })
+
+        test('without workout: fallback panel without graph, still category and buttons', () => {
+            renderView(noGraphProps)
+            expect(screen.queryByTestId('workout-graph')).toBeNull()
+            expect(screen.getByTestId('status-success')).toBeTruthy()
+            expect(screen.getByText('"Sweet Spot" has been added to your library')).toBeTruthy()
+            expect(screen.getByRole('combobox')).toBeTruthy()
+            expect(buttons()).toEqual(['Import another', 'Done'])
+        })
+
+        test('a workout without steps uses the fallback as well', () => {
+            renderView({ ...props, result: { ...props.result, workout: { name: 'x', steps: [] } } })
+            expect(screen.queryByTestId('workout-graph')).toBeNull()
+        })
+
+        test('category select shows result.group', () => {
+            renderView(props)
+            expect(screen.getByRole('combobox').value).toBe('My Workouts')
+        })
+
+        test('category select shows a preselected group that is the last used one', () => {
+            renderView({ ...props, result: { ...props.result, group: 'Intervals' } })
+            expect(screen.getByRole('combobox').value).toBe('Intervals')
+            expect(screen.queryByText('Please select ..')).toBeNull()
+        })
+
+        test('category select never shows the placeholder, even without a group', () => {
+            renderView({ ...props, result: { ...props.result, group: undefined } })
+            expect(screen.getByRole('combobox').value).toBe('My Workouts')
+            expect(screen.queryByText('Please select ..')).toBeNull()
         })
 
         test('Done reports done', () => {
             renderView(props)
             fireEvent.click(screen.getByText('Done'))
             expect(handlers.onClose).toHaveBeenCalledWith('done')
+        })
+
+        test('Import another calls onPickAnother and does not close', () => {
+            renderView(props)
+            fireEvent.click(screen.getByText('Import another'))
+            expect(handlers.onPickAnother).toHaveBeenCalledTimes(1)
+            expect(handlers.onClose).not.toHaveBeenCalled()
         })
 
         test('selecting an existing group calls onSetGroup(name)', () => {
@@ -131,6 +188,7 @@ describe('WorkoutImportDialogView', () => {
             renderView(props)
             expect(screen.getByText('Import Failed')).toBeTruthy()
             expect(screen.getByText('Only one workout file at a time')).toBeTruthy()
+            expect(screen.getByTestId('status-error').textContent).toBe('!')
             expect(buttons()).toEqual(['Pick another file', 'Close'])
         })
 
