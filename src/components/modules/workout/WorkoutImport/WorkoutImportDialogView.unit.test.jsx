@@ -40,12 +40,18 @@ describe('WorkoutImportDialogView', () => {
     const renderView = (displayProps) => render(<WorkoutImportDialogView displayProps={displayProps} {...handlers} />)
 
     describe('landing', () => {
-        test('shows the title and the file tile, no buttons', () => {
+        test('shows the title, the file tile and a Cancel button', () => {
             renderView({ phase: 'landing', knownGroups: [] })
             expect(screen.getByText('Import Workout')).toBeTruthy()
             expect(screen.getByText('Choose Workout File')).toBeTruthy()
             expect(screen.getByText('ZWO or JSON')).toBeTruthy()
-            expect(buttons()).toEqual([])
+            expect(buttons()).toEqual(['Cancel'])
+        })
+
+        test('Cancel reports cancel', () => {
+            renderView({ phase: 'landing', knownGroups: [] })
+            fireEvent.click(screen.getByText('Cancel'))
+            expect(handlers.onClose).toHaveBeenCalledWith('cancel')
         })
 
         test('tile accepts a single zwo/json file', () => {
@@ -106,7 +112,7 @@ describe('WorkoutImportDialogView', () => {
             expect(screen.getByText('Category')).toBeTruthy()
             expect(screen.getByTestId('status-success')).toBeTruthy()
             expect(screen.getByTestId('workout-graph')).toBeTruthy()
-            expect(buttons()).toEqual(['Import another', 'Done'])
+            expect(buttons()).toEqual(['Import more', 'Done'])
         })
 
         test('graph uses the FTP from the props, 200 if missing', () => {
@@ -125,7 +131,7 @@ describe('WorkoutImportDialogView', () => {
             expect(screen.getByTestId('status-success')).toBeTruthy()
             expect(screen.getByText('"Sweet Spot" has been added to your library')).toBeTruthy()
             expect(screen.getByRole('combobox')).toBeTruthy()
-            expect(buttons()).toEqual(['Import another', 'Done'])
+            expect(buttons()).toEqual(['Import more', 'Done'])
         })
 
         test('a workout without steps uses the fallback as well', () => {
@@ -156,9 +162,9 @@ describe('WorkoutImportDialogView', () => {
             expect(handlers.onClose).toHaveBeenCalledWith('done')
         })
 
-        test('Import another calls onPickAnother and does not close', () => {
+        test('Import more calls onPickAnother and does not close', () => {
             renderView(props)
-            fireEvent.click(screen.getByText('Import another'))
+            fireEvent.click(screen.getByText('Import more'))
             expect(handlers.onPickAnother).toHaveBeenCalledTimes(1)
             expect(handlers.onClose).not.toHaveBeenCalled()
         })

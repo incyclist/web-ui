@@ -26,7 +26,7 @@ const TileArea = styled.div`
     align-items: stretch;
     justify-content: center;
     width: 100%;
-    height: calc(100% - 5vh);
+    height: calc(100% - 7.7vh);
     padding: 3vh 2vw 0 2vw;
     box-sizing: border-box;
 `
@@ -115,13 +115,13 @@ const StatusCircle = styled.div`
     align-items: center;
     justify-content: center;
     box-sizing: border-box;
-    width: ${props => props.$large ? '12vh' : '6vh'};
-    height: ${props => props.$large ? '12vh' : '6vh'};
-    border: ${props => props.$large ? '0.6vh' : '0.4vh'} solid ${props => props.$color};
+    width: ${props => props.$large ? '12vh' : '2.8vh'};
+    height: ${props => props.$large ? '12vh' : '2.8vh'};
+    border: ${props => props.$large ? '0.6vh' : '0.2vh'} solid ${props => props.$color};
     border-radius: 50%;
     color: ${props => props.$color};
     font-weight: bold;
-    font-size: ${props => props.$large ? '7vh' : '3.5vh'};
+    font-size: ${props => props.$large ? '7vh' : '1.6vh'};
     line-height: 1;
 `
 
@@ -132,7 +132,7 @@ const StatusText = styled.div`
 
 const SuccessCircle = ({ large }) => (
     <StatusCircle $large={large} $color={SUCCESS_COLOR} data-testid="status-success">
-        <ImportIcon size={large ? '7vh' : '3.5vh'} />
+        <ImportIcon size={large ? '7vh' : '1.6vh'} />
     </StatusCircle>
 )
 
@@ -140,7 +140,7 @@ const ErrorCircle = () => (
     <StatusCircle $large $color={ERROR_COLOR} data-testid="status-error">!</StatusCircle>
 )
 
-const Landing = ({ onFiles }) => {
+const Landing = ({ onFiles, onCancel }) => {
     const onDrop = useCallback((dropInfo) => {
         const files = (Array.isArray(dropInfo) ? dropInfo : [dropInfo]).filter(Boolean)
         if (files.length > 0)
@@ -148,6 +148,7 @@ const Landing = ({ onFiles }) => {
     }, [onFiles])
 
     return (
+        <>
         <TileArea>
             <Dropzone
                 id="workout-import-tile"
@@ -164,6 +165,10 @@ const Landing = ({ onFiles }) => {
                 }
             />
         </TileArea>
+        <ButtonBar justify="center">
+            <Button text="Cancel" onClick={onCancel} />
+        </ButtonBar>
+        </>
     )
 }
 
@@ -194,7 +199,7 @@ const Result = ({ result, knownGroups, onSetGroup, onPickAnother, onDone }) => {
     )
     const buttons = (
         <ButtonBar justify="center">
-            <Button text="Import another" primary={false} onClick={onPickAnother} />
+            <Button text="Import more" primary={false} onClick={onPickAnother} />
             <Button text="Done" primary onClick={onDone} />
         </ButtonBar>
     )
@@ -267,7 +272,7 @@ export const WorkoutImportDialogView = ({ displayProps, onClose, onFiles, onPick
             content = <Failed error={error} onPickAnother={onPickAnother} onClose={close('close')} />
             break
         default:
-            content = <Landing onFiles={onFiles} />
+            content = <Landing onFiles={onFiles} onCancel={close('cancel')} />
     }
 
     return (

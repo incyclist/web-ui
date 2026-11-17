@@ -72,11 +72,26 @@ export function Title(props) {
 
 const ESC=27
 
+// Open dialogs, topmost last. `window.activeDialog` always mirrors the topmost one (hooks like useKey
+// and useScheduledWorkoutPrompt read it). Tracking a stack - instead of every dialog restoring "the
+// value it saw" on each re-render - keeps a lower dialog from losing (or stealing back) the active
+// state when another dialog re-renders or closes.
+const dialogStack = []
+let dialogCounter = 0
+
+const updateActiveDialog = () => {
+    window.activeDialog = dialogStack.length>0 ? dialogStack[dialogStack.length-1] : undefined
+}
+
 export const Dialog = (props) => {
 
     const logger = new EventLogger('Incyclist')
 
-    const key = `${props.id??props.title}${Date.now()}`
+    // stable for the lifetime of the dialog instance
+    const keyRef = useRef(null)
+    if (keyRef.current===null)
+        keyRef.current = `${props.id??props.title}${Date.now()}-${++dialogCounter}`
+    const key = keyRef.current
     const mounted = useRef(false)
 
     const onOutsideClicked = () => {
@@ -113,12 +128,15 @@ export const Dialog = (props) => {
     })
 
     useEffect( ()=>{
-        const prev = window.activeDialog
-        window.activeDialog = key
+        dialogStack.push(key)
+        updateActiveDialog()
         return ()=> {
-            window.activeDialog = prev
+            const idx = dialogStack.lastIndexOf(key)
+            if (idx!==-1)
+                dialogStack.splice(idx,1)
+            updateActiveDialog()
         }
-    })
+    },[key])
 
     useUnmountEffect( ()=>{
 
