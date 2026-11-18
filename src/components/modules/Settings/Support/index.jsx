@@ -14,8 +14,6 @@ const writeToClipboard = async (text) => {
     await navigator.clipboard.writeText(text)
 }
 
-const getOtherLinkId = (link) => /github/i.test(link?.url ?? '') ? 'github' : 'strava'
-
 export const SupportArea = () => {
 
     const service = useMemo(() => getSupportSettingsPageService(), [])
@@ -37,7 +35,7 @@ export const SupportArea = () => {
         catch { /* nothing to recover: the link is visible and can be opened manually */ }
     }, [service])
 
-    const onOpenOtherLink = useCallback((link) => onOpenLink(getOtherLinkId(link), link.url), [onOpenLink])
+    const onOpenOtherLink = useCallback((link) => onOpenLink(link.id, link.url), [onOpenLink])
 
     const onDonate = useCallback(async (id, url) => {
         service.onDonationClicked(id)

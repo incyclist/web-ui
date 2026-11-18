@@ -14,6 +14,9 @@ const appInfo = {
     uiVersion: '26.10.1',
     uuid: '1f3a9c0e-5d1b-4e7a-9a3c-2c8e0f4b77b2',
     privacyUrl: 'https://incyclist.com/privacy',
+    labels: { appVersion: 'App Version', uiVersion: 'UI Version', uuid: 'uuid', privacy: 'Privacy', privacyLink: 'Privacy Statement' },
+    compactVersionText: 'Version: App 1.2.3 · UI 26.10.1',
+    uuidActionLabel: 'Copy',
 }
 
 const email = {
@@ -36,8 +39,8 @@ const baseDonation = {
     promise: 'Incyclist is free and stays free. There is no subscription and nothing to unlock.',
     note: 'Donating is entirely voluntary and changes nothing in the app. You can also help by answering questions in the',
     otherHelpLinks: [
-        { label: 'Strava club', url: 'https://www.strava.com/clubs/1029407' },
-        { label: 'GitHub', url: 'https://github.com/incyclist' },
+        { id: 'strava', label: 'Strava club', url: 'https://www.strava.com/clubs/1029407' },
+        { id: 'github', label: 'GitHub', url: 'https://github.com/incyclist' },
     ],
 }
 
@@ -66,7 +69,7 @@ WebsiteMode.args = {
         ...baseDonation,
         mode: 'website',
         channels: [],
-        websiteLink: { label: 'Ways to support Incyclist', url: 'https://incyclist.com/#support', host: 'incyclist.com' },
+        websiteLink: { label: 'Ways to support Incyclist ↗', url: 'https://incyclist.com/#support', host: 'incyclist.com' },
     },
 }
 

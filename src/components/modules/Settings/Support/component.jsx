@@ -58,24 +58,24 @@ const Confirmation = styled.span`
 
 const LABEL_WIDTH = '8vw'
 
-const UuidRow = ({ uuid, onCopyUuid, uuidCopied }) => (
+const UuidRow = ({ uuid, label, actionLabel, onCopyUuid, uuidCopied }) => (
     <Row>
-        <Text label='uuid' labelWidth={LABEL_WIDTH}>{uuid}</Text>
+        <Text label={label} labelWidth={LABEL_WIDTH}>{uuid}</Text>
         {!uuidCopied && onCopyUuid
-            ? <Button width='6ch' height='2vh' fontSize='1.5vh' secondary={true} padding='0' margin='0 0 0 0.5vw' onClick={onCopyUuid}>Copy</Button>
+            ? <Button width='6ch' height='2vh' fontSize='1.5vh' secondary={true} padding='0' margin='0 0 0 0.5vw' onClick={onCopyUuid}>{actionLabel}</Button>
             : null}
     </Row>
 )
 
 const AppInfo = ({ appInfo, onOpenLink, onCopyUuid, uuidCopied }) => {
-    const { title, appVersion, uiVersion, uuid, privacyUrl } = appInfo
+    const { title, appVersion, uiVersion, uuid, privacyUrl, labels, uuidActionLabel } = appInfo
     return <>
         <Header>{title}</Header>
-        <Text label='App Version' labelWidth={LABEL_WIDTH}>{appVersion}</Text>
-        <Text label='UI Version' labelWidth={LABEL_WIDTH}>{uiVersion}</Text>
-        <UuidRow uuid={uuid} onCopyUuid={onCopyUuid} uuidCopied={uuidCopied} />
-        <Text label='Privacy' labelWidth={LABEL_WIDTH}>
-            <UrlLink text='Privacy Statement' url={privacyUrl} onClick={() => onOpenLink('privacy', privacyUrl)} />
+        <Text label={labels.appVersion} labelWidth={LABEL_WIDTH}>{appVersion}</Text>
+        <Text label={labels.uiVersion} labelWidth={LABEL_WIDTH}>{uiVersion}</Text>
+        <UuidRow uuid={uuid} label={labels.uuid} actionLabel={uuidActionLabel} onCopyUuid={onCopyUuid} uuidCopied={uuidCopied} />
+        <Text label={labels.privacy} labelWidth={LABEL_WIDTH}>
+            <UrlLink text={labels.privacyLink} url={privacyUrl} logger={null} onClick={() => onOpenLink('privacy', privacyUrl)} />
         </Text>
     </>
 }
@@ -86,7 +86,7 @@ const HelpRow = ({ link, onOpenLink, onOpenEmail, onCopyDetails, copied }) => {
     return (
         <Row>
             <Text label={link.shortLabel} labelWidth={LABEL_WIDTH}>
-                <UrlLink text={link.label} url={link.url} onClick={onClick} />
+                <UrlLink text={link.label} url={link.url} logger={null} onClick={onClick} />
             </Text>
             {email
                 ? <>
@@ -129,7 +129,7 @@ const DonationButtons = ({ donation, onDonate }) => {
                     onClick={() => onDonate('website', websiteLink.url)}
                 >
                     <Column align='center'>
-                        <span>{websiteLink.label} ↗</span>
+                        <span>{websiteLink.label}</span>
                         <SubLabel>{websiteLink.host}</SubLabel>
                     </Column>
                 </Button>
@@ -155,7 +155,7 @@ const DonationCard = ({ donation, onDonate, onOpenOtherLink }) => (
             {donation.otherHelpLinks.map((l, i) => (
                 <React.Fragment key={l.url}>
                     {i > 0 ? ' · ' : null}
-                    <UrlLink text={l.label} url={l.url} onClick={() => onOpenOtherLink(l)} />
+                    <UrlLink text={l.label} url={l.url} logger={null} onClick={() => onOpenOtherLink(l)} />
                 </React.Fragment>
             ))}
         </Muted>

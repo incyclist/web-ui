@@ -23,7 +23,10 @@ const email = {
     copyLabel: 'Copy details', copiedMessage: 'Copied. Paste it.',
 }
 const props = {
-    appInfo: { title: 'App info', appVersion: '1.0.0', uiVersion: '2.0.0', uuid: 'u-1', privacyUrl: 'https://p' },
+    appInfo: { title: 'App info', appVersion: '1.0.0', uiVersion: '2.0.0', uuid: 'u-1', privacyUrl: 'https://p',
+        labels: { appVersion: 'App Version', uiVersion: 'UI Version', uuid: 'uuid', privacy: 'Privacy', privacyLink: 'Privacy Statement' },
+        compactVersionText: 'Version: App 1.0.0 · UI 2.0.0', uuidActionLabel: 'Copy',
+    },
     helpTitle: 'Need help?',
     helpLinks: [
         { id: 'strava', label: 'Strava Club', shortLabel: 'Strava', url: 'https://strava' },
@@ -35,7 +38,7 @@ const props = {
             { id: 'paypal', label: 'PayPal', subLabel: 'one-time', url: 'https://paypal', primary: true },
             { id: 'github-sponsors', label: 'GitHub Sponsors', subLabel: 'one-time or monthly', url: 'https://gh', primary: false },
         ],
-        otherHelpLinks: [{ label: 'GitHub', url: 'https://github.com/incyclist' }],
+        otherHelpLinks: [{ id: 'github', label: 'GitHub', url: 'https://github.com/incyclist' }],
     },
 }
 
@@ -66,6 +69,13 @@ describe('SupportArea', () => {
         fireEvent.click(screen.getByText('PayPal'))
         expect(service.onDonationClicked).toHaveBeenCalledWith('paypal')
         await waitFor(() => expect(openExternal).toHaveBeenCalledWith('https://paypal'))
+    })
+
+    test('other help link reports the id supplied by the page service', async () => {
+        render(<SupportArea />)
+        fireEvent.click(screen.getByText('GitHub'))
+        expect(service.onLinkClicked).toHaveBeenCalledWith('github')
+        await waitFor(() => expect(openExternal).toHaveBeenCalledWith('https://github.com/incyclist'))
     })
 
     test('email opens through the external path and reports success', async () => {
@@ -106,10 +116,11 @@ describe('SupportArea', () => {
             ...props,
             donation: {
                 ...props.donation, mode: 'website', fundsText: undefined, channels: [],
-                websiteLink: { label: 'Ways to support Incyclist', url: 'https://incyclist.com/#support', host: 'incyclist.com' },
+                websiteLink: { label: 'Ways to support Incyclist ↗', url: 'https://incyclist.com/#support', host: 'incyclist.com' },
             },
         })
         render(<SupportArea />)
+        expect(screen.getByText('Ways to support Incyclist ↗')).toBeTruthy()
         expect(screen.queryByText('PayPal')).toBeNull()
         fireEvent.click(screen.getByText('incyclist.com'))
         expect(service.onDonationClicked).toHaveBeenCalledWith('website')
