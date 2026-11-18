@@ -1,48 +1,95 @@
-import React, { useEffect, useState } from "react"
-import { UserSettingsService } from "incyclist-services"
+import React, { useCallback, useEffect, useMemo, useState } from "react"
+import { getSupportSettingsPageService } from "incyclist-services"
 import { SupportAreaView } from "./component"
-import packageInfo from '../../../../../package.json'
-import AppInfoBinding from "../../../../bindings/app-info"
+import { hasFeature, api } from "../../../../utils/electron/integration"
 
-export const SupportArea = ({user})=> {
+const openExternal = async (url) => {
+    if (hasFeature('shell.openExternal'))
+        await api.shell.openExternal(url)
+    else
+        window.open(url, '_blank', 'noopener,noreferrer')
+}
 
+const writeToClipboard = async (text) => {
+    await navigator.clipboard.writeText(text)
+}
 
+const getOtherLinkId = (link) => /github/i.test(link?.url ?? '') ? 'github' : 'strava'
 
+export const SupportArea = () => {
 
-    const [uuid,setUuid] = useState(undefined)
-    const [appVersion,setAppVersion] = useState(undefined)
-    const [reactVersion,setReactVersion] = useState(undefined)
-    
+    const service = useMemo(() => getSupportSettingsPageService(), [])
+    const props = useMemo(() => service.getPageDisplayProps(), [service])
 
-    useEffect( ()=>{
-        const userSettings = UserSettingsService.getInstance()
-        
+    const [copied, setCopied] = useState(false)
+    const [uuidCopied, setUuidCopied] = useState(false)
 
-        if (!uuid) {
-            try {
-                setUuid(userSettings.get('uuid'))
-            }
-            catch(err) {
+    useEffect(() => {
+        service.openPage()
+        return () => { service.closePage() }
+    }, [service])
 
-            }
+    const onOpenLink = useCallback(async (id, url) => {
+        service.onLinkClicked(id)
+        try {
+            await openExternal(url)
         }
-        if (!appVersion) {
-            const appInfo = AppInfoBinding.getInstance().getAppInfo()
-            setAppVersion(appInfo.version)
+        catch { /* nothing to recover: the link is visible and can be opened manually */ }
+    }, [service])
+
+    const onOpenOtherLink = useCallback((link) => onOpenLink(getOtherLinkId(link), link.url), [onOpenLink])
+
+    const onDonate = useCallback(async (id, url) => {
+        service.onDonationClicked(id)
+        try {
+            await openExternal(url)
         }
+        catch { /* the URL is not recoverable by the app */ }
+    }, [service])
 
-        if(!reactVersion) {
-            setReactVersion(packageInfo.version)
+    const copyDetails = useCallback(async (email, trigger) => {
+        try {
+            await writeToClipboard(email.copyText)
+            setCopied(true)
+            service.onDetailsCopied(trigger, 'success')
         }
+        catch {
+            setCopied(false)
+            service.onDetailsCopied(trigger, 'failed')
+        }
+    }, [service])
 
+    const onCopyDetails = useCallback((email) => copyDetails(email, 'button'), [copyDetails])
 
-    },[appVersion, reactVersion, uuid])
+    const onOpenEmail = useCallback(async (link) => {
+        service.onLinkClicked(link.id)
+        try {
+            await openExternal(link.url)
+            service.onEmailOpenResult('opened')
+        }
+        catch (err) {
+            service.onEmailOpenResult('failed', err?.message ?? String(err))
+            await copyDetails(link.email, 'fallback')
+        }
+    }, [service, copyDetails])
 
+    const onCopyUuid = useCallback(async () => {
+        try {
+            await writeToClipboard(props.appInfo.uuid)
+            setUuidCopied(true)
+        }
+        catch { /* clipboard not available */ }
+    }, [props])
 
-
-
-    const props={uuid,appVersion,reactVersion}
- 
-    return <SupportAreaView {...props}/>
-
+    return <SupportAreaView
+        {...props}
+        copied={copied}
+        uuidCopied={uuidCopied}
+        onOpenLink={onOpenLink}
+        onOpenOtherLink={onOpenOtherLink}
+        onOpenEmail={onOpenEmail}
+        onCopyDetails={onCopyDetails}
+        onCopyUuid={onCopyUuid}
+        onDonate={onDonate}
+    />
 }
