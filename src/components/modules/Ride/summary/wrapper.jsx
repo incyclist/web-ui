@@ -9,6 +9,7 @@ export const DynamicActivitySummary = ({onExit,onNew,onContinue})=> {
     const [isSaving,setIsSaving] = useState(false)
     const [showDeleteConfirm,setShowDeleteConfirm] = useState(false)
     const [initialized,setInitialized] = useState(false)
+    const [,setRefresh] = useState(0)
 
     const propsRef = useRef({})
 
@@ -70,9 +71,14 @@ export const DynamicActivitySummary = ({onExit,onNew,onContinue})=> {
             propsRef.current.onDeleteCancel = onDeleteCancel
             propsRef.current.onTitleChange = onChangeTitle
 
-            if (propsRef.current.showDonate) {
-                propsRef.current.onDonateClicked = () => {
-                    service.onDonateClicked()
+            if (propsRef.current.donation) {
+                propsRef.current.onDonateClicked = (channelId) => {
+                    service.onDonateClicked(channelId)
+                }
+                propsRef.current.onDonateHidden = () => {
+                    service.onDonateHidden()
+                    getDisplayProperties()
+                    setRefresh(n => n + 1)
                 }
             }
         }
