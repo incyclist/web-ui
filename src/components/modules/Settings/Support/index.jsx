@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react"
-import { getSupportSettingsPageService } from "incyclist-services"
+import { getSupportSettingsDialogService } from "incyclist-services"
 import { SupportAreaView } from "./component"
 import { hasFeature, api } from "../../../../utils/electron/integration"
 
@@ -16,15 +16,15 @@ const writeToClipboard = async (text) => {
 
 export const SupportArea = () => {
 
-    const service = useMemo(() => getSupportSettingsPageService(), [])
-    const props = useMemo(() => service.getPageDisplayProps(), [service])
+    const service = useMemo(() => getSupportSettingsDialogService(), [])
+    const props = useMemo(() => service.getDialogDisplayProps(), [service])
 
     const [copied, setCopied] = useState(false)
     const [uuidCopied, setUuidCopied] = useState(false)
 
     useEffect(() => {
-        service.openPage()
-        return () => { service.closePage() }
+        service.openDialog()
+        return () => { service.closeDialog() }
     }, [service])
 
     const onOpenLink = useCallback(async (id, url) => {
