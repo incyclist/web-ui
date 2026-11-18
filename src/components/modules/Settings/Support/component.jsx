@@ -100,6 +100,7 @@ const HelpRow = ({ link, onOpenLink, onOpenEmail, onCopyDetails, copied }) => {
 
 const ChannelButton = ({ channel, onDonate }) => (
     <Button
+        id={`donate-${channel.id}`}
         primary={channel.primary}
         secondary={!channel.primary}
         margin='0 1vw 0 0'
@@ -121,6 +122,7 @@ const DonationButtons = ({ donation, onDonate }) => {
         return (
             <Row>
                 <Button
+                    id='donate-website'
                     primary={true}
                     margin='0 1vw 0 0'
                     height='6vh'
