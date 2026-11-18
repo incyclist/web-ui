@@ -4,7 +4,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 
 const { service, hasFeature, openExternal } = vi.hoisted(() => ({
     service: {
-        openDialog: vi.fn(), closeDialog: vi.fn(), getDialogDisplayProps: vi.fn(),
+        open: vi.fn(), close: vi.fn(), getDisplayProps: vi.fn(),
         onLinkClicked: vi.fn(), onDonationClicked: vi.fn(), onEmailOpenResult: vi.fn(), onDetailsCopied: vi.fn(),
     },
     hasFeature: vi.fn(), openExternal: vi.fn(),
@@ -12,7 +12,7 @@ const { service, hasFeature, openExternal } = vi.hoisted(() => ({
 
 vi.mock('incyclist-services', async (importOriginal) => ({
     ...(await importOriginal()),
-    getSupportSettingsDialogService: () => service,
+    useSupportSettingsDisplay: () => service,
 }))
 vi.mock('../../../../utils/electron/integration', () => ({ hasFeature, api: { shell: { openExternal } } }))
 
@@ -46,7 +46,7 @@ const writeText = vi.fn()
 
 beforeEach(() => {
     vi.clearAllMocks()
-    service.getDialogDisplayProps.mockReturnValue(props)
+    service.getDisplayProps.mockReturnValue(props)
     hasFeature.mockReturnValue(true)
     openExternal.mockResolvedValue(undefined)
     writeText.mockResolvedValue(undefined)
@@ -54,14 +54,14 @@ beforeEach(() => {
 })
 
 describe('SupportArea', () => {
-    test('renders what the dialog service supplies and opens/closes the dialog', () => {
+    test('renders what the display service supplies and opens/closes the display service', () => {
         const { unmount } = render(<SupportArea />)
-        expect(service.openDialog).toHaveBeenCalled()
+        expect(service.open).toHaveBeenCalled()
         expect(screen.getByText('Need help?')).toBeTruthy()
         expect(screen.getByText('Support Incyclist')).toBeTruthy()
         expect(screen.getByText('PayPal')).toBeTruthy()
         unmount()
-        expect(service.closeDialog).toHaveBeenCalled()
+        expect(service.close).toHaveBeenCalled()
     })
 
     test('donation button opens the link and reports the click', async () => {
@@ -71,7 +71,7 @@ describe('SupportArea', () => {
         await waitFor(() => expect(openExternal).toHaveBeenCalledWith('https://paypal'))
     })
 
-    test('other help link reports the id supplied by the dialog service', async () => {
+    test('other help link reports the id supplied by the display service', async () => {
         render(<SupportArea />)
         fireEvent.click(screen.getByText('GitHub'))
         expect(service.onLinkClicked).toHaveBeenCalledWith('github')
@@ -112,7 +112,7 @@ describe('SupportArea', () => {
     })
 
     test('website mode shows one button and no channels', async () => {
-        service.getDialogDisplayProps.mockReturnValue({
+        service.getDisplayProps.mockReturnValue({
             ...props,
             donation: {
                 ...props.donation, mode: 'website', fundsText: undefined, channels: [],
