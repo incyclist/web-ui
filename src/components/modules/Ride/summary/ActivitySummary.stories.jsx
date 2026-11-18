@@ -208,12 +208,31 @@ NoHrm.args = {
     preview: 'https://videos.incyclist.com/previews/DE_Arnbach_preview.png',
 }
 
+const donation = {
+    text: "Incyclist is free and stays free. If you'd like to help with server and app-store costs:",
+    shortText: 'Incyclist is free and stays free. Like to help with costs?',
+    links: [
+        { id: 'paypal', label: 'PayPal', url: 'https://www.paypal.com/paypalme/incyclist' },
+        { id: 'github-sponsors', label: 'GitHub Sponsors', url: 'https://github.com/sponsors/incyclist' },
+    ],
+    hideLabel: 'Hide',
+}
+
 export const WithDonate = Template.bind({});
 WithDonate.args = {
     activity:noHrmActivity,
     showMap: false,    
     showSave: true,
-    showDonate: true,
-    onDonate: () => {},
+    donation,
+    onDonateClicked: () => {},
+    onDonateHidden: () => {},
+    preview: 'https://videos.incyclist.com/previews/DE_Arnbach_preview.png',
+}
+
+export const WithoutDonate = Template.bind({});
+WithoutDonate.args = {
+    activity:noHrmActivity,
+    showMap: false,    
+    showSave: true,
     preview: 'https://videos.incyclist.com/previews/DE_Arnbach_preview.png',
 }

@@ -1,7 +1,7 @@
 /* eslint-disable jsx-a11y/accessible-emoji */
 import React, { useMemo, useState } from "react"
 import { createPortal } from "react-dom"
-import { Button, ButtonBar, Column, ErrorBoundary, Row, View, Image, UrlLink  } from "../../../atoms"
+import { Button, ButtonBar, Column, ErrorBoundary, Row, View, Image, UrlLink, LinkButton } from "../../../atoms"
 import { AppThemeProvider } from "../../../../theme"
 import styled from "styled-components";
 import { FreeMap } from "../../../molecules/Maps";
@@ -48,13 +48,43 @@ const Block= styled(View)`
     height: 100%;
 `
 
-const DEFAULT_DONATE_TEXT = 'You seem to be enjoying Incyclist. Please consider donating to support this app.'
-const DEFAULT_DONATE_URL = 'https://www.paypal.com/paypalme/incyclist'
+// fixed-height slot, so that the stats don't jump depending on whether the donation line is shown
+const DONATE_SLOT_HEIGHT = '3.5vh'
+
+const DonationRow = styled(Row)`
+    height: ${DONATE_SLOT_HEIGHT};
+    min-height: ${DONATE_SLOT_HEIGHT};
+    align-items: center;
+    justify-content: space-between;
+    font-size: 1.5vh;
+    opacity: 0.75;
+    margin-bottom: 1vh;
+`
+
+export const DonationLine = ({ donation, onDonateClicked, onDonateHidden }) => {
+    const links = donation?.links ?? []
+    return (
+        <DonationRow className='donation'>
+            <span>
+                {donation?.text}{' '}
+                {links.map((l, i) => (
+                    <React.Fragment key={l.id}>
+                        {i > 0 ? ' · ' : null}
+                        <span onClick={() => onDonateClicked?.(l.id)}>
+                            <UrlLink text={l.label} url={l.url} />
+                        </span>
+                    </React.Fragment>
+                ))}
+            </span>
+            <LinkButton label={donation?.hideLabel} onClick={() => onDonateHidden?.()} />
+        </DonationRow>
+    )
+}
 
 export const ActivitySummaryView = ( {activity,position,preview, units, xScale,
                                   showMap,showSave,showNew=true,showContinue=true,showExit=true,showDelete:showDeleteProp,
                                   isSaving=false,showDeleteConfirm=false,
-                                  showDonate,donateText=DEFAULT_DONATE_TEXT,donateUrl=DEFAULT_DONATE_URL,onDonateClicked,
+                                  donation,onDonateClicked,onDonateHidden,
                                   onTitleChange, onSave, onNew, onContinue, onExit, onDelete, onDeleteConfirm, onDeleteCancel
                                  }) => {
 
@@ -82,13 +112,11 @@ export const ActivitySummaryView = ( {activity,position,preview, units, xScale,
         setMarkerSize (Number(24/20*v.zoom).toFixed(0))   
     }
 
-    const statsHeight = (showDonate && donateText)? 'calc(58% - 3.5vh)' :  '58%'    
-
     return <ErrorBoundary> 
         <AppThemeProvider>
             <ContentArea>
                 <DataArea>
-                    <CRow className='activity-stats' height={statsHeight} margin='0 0 1% 0' style={{ textAlign:'left'}}>
+                    <CRow className='activity-stats' height={`calc(58% - ${DONATE_SLOT_HEIGHT})`} margin='0 0 1% 0' style={{ textAlign:'left'}}>
                         <Column width='54%' margin='0 4% 0 0' >
 
                             { showMap ? <FreeMap
@@ -125,21 +153,12 @@ export const ActivitySummaryView = ( {activity,position,preview, units, xScale,
 
                     </CRow>
 
-                    { showDonate && donateText ? 
-                        <ErrorBoundary>
-                            <CRow height='3.5vh' style={{ minHeight:'3.5vh', fontSize:'1.5vh',textAlign:'center', background:'darkgrey', marginBottom:'1vh'}}>
-                                <Column style={ {textAlign:'center', verticalAlign:'middle', minHeight:'3.5vh', fontSize:'3vh'   }}>
-                                    <span role='img' area-label='info' >ℹ️</span>
-                                </Column>
-                                <Column  width='90%'>
-                                    <span>{donateText}</span>
-                                    <span>Click <UrlLink text='here' url={donateUrl} onOpened={onDonateClicked}/> to donate </span>
-                                </Column>
-                            </CRow> 
-                        </ErrorBoundary>                            
-                        : null
-                    }
-                
+                    <ErrorBoundary>
+                        {donation
+                            ? <DonationLine donation={donation} onDonateClicked={onDonateClicked} onDonateHidden={onDonateHidden} />
+                            : <DonationRow aria-hidden='true' />}
+                    </ErrorBoundary>
+
                     <CRow className='activity-graph' height='40%'  style={{ textAlign:'left'}}>
                         <ErrorBoundary>
                             <Column width='100%' >
