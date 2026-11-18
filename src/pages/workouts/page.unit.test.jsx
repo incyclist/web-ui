@@ -1,6 +1,6 @@
 import React from 'react'
 import { describe, test, expect, vi, beforeEach } from 'vitest'
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent, act } from '@testing-library/react'
 import { MemoryRouter } from 'react-router'
 import { WorkoutsPage } from './page'
 
@@ -15,7 +15,8 @@ const { service, screenCalls } = vi.hoisted(() => ({
         onOpenDetails: vi.fn(),
         onCardOK: vi.fn(),
         onDelete: vi.fn(),
-        onRetry: vi.fn(),
+        onImportOpen: vi.fn(),
+        onImportFiles: vi.fn(),
         onCarouselInitialized: vi.fn(),
         onCarouselUpdated: vi.fn(),
         onCreateInfoClosed: vi.fn(),
@@ -37,6 +38,10 @@ vi.mock('./screen', () => ({
 
 vi.mock('../../components/modules/workout/selection/WorkoutDetails', () => ({
     WorkoutDetailsDialog: ({ id }) => <div>details:{id}</div>,
+}))
+
+vi.mock('../../components/modules/workout/WorkoutImport', () => ({
+    WorkoutImportDialog: ({ source, onClose }) => <div>import-dialog:{source}<button onClick={onClose}>close-import</button></div>,
 }))
 
 vi.mock('../../hooks', async (importOriginal) => {
@@ -96,14 +101,13 @@ describe('WorkoutsPage', () => {
     test('card actions and carousel callbacks are forwarded by id', () => {
         renderPage()
         const p = screenCalls.at(-1)
-        p.onOK('w1', ['f'])
+        p.onOK('w1')
         p.onDelete('w1')
-        p.onRetry('imp')
         p.onInitialized('myWorkouts', { item: 1, itemsInSlide: 4 })
         p.onSlideChanged('myWorkouts', { item: 2, itemsInSlide: 4 })
-        expect(service.onCardOK).toHaveBeenCalledWith('w1', ['f'])
+        expect(service.onCardOK).toHaveBeenCalledWith('w1')
         expect(service.onDelete).toHaveBeenCalledWith('w1')
-        expect(service.onRetry).toHaveBeenCalledWith('imp')
+        expect(screenCalls.at(-1).onRetry).toBeUndefined()
         expect(service.onCarouselInitialized).toHaveBeenCalledWith('myWorkouts', 1, 4)
         expect(service.onCarouselUpdated).toHaveBeenCalledWith('myWorkouts', 2, 4)
     })
@@ -151,5 +155,40 @@ describe('WorkoutsPage', () => {
     test('no overlay without createInfo', () => {
         renderPage()
         expect(screen.queryByText(/steps to create a workout/)).toBeNull()
+    })
+
+    test('import button opens the import flow and mounts the dialog', () => {
+        renderPage()
+        expect(screen.queryByText(/import-dialog/)).toBeNull()
+        act(() => { screenCalls.at(-1).onImportWorkout() })
+        expect(service.onImportOpen).toHaveBeenCalledTimes(1)
+        expect(screen.getByText('import-dialog:button')).toBeTruthy()
+        expect(screenCalls.at(-1).dropEnabled).toBe(false)
+    })
+
+    test('a page drop hands the files to the service before the dialog mounts', () => {
+        renderPage()
+        expect(screenCalls.at(-1).dropEnabled).toBe(true)
+        service.onImportFiles.mockImplementation(() => {
+            expect(screen.queryByText(/import-dialog/)).toBeNull()
+        })
+        const files = [{ type: 'url', url: 'file:///a.zwo' }]
+        act(() => { screenCalls.at(-1).onDropFiles(files) })
+        expect(service.onImportFiles).toHaveBeenCalledWith(files, 'page-drop')
+        expect(screen.getByText('import-dialog:page-drop')).toBeTruthy()
+    })
+
+    test('closing the dialog unmounts it and re-enables the drop overlay', () => {
+        renderPage()
+        act(() => { screenCalls.at(-1).onImportWorkout() })
+        fireEvent.click(screen.getByText('close-import'))
+        expect(screen.queryByText(/import-dialog/)).toBeNull()
+        expect(screenCalls.at(-1).dropEnabled).toBe(true)
+    })
+
+    test('create-info step 4 points at the Import Workout button', () => {
+        service.getPageDisplayProperties.mockReturnValue(props({ createInfo: { markAsSeenDefault: true } }))
+        renderPage()
+        expect(screen.getByText(/Import Workout button/)).toBeTruthy()
     })
 })

@@ -7,7 +7,8 @@ export default {
     argTypes: {
         onOK: { action: 'OK' },
         onDelete: { action: 'delete' },
-        onRetry: { action: 'retry' },
+        onImportWorkout: { action: 'import workout' },
+        onDropFiles: { action: 'drop files' },
     },
 }
 
@@ -30,7 +31,6 @@ const workout = (id, title, extra = {}) => ({
 const myWorkouts = {
     id: 'myWorkouts', title: 'My Workouts', observer: noObserver,
     cards: [
-        { id: 'Import', cardType: 'WorkoutImport', props: { title: 'Import Workout', filters: [], visible: true } },
         { id: 'Create', cardType: 'WorkoutCreate', props: { title: 'Create Workout', visible: true } },
         workout('w1', 'Sweet Spot'),
     ]

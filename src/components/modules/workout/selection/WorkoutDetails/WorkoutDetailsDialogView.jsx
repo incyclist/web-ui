@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from "react"
 import styled from "styled-components"
-import { Button, ButtonBar, CheckBox, Column, Divider, EditNumber, EditText, Row, SingleSelect, Text } from "../../../../atoms"
+import { Button, ButtonBar, CheckBox, Column, Divider, EditNumber, Row, Text } from "../../../../atoms"
 import { AttachmentChip, Dialog, MessageBox, WorkoutGraph } from "../../../../molecules"
+import { WorkoutCategorySelect } from "../WorkoutCategorySelect"
 
 const ContentArea = styled(Column)`
     height: calc(100% - 7.7vh);
@@ -10,7 +11,6 @@ const ContentArea = styled(Column)`
     padding-right:0.4vw;
 `
 
-const ADD_CATEGORY = 'Add new Category'
 const styling = { labelWidth: '12ch', labelPosition: 'before' }
 
 /**
@@ -26,7 +26,7 @@ export const WorkoutDetailsDialogView = ({
     onFtpChange, onErgModeChange, onStepChangeAudioSignalChange, onGroupChange
 }) => {
 
-    const [state, setState] = useState({ ftp, useErgMode, stepChangeAudioSignal, showCategoryEdit: false, confirmDelete: false })
+    const [state, setState] = useState({ ftp, useErgMode, stepChangeAudioSignal, confirmDelete: false })
 
     // keep local (optimistic) values in sync when the page service pushes new values
     useEffect(() => { setState(c => ({ ...c, ftp })) }, [ftp])
@@ -48,30 +48,12 @@ export const WorkoutDetailsDialogView = ({
         setState(c => ({ ...c, stepChangeAudioSignal: value }))
         onStepChangeAudioSignalChange?.(value)
     }
-    const onGroupSelected = (value) => {
-        if (value === ADD_CATEGORY) {
-            setState(c => ({ ...c, showCategoryEdit: true }))
-            return
-        }
-        onGroupChange?.(value)
-    }
-    const onNewGroup = (value) => {
-        setState(c => ({ ...c, showCategoryEdit: false }))
-        if (value?.length)
-            onGroupChange?.(value)
-    }
-
     const onDeleteClicked = () => setState(c => ({ ...c, confirmDelete: true }))
     const onDeleteNo = () => setState(c => ({ ...c, confirmDelete: false }))
     const onDeleteYes = () => {
         setState(c => ({ ...c, confirmDelete: false }))
         onDelete?.()
     }
-
-    const groupList = [...(groups ?? [])]
-    if (group && !groupList.includes(group))
-        groupList.push(group)
-    groupList.push(ADD_CATEGORY)
 
     return (
         <>
@@ -88,10 +70,7 @@ export const WorkoutDetailsDialogView = ({
                     {ftpRequired ? <EditNumber {...styling} label='FTP' value={state.ftp ?? 200} digits={0} min={0} max={999} onValueChange={onFtpChanged} /> : null}
 
                     {isScheduledEntry ? <Text {...styling} label='Date' text={dateStr} /> :
-                        state.showCategoryEdit ?
-                            <EditText {...styling} label='Category' value='' onValueChange={onNewGroup} />
-                            :
-                            <SingleSelect {...styling} label='Category' value={group} options={groupList} onValueChange={onGroupSelected} />
+                        <WorkoutCategorySelect {...styling} value={group} groups={groups} onChange={onGroupChange} />
                     }
 
                     <CheckBox {...styling} label='Use ERG Mode' value={state.useErgMode} onValueChange={onErgModeChanged} />
