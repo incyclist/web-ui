@@ -127,7 +127,7 @@ export class GearSettingsView extends React.Component {
 
                 {properties.map( (p,index) => 
                     <div key={index}> 
-                        <Property property={p} noLog logger={logger}value={(settings? settings[p.key]:undefined) || p.default} settings={settings} onChange={ (p,value) => this.onSettingsChanged(p,value)} />
+                        <Property property={p} noLog logger={logger}value={(settings? settings[p.key]:undefined) ?? p.default} settings={settings} onChange={ (p,value) => this.onSettingsChanged(p,value)} />
                     </div>
                 )}
 
