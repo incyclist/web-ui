@@ -6,6 +6,9 @@ import { EventLogger } from 'gd-eventlog';
 import { Autosize, ErrorBoundary, Loader } from '../../atoms';
 import { useUnmountEffect } from '../../../hooks';
 import { withLegacyLocalUrlWorkaround } from '../../../utils/legacyVideoUrlWorkaround';
+import {
+    clampPlaybackRate, buildElementErrorLog, createPlayFailureTracker, handlePlayFailure, reportUnplayable
+} from './videoDiagnostics';
 
 
 export const VideoContainer = styled(Autosize)`
@@ -21,7 +24,7 @@ export const VideoView = styled.video`
     // display: ${props => props.hidden ?  'none' : 'block'  };
 ` 
 
-export const Video = ( { src, startTime, observer, width, height,muted=true,loop=false,hidden=false,
+export const Video = ( { src, startTime, observer, width, height,muted=true,loop=false,hidden=false, segment,
                          onPlaybackUpdate, onLoaded, onLoadError, onPlaybackError, onStalled, onWaiting, onEnded } ) => {
 
     // src already went through resolvePlaybackUrl() (incyclist-services), which can resolve
@@ -37,6 +40,7 @@ export const Video = ( { src, startTime, observer, width, height,muted=true,loop
     })
 
     const loggerRef = useRef( new EventLogger('video'))
+    const refTracker = useRef( createPlayFailureTracker())
 
     const logEvent = useCallback((e)=> {
         try {
@@ -53,17 +57,30 @@ export const Video = ( { src, startTime, observer, width, height,muted=true,loop
     },[logEvent])
 
 
+    const onPlayFailed = useCallback( (e) => {
+        const video = refVideo.current
+        const giveUp = handlePlayFailure({ tracker:refTracker.current, error:e, video, src, resolvedSrc, segment, log:logEvent })
+        if (giveUp && !refInfo.current.errorReported) {
+            refInfo.current.errorReported = true
+            reportUnplayable({ loading:refInfo.current.loading, video, error:e, onLoadError, onPlaybackError })
+        }
+    },[logEvent, src, resolvedSrc, segment, onLoadError, onPlaybackError])
+
     const startPlay = useCallback(()=> {
         if (!refVideo.current || refInfo.current.playing)
+            return
+
+        // a failing source is not retried on every sync tick
+        if (!refTracker.current.canAttempt())
             return
 
         refInfo.current.startPlaying = true
         refInfo.current.ended = false
         refVideo.current.play()       
-            .then( ()=>  refInfo.current.playing = true)
-            .catch( e=> logError('startPlay',e))
+            .then( ()=>  { refInfo.current.playing = true; refTracker.current.recordSuccess() })
+            .catch( onPlayFailed )
             .finally( ()=> refInfo.current.startPlaying = false)
-    },[logError])
+    },[onPlayFailed])
 
     const pausePlay = ()=> {
         if (!refVideo.current || refInfo.current.paused || refInfo.current.startPlaying) 
@@ -124,14 +141,17 @@ export const Video = ( { src, startTime, observer, width, height,muted=true,loop
         if (rate===undefined || rate===null || isNaN(rate) || !isFinite(rate))    
             return
 
-        if (rate===refVideo.current.playbackRate) 
+        // rates below the supported range would throw
+        const effectiveRate = clampPlaybackRate(rate)
+
+        if (effectiveRate===refVideo.current.playbackRate) 
             return;
 
 
         try {
             // playback speed follows the rider's speed - keep the audio at its natural pitch
             refVideo.current.preservesPitch = true
-            refVideo.current.playbackRate = rate        
+            refVideo.current.playbackRate = effectiveRate        
             if (rate>0)
                 startPlay()
             else if (rate===0) 
@@ -225,10 +245,14 @@ export const Video = ( { src, startTime, observer, width, height,muted=true,loop
         if (!refVideo.current)
             refVideo.current = e.target
 
-        if (refInfo.current?.loading && onLoadError) {
+        const phase = refInfo.current?.loading ? 'loading' : 'playback'
+        logEvent(buildElementErrorLog({ video:refVideo.current, phase, src, resolvedSrc, segment }))
+        refInfo.current.errorReported = true
+
+        if (phase==='loading' && onLoadError) {
             onLoadError(refVideo.current.error)
         }
-        else if (!refInfo.current?.loading && onPlaybackError) {
+        else if (phase==='playback' && onPlaybackError) {
             onPlaybackError(refVideo.current.error)
         }
     }

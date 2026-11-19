@@ -5,6 +5,9 @@ import { EventLogger } from 'gd-eventlog';
 
 import { Autosize, ErrorBoundary, Loader } from '../../atoms';
 import { useUnmountEffect } from '../../../hooks';
+import {
+    clampPlaybackRate, buildElementErrorLog, createPlayFailureTracker, handlePlayFailure, reportUnplayable
+} from './videoDiagnostics';
 
 // fallback for desktop versions that don't report the MIME type of the stream (video only)
 export const DEFAULT_STREAM_MIME = 'video/mp4; codecs="avc1.4D0029"'
@@ -22,7 +25,7 @@ export const VideoView = styled.video`
     // display: ${props => props.hidden ?  'none' : 'block'  };
 ` 
 
-export const AutoConvertVideo = ( { src, startTime, observer, width, height,muted=true,loop=false,hidden=false,
+export const AutoConvertVideo = ( { src, startTime, observer, width, height,muted=true,loop=false,hidden=false, segment,
                          onPlaybackUpdate, onLoaded, onLoadError, onPlaybackError, onStalled, onWaiting, onEnded,
                          } ) => {
 
@@ -32,6 +35,10 @@ export const AutoConvertVideo = ( { src, startTime, observer, width, height,mute
         playing:false, loading:false, canPlay:false,  startPlaying:false, ended:false, isReady:false
     })
     const loggerRef = useRef( new EventLogger('video'))
+    const refTracker = useRef( createPlayFailureTracker())
+
+    // src is a VideoConversion (older services versions do not expose the url)
+    const getSrcUrl = () => src?.getUrl?.()
 
     const logEvent = (e)=> {
         try {
@@ -41,8 +48,18 @@ export const AutoConvertVideo = ( { src, startTime, observer, width, height,mute
     }
 
     const logError = useCallback( ( fn, e, args={}) => {
-        logEvent( {message:'error',fn,...args})
+        logEvent( {message:'error',fn,error:e?.message,...args})
     },[])
+
+    const onPlayFailed = useCallback( (e) => {
+        const video = refVideo.current
+        const giveUp = handlePlayFailure({ tracker:refTracker.current, error:e, video, src:getSrcUrl(), resolvedSrc:getSrcUrl(), segment, log:(l)=>logEvent({...l, video:getSrcUrl()}) })
+        if (giveUp && !refInfo.current.errorReported) {
+            refInfo.current.errorReported = true
+            reportUnplayable({ loading:refInfo.current.loading, video, error:e, onLoadError, onPlaybackError })
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    },[segment, onLoadError, onPlaybackError])
 
     const startPlay = useCallback(()=> {
 
@@ -52,13 +69,17 @@ export const AutoConvertVideo = ( { src, startTime, observer, width, height,mute
         if (!refVideo.current)
             return
 
+        // a failing source is not retried on every sync tick
+        if (!refTracker.current.canAttempt())
+            return
+
         refInfo.current.startPlaying = true
         refInfo.current.ended = false
         refVideo.current.play()       
-            .then( ()=>  refInfo.current.playing = true)
-            .catch( e=> logError('startPlay',e))
+            .then( ()=>  { refInfo.current.playing = true; refTracker.current.recordSuccess() })
+            .catch( onPlayFailed )
             .finally( ()=> refInfo.current.startPlaying = false)
-    }, [logError])
+    }, [onPlayFailed])
 
 
     const pausePlay = ()=> {
@@ -128,14 +149,17 @@ export const AutoConvertVideo = ( { src, startTime, observer, width, height,mute
         if (rate===undefined || rate===null || Number.isNaN(rate) || !Number.isFinite(rate))    
             return
 
-        if (rate===refVideo.current.playbackRate) 
+        // rates below the supported range would throw
+        const effectiveRate = clampPlaybackRate(rate)
+
+        if (effectiveRate===refVideo.current.playbackRate) 
             return;
     
 
         try {
             // playback speed follows the rider's speed - keep the audio at its natural pitch
             refVideo.current.preservesPitch = true
-            refVideo.current.playbackRate = rate        
+            refVideo.current.playbackRate = effectiveRate        
             if (rate>0)
                 startPlay()
             else if (rate===0) 
@@ -238,6 +262,11 @@ export const AutoConvertVideo = ( { src, startTime, observer, width, height,mute
 
         const error = refInfo.current?.error ?? refVideo.current.error
 
+        const phase = refInfo.current?.loading ? 'loading' : 'playback'
+        logEvent({ ...buildElementErrorLog({ video:refVideo.current, phase, src:getSrcUrl(), resolvedSrc:getSrcUrl(), segment }),
+                   playback:'converted', error:error?.message, video:getSrcUrl() })
+        refInfo.current.errorReported = true
+
         if (refInfo.current?.loading && onLoadError) {
             const {conversion} = refInfo.current??{}
             if (conversion)
@@ -314,7 +343,7 @@ export const AutoConvertVideo = ( { src, startTime, observer, width, height,mute
 
             if (refInfo.current) {
                 refInfo.current.error = new Error('Conversion Error')
-                logError(err,'getNextSegment')
+                logError('getNextSegment',err)
                 onError()
             }            
             
