@@ -7,6 +7,7 @@ import { EventLogger } from 'gd-eventlog'
 export const DynamicCoachEdit = ({coach,onOK, onCancel})=> {
 
     const [initialized,setInitialized] = useState(false)
+    const [error,setError] = useState(null)
     const data = useRef(null)
     const service = getCoachesService()
     const logger = new EventLogger('CoachEdit')
@@ -28,13 +29,16 @@ export const DynamicCoachEdit = ({coach,onOK, onCancel})=> {
         try {
             data.current.update( coach)
             service.saveCoach(data.current)
-    
+            setError(null)
+
             if (onOK)
                 onOK(coach)
-    
+
         }
         catch(err) {
             logger.logEvent({message:'error', fn:'onOKHandler',error:err.message, stack:err.stack})
+            // keep the dialog open and tell the user that the coach was not saved
+            setError('Could not save the coach')
 
         }
     }
@@ -51,5 +55,5 @@ export const DynamicCoachEdit = ({coach,onOK, onCancel})=> {
         logger.logEvent({message:'error', fn:'before render',error:err.message, stack:err.stack})
     }
 
-    return <CoachEdit {...coachProps} onOK={onOKHandler} onCancel={onCancel} />
+    return <CoachEdit {...coachProps} error={error} onOK={onOKHandler} onCancel={onCancel} />
 }

@@ -6,7 +6,7 @@ import { Dialog } from '../../../molecules'
 const ContentArea = styled(Column)`
 height: calc(100% - 7.7vh);
 `
-export const CoachEdit = ({name,type,power,speed,lead,onOK, onCancel}) => {
+export const CoachEdit = ({name,type,power,speed,lead,error,onOK, onCancel}) => {
 
     const [state,setState] = useState({name,type,power,speed,lead})
 
@@ -102,10 +102,16 @@ export const CoachEdit = ({name,type,power,speed,lead,onOK, onCancel}) => {
         return state.speed?.unit??'km/h'
     }
 
-    const isComplete = state.type!==undefined  && 
-        ( (getMode()==='Power' && state.power!==undefined) || 
-          (getMode()==='Speed' && state.speed!==undefined) )
-    
+    const hasValue = (v) => v!==undefined && v!==null && v!==''
+    const hasSpeed = () => {
+        const {speed} = state
+        return typeof speed==='object' && speed!==null ? hasValue(speed.value) : hasValue(speed)
+    }
+
+    const isComplete = state.type!==undefined  &&
+        ( (getMode()==='Power' && hasValue(state.power)) ||
+          (getMode()==='Speed' && hasSpeed()) )
+
     return (
         <ErrorBoundary>
             <Dialog title='Coach Setting' level={6} onESC={onCancel}>
@@ -119,6 +125,7 @@ export const CoachEdit = ({name,type,power,speed,lead,onOK, onCancel}) => {
                     {getMode()==='Speed' ? <Row><EditNumber label='Speed' value={getSpeed()} unit={getSpeedUnit()} allowEmpty onValueChange={onSpeedChanged} align='right' min={1} max={60} maxLength={5} {...editProps} /></Row>:null}
                     {getMode()!==undefined ? <Row><EditNumber label='Lead' value={getLead()} unit={getLeadUnit() } allowEmpty onValueChange={onLeadChanged} align='right' min={-100} max={100} maxLength={5} {...editProps} /></Row>:null}
 
+                    {error ? <Row><Text text={error} color='red' /></Row> : null}
                 </ContentArea>
 
                 <ButtonBar justify='center'>
