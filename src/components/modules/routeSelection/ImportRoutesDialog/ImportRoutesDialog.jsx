@@ -8,6 +8,7 @@ import { ScanningView } from './views/ScanningView';
 import { ParseSelectView } from './views/ParseSelectView';
 import { IngestingView } from './views/IngestingView';
 import { CompleteView } from './views/CompleteView';
+import { RouteServersView } from './views/RouteServersView';
 
 // Fixed across every phase this dialog can be in. The Dialog molecule's default sizing is
 // percentage-based (80% x 80%), which puts a checkbox list across ~2000px on a wide
@@ -84,6 +85,11 @@ export const ImportRoutesDialog = ({ onClose }) => {
     // threading it through the hook.
     const [folderInfo, setFolderInfo] = useState(null);
 
+    // "Add a route server" replaces the landing tiles in place; it is not a phase of the route import itself
+    const [showServers, setShowServers] = useState(false);
+    const onAddRouteServer = useCallback(() => setShowServers(true), []);
+    const onServersBack = useCallback(() => setShowServers(false), []);
+
     useEffect(() => {
         // A successful single-route import closes the dialog on its own - the route
         // appearing in the list behind it is the confirmation, no explicit "Done" click.
@@ -115,7 +121,10 @@ export const ImportRoutesDialog = ({ onClose }) => {
             onESC={dismissable ? onClose : undefined}
             onOutsideClicked={dismissable ? onClose : undefined}
         >
+            {showServers && phase === 'landing' ?
+                <RouteServersView onBack={onServersBack} onClose={onClose} /> :
             <View
+                onAddRouteServer={onAddRouteServer}
                 displayProps={displayProps}
                 folderInfo={folderInfo}
                 onAddRoute={importSingle}
@@ -131,7 +140,7 @@ export const ImportRoutesDialog = ({ onClose }) => {
                 toggleSelected={toggleSelected}
                 selectAll={selectAll}
                 deselectAll={deselectAll}
-            />
+            />}
         </Dialog>
     );
 };

@@ -23,6 +23,17 @@ vi.mock('../../../../bindings/native-ui', () => ({
     useAppUI: () => ({ selectDirectory: mockSelectDirectory }),
 }))
 
+// the add view of the route servers is driven by a page service; replaced by a stub that lets the test close it
+vi.mock('./views/RouteServersView', () => ({
+    RouteServersView: ({ onBack, onClose }) => (
+        <div>
+            <span>route servers view</span>
+            <button onClick={onBack}>servers back</button>
+            <button onClick={onClose}>servers done</button>
+        </div>
+    ),
+}))
+
 // The Dialog molecule owns the fixed-size chrome this test needs to verify; stubbed here
 // only to capture the width/height it was given (its own rendering is exercised by its own
 // unit tests), while still rendering the real children so Landing/Result assertions work.
@@ -182,5 +193,18 @@ describe('ImportRoutesDialog', () => {
 
         expect(screen.queryByText('Close')).toBeNull()
         expect(dialogProps[0].onOutsideClicked).toBeUndefined()
+    })
+
+    test('"Add a route server" replaces the landing tiles in place and Back returns to them', () => {
+        const onClose = vi.fn()
+        render(<ImportRoutesDialog onClose={onClose} />)
+
+        fireEvent.click(screen.getByText('Add a route server'))
+        expect(screen.getByText('route servers view')).toBeTruthy()
+        expect(screen.queryByText('Import a whole folder')).toBeNull()
+
+        fireEvent.click(screen.getByText('servers back'))
+        expect(screen.getByText('Import a whole folder')).toBeTruthy()
+        expect(onClose).not.toHaveBeenCalled()
     })
 })
