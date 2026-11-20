@@ -123,4 +123,14 @@ describe('LandingView', () => {
 
         expect(onSelectFolder).not.toHaveBeenCalled()
     })
+
+    test('offers the "Add a route server" tile and reports a click', () => {
+        const onAddRouteServer = vi.fn()
+        render(<LandingView onAddRoute={vi.fn()} onSelectFolder={vi.fn()} onAddRouteServer={onAddRouteServer} />)
+
+        expect(screen.getByText('Collections hosted by other riders and groups. They update automatically.')).toBeTruthy()
+        fireEvent.click(screen.getByText('Add a route server'))
+
+        expect(onAddRouteServer).toHaveBeenCalledTimes(1)
+    })
 })

@@ -54,6 +54,25 @@ const TileWrapper = styled.div`
     display: flex;
 `;
 
+// Same look as the other tiles (dashed outline, translucent fill), but a plain button: there is nothing to drop or pick
+const ServerTile = styled.button`
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font: inherit;
+    color: white;
+    background: rgba(255, 255, 255, 0.08);
+    border: 2px dashed #dcdcdc;
+    border-radius: 10px;
+
+    &:hover, &:focus-visible {
+        background: rgba(255, 255, 255, 0.2);
+        outline: none;
+    }
+`;
+
 const HintText = styled.div`
     width: 100%;
     height: 5vh;
@@ -67,8 +86,8 @@ const HintText = styled.div`
 `;
 
 /**
- * The Import Routes dialog's landing screen - two tiles ("Add a route" / "Import a whole
- * folder"). Desktop does not ask the user to classify their own file: the parser already
+ * The Import Routes dialog's landing screen - three tiles ("Add a route" / "Import a whole
+ * folder" / "Add a route server"). Desktop does not ask the user to classify their own file: the parser already
  * tells single route files apart from a folder scan.
  *
  * "Add a route" allows picking several files at once (which is also how many GPX routes are
@@ -78,7 +97,7 @@ const HintText = styled.div`
  * Presentational only - `onAddRoute`/`onSelectFolder` are `useImportRoutes()`'s
  * `importSingle`/`scan`, wired in by the dialog shell.
  */
-export const LandingView = ({ onAddRoute, onSelectFolder, onClose }) => {
+export const LandingView = ({ onAddRoute, onSelectFolder, onAddRouteServer, onClose }) => {
     const handleAddRouteDrop = useCallback((dropInfo) => {
         const files = (Array.isArray(dropInfo) ? dropInfo : [dropInfo]).filter(Boolean);
         if (files.length > 0 && onAddRoute)
@@ -115,6 +134,14 @@ export const LandingView = ({ onAddRoute, onSelectFolder, onClose }) => {
                             </TileContent>
                         }
                     />
+                </TileWrapper>
+                <TileWrapper>
+                    <ServerTile id="add-route-server-tile" type="button" onClick={() => onAddRouteServer?.()}>
+                        <TileContent>
+                            <TileTitle>Add a route server</TileTitle>
+                            <TileSubline>Collections hosted by other riders and groups. They update automatically.</TileSubline>
+                        </TileContent>
+                    </ServerTile>
                 </TileWrapper>
             </TilesArea>
             <HintText>…or drop route files anywhere on the Routes page</HintText>

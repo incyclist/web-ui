@@ -54,6 +54,17 @@ export class AppBinding {
         return await api.fs.readdir(path, options);
     }
 
+    /**
+     * Size of a file. Needs the 'fileSystem.stat' capability of the desktop app: older installers do not
+     * provide it, in which case nothing is returned (callers treat the size as unknown)
+     */
+    async stat(path) {
+        if (!hasFeature('fileSystem.stat'))
+            return undefined;
+        const stats = await api.fs.stat(path);
+        return stats ? { size: stats.size } : undefined;
+    }
+
     async existsFile(path) {
         try {
             await this.access(path)

@@ -1,20 +1,22 @@
 import React, { useEffect, useState } from 'react'
-import { useAppsService, useRouteList } from 'incyclist-services'
+import { useRouteList } from 'incyclist-services'
 import { RouteListItemSkeleton, RouteListItemView } from './component'
 
 // Service subscriptions and detail loading stay here; the row view is driven by props.
 export const RouteListItem = ({ outsideFold, ...props }) => {
     const service = useRouteList()
-    const apps = useAppsService()
     const [updates, setUpdates] = useState({})
     const [details, setDetails] = useState({})
     const { id, observer } = props
     const route = { ...props, ...updates }
     const hasShape = Array.isArray(route.shape) && route.shape.length > 0
     const hasPoints = Array.isArray(route.points) && route.points.length > 0
+    // services decides the text: the name the user gave a route server, or an app's display name
     let sourceLabel
-    try { if (route.source) sourceLabel = apps.getName(route.source) }
-    catch { sourceLabel = route.source }
+    try {
+        sourceLabel = service.getRouteSourceLabel(route)
+    }
+    catch { sourceLabel = route.apiServer || route.source }
 
     useEffect(() => {
         if (!observer) return

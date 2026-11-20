@@ -80,6 +80,12 @@ describe('filter chips', () => {
         expect(countActiveFilters({contentType:'Video', country:'France'})).toBe(2)
     })
 
+    test('the Source chip shows the label while the filter keeps the value', () => {
+        const labels = {EbelingHoppe:'Ebeling Hoppe'}
+        expect(getFilterChips({routeSource:'EbelingHoppe'}, labels)).toEqual([{key:'routeSource', label:'Ebeling Hoppe'}])
+        expect(getFilterChips({routeSource:'Local'}, labels)).toEqual([{key:'routeSource', label:'Local'}])
+    })
+
     test('distance and elevation ranges are one chip each, with units', () => {
         const chips = getFilterChips({
             distance:{min:{value:40,unit:'km'}, max:undefined},

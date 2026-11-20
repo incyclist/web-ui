@@ -102,9 +102,11 @@ const getRangeLabel = (range, name, scope) => {
  * Returns one chip per active filter of the filter panel (the title search is not a chip -
  * it is always visible in the search box).
  *
+ * @param filters the active filters
+ * @param routeSourceLabels optional display text per Source value (the stored value stays the key)
  * @returns {Array<{key:string,label:string}>}
  */
-export const getFilterChips = (filters) => {
+export const getFilterChips = (filters, routeSourceLabels) => {
     if (!filters)
         return []
 
@@ -116,7 +118,7 @@ export const getFilterChips = (filters) => {
     add('contentType', isSet(filters.contentType) ? filters.contentType : undefined)
     add('routeType',   isSet(filters.routeType) ? filters.routeType : undefined)
     add('country',     isSet(filters.country) ? filters.country : undefined)
-    add('routeSource', isSet(filters.routeSource) ? filters.routeSource : undefined)
+    add('routeSource', isSet(filters.routeSource) ? (routeSourceLabels?.[filters.routeSource] ?? filters.routeSource) : undefined)
 
     return chips
 }

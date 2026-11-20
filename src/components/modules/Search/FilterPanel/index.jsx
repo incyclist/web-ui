@@ -91,7 +91,7 @@ export const RouteFilterPanel = (props) => {
             <Column className='filter-column'>
                 <SingleSelect label='Country' labelPosition='before'  labelWidth='12ch' selected={country} options={countries}
                     onValueChange={onChangeCountry} />
-                <SingleSelect label='Source' labelPosition='before'  labelWidth='12ch' selected={routeSource} options={routeSources}
+                <SingleSelect label='Source' labelPosition='before'  labelWidth='12ch' selected={routeSource} options={routeSources} optionLabels={props.routeSourceLabels}
                     onValueChange={onChangeRouteSource} />
             </Column>
         </Container>

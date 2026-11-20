@@ -15,7 +15,7 @@ const Select = styled.select`
 
 export const SingleSelect = (props) => {
     const { name,label, options,selected,disabled=false,labelPosition='after',labelWidth, innerMargin='0.4vw',
-            selectText,
+            selectText, optionLabels,
             onValueChange} = props
 
     const [value,setValue] = useState(props.value??selected)
@@ -24,7 +24,7 @@ export const SingleSelect = (props) => {
         setValue(props.value??selected)
     },[props.value,selected])
 
-    const childProps = copyPropsExcluding(props,['label','onClick','onValueChange','value'])
+    const childProps = copyPropsExcluding(props,['label','onClick','onValueChange','value','optionLabels'])
     if (props.value)
         childProps.selected = props.value
     else
@@ -54,7 +54,7 @@ export const SingleSelect = (props) => {
             
             >
             { options && !value ? <option key={-1} value={'#none#'}>{pleaseSelect}</option>:null}
-            {options ? options.map((option, index) => <option key={index} value={option}>{option}</option>):null}
+            {options ? options.map((option, index) => <option key={index} value={option}>{optionLabels?.[option] ?? option}</option>):null}
         </Select>
 
         { (labelPosition ==='after') ? <Label labelPosition={labelPosition} labelWidth={labelWidth} innerMargin={innerMargin}  htmlFor={id} >{label}</Label>:null }
