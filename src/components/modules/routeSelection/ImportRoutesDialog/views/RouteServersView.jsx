@@ -17,11 +17,11 @@ const Area = styled.div`
  * tiles in place (no second modal). Back returns to the landing view; once a server was added the whole dialog closes.
  */
 export const RouteServersView = ({ onBack, onClose }) => {
-    const onClosed = useCallback((last) => {
-        if (last?.manual?.state === 'success')
-            onClose?.();
-        else
+    const onClosed = useCallback((reason) => {
+        if (reason === 'back')
             onBack?.();
+        else
+            onClose?.();   // 'done' (server added) and 'cancel'
     }, [onBack, onClose]);
 
     const { props, actions } = useRouteServersSettings('import', onClosed);

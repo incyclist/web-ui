@@ -3,15 +3,15 @@ import { getRouteServersSettingsPageService } from 'incyclist-services'
 
 const ACTIONS = [
     'showAdd', 'showManualEntry', 'back', 'addKnown', 'retryKnown', 'setManualUrl', 'setManualName',
-    'checkAndAdd', 'check', 'add', 'confirmAddEmpty', 'requestRemove', 'setRemoveRoutes', 'confirmRemove', 'cancelRemove'
+    'checkAndAdd', 'check', 'add', 'confirmAddEmpty', 'cancelAddEmpty', 'requestRemove', 'setRemoveRoutes', 'confirmRemove', 'cancelRemove'
 ]
 
 /**
  * Connects a component to the route servers settings page service: opens the page on mount, follows its
  * `page-update` events and closes it on unmount.
  *
- * `onClosed` is called with the last display props when the page service closes itself (e.g. Back from the add view
- * when it was opened from the Import dialog, or after a server was added there).
+ * `onClosed(reason, lastProps)` is called when the page service closes itself. `reason` is the one the page service
+ * reports: 'done' (a server was added from the Import dialog), 'back' (Back from the first view) or 'cancel'.
  *
  * @param origin 'settings' | 'import'
  * @returns { props, actions } - props are `undefined` until the page is open
@@ -31,7 +31,7 @@ export const useRouteServersSettings = (origin = 'settings', onClosed) => {
             lastRef.current = updated
             setProps(updated)
         }
-        const onPageClosed = () => { onClosedRef.current?.(lastRef.current) }
+        const onPageClosed = (event) => { onClosedRef.current?.(event?.reason ?? 'cancel', lastRef.current) }
 
         observer?.on('page-update', onUpdate)
         observer?.on('closed', onPageClosed)

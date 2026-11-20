@@ -44,15 +44,32 @@ describe('useRouteServersSettings', () => {
         expect(mockService.showAdd).toHaveBeenCalledTimes(1)
     })
 
-    test('reports the last props when the service closes itself', () => {
+    test.each(['done', 'back', 'cancel'])('reports the reason %s when the service closes itself', (reason) => {
         const onClosed = vi.fn()
         renderHook(() => useRouteServersSettings('import', onClosed))
 
-        mockService.getPageDisplayProps.mockReturnValue({ view: 'add', manual: { state: 'success' } })
+        mockService.getPageDisplayProps.mockReturnValue({ view: 'add' })
         act(() => { observer.emit('page-update') })
+        act(() => { observer.emit('closed', { reason }) })
+
+        expect(onClosed).toHaveBeenCalledWith(reason, { view: 'add' })
+    })
+
+    test('treats a closed event without reason as cancel', () => {
+        const onClosed = vi.fn()
+        renderHook(() => useRouteServersSettings('import', onClosed))
+
         act(() => { observer.emit('closed') })
 
-        expect(onClosed).toHaveBeenCalledWith({ view: 'add', manual: { state: 'success' } })
+        expect(onClosed).toHaveBeenCalledWith('cancel', { view: 'list' })
+    })
+
+    test('forwards cancelAddEmpty to the service', () => {
+        mockService.cancelAddEmpty = vi.fn()
+        const { result } = renderHook(() => useRouteServersSettings())
+
+        result.current.actions.cancelAddEmpty()
+        expect(mockService.cancelAddEmpty).toHaveBeenCalledTimes(1)
     })
 
     test('closes the page on unmount', () => {

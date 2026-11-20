@@ -12,7 +12,7 @@ export const serversWithStatuses = [
 
 export const known = [
     { id: 'alpine', name: 'Alpine Videos', description: 'Alps & Dolomites, 40+ climbs', operator: 'Alpine Video Club', state: 'available' },
-    { id: 'flanders', name: 'Flanders Classics', description: 'Cobbles and bergs', operator: 'VZW Kassei', state: 'added', routeCount: 24 },
+    { id: 'flanders', name: 'Flanders Classics', description: 'Cobbles and bergs', operator: 'VZW Kassei', state: 'added', routeCount: 24, statusText: 'Added ✓ · 24 routes' },
 ]
 
 export const manualIdle = { url: '', name: '', nameTouched: false, state: 'idle', canSubmit: false, canCheck: false }
@@ -52,8 +52,9 @@ export const manual = {
 
 export const knownStates = [
     { id: 'a', name: 'Available', description: 'Not added yet', operator: 'Someone', state: 'available' },
-    { id: 'b', name: 'Checking', description: 'Being checked', state: 'checking' },
-    { id: 'c', name: 'Added', description: 'Already in your list', state: 'added', routeCount: 12 },
+    { id: 'b', name: 'Checking', description: 'Being checked', state: 'checking', statusText: 'Checking…' },
+    { id: 'c', name: 'Added', description: 'Already in your list', state: 'added', routeCount: 12, statusText: 'Added ✓ · 12 routes' },
+    { id: 'e', name: 'Added empty', description: 'No routes yet', state: 'added', statusText: 'Added ✓' },
     { id: 'd', name: 'Failed', description: 'Could not be reached', state: 'error', error: "This server couldn't be reached. Check the address and your connection." },
 ]
 

@@ -84,6 +84,7 @@ describe('RouteServersSettingsView', () => {
             expect(actions.addKnown).toHaveBeenCalledWith('a')
             expect(within(screen.getByTestId('known-b')).getByText('Checking…')).toBeDefined()
             expect(within(screen.getByTestId('known-c')).getByText('Added ✓ · 12 routes')).toBeDefined()
+            expect(within(screen.getByTestId('known-e')).getByText('Added ✓')).toBeDefined()
 
             expect(within(screen.getByTestId('known-d')).getByText(/couldn't be reached/)).toBeDefined()
             fireEvent.click(within(screen.getByTestId('known-d')).getByText('Try again'))
@@ -173,7 +174,8 @@ describe('RouteServersSettingsView', () => {
             expect(actions.confirmAddEmpty).toHaveBeenCalledTimes(1)
 
             fireEvent.click(screen.getByText('Cancel'))
-            expect(actions.setManualUrl).toHaveBeenCalledWith(manual.confirmEmpty.url)
+            expect(actions.cancelAddEmpty).toHaveBeenCalledTimes(1)
+            expect(actions.setManualUrl).not.toHaveBeenCalled()
         })
 
         test('shows errors below the field that caused them', () => {

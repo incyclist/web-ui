@@ -128,15 +128,15 @@ const BackBar = styled.div`
 `
 
 const KnownEntry = ({ entry, onAdd, onRetry }) => {
-    const { name, description, operator, state, routeCount, error } = entry
+    const { name, description, operator, state, statusText, error } = entry
     let status = null
 
     if (state === 'available')
         status = <Button text='Add' size='small' onClick={() => onAdd?.(entry.id)} />
     else if (state === 'checking')
-        status = <span role='status'>Checking…</span>
+        status = <span role='status'>{statusText}</span>
     else if (state === 'added')
-        status = <span>{routeCount ? `Added ✓ · ${routeCount} ${routeCount === 1 ? 'route' : 'routes'}` : 'Added ✓'}</span>
+        status = <span>{statusText}</span>
     else if (state === 'error')
         status = <>
             <span role='alert' style={{ color: '#ff7b7b' }}>{error}</span>
@@ -206,7 +206,7 @@ const ManualEntry = ({ manual, trustNote, actions }) => {
             {confirmEmpty ?
                 <>
                     <Button text='Add anyway' primary={true} onClick={() => actions.confirmAddEmpty()} />
-                    <Button text='Cancel' onClick={() => actions.setManualUrl(url)} />
+                    <Button text='Cancel' onClick={() => actions.cancelAddEmpty()} />
                 </> : primary}
         </Actions>
     </Card>
