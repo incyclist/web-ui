@@ -39,13 +39,13 @@ const NoRoutesArea = styled(Row)`
 
 
 export const SearchScreen =  
-    ({ routes, cards,countries,filters={},contentTypes,routeTypes,routeSources,units,
+    ({ routes, cards,countries,filters={},contentTypes,routeTypes,routeSources,routeSourceLabels,units,
        onSelect,onDelete, closePage,loading,
        onChangeFilter,displayType: propDisplayType ,onDisplayTypeSelected
     }) => {
 
 
-    const filterProps = {routes,countries,filters,contentTypes,routeTypes,routeSources,onChangeFilter,units}
+    const filterProps = {routes,countries,filters,contentTypes,routeTypes,routeSources,routeSourceLabels,onChangeFilter,units}
     const displayType = propDisplayType
 
     return (

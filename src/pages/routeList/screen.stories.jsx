@@ -43,7 +43,8 @@ const createTestData =(cnt) => {
 
 const common = {
   displayType:'list', sortOrder:'suggested', units:{distance:'km', elevation:'m'},
-  countries:['France','Germany'], contentTypes:['Video','GPX'], routeTypes:['Loop','Point to Point'], routeSources:['Local','Incyclist'],
+  countries:['France','Germany'], contentTypes:['Video','GPX'], routeTypes:['Loop','Point to Point'], routeSources:['Local','Incyclist','EbelingHoppe'],
+  routeSourceLabels:{Local:'Local',Incyclist:'Incyclist',EbelingHoppe:'Ebeling Hoppe'},
 }
 
 export const Loading = Template.bind({});

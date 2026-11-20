@@ -2,7 +2,10 @@ import React from 'react'
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, act } from '@testing-library/react'
 
-const { service } = vi.hoisted(() => ({ service: { requestRouteDetails: vi.fn() } }))
+const { service } = vi.hoisted(() => ({ service: {
+    requestRouteDetails: vi.fn(),
+    getRouteSourceLabel: vi.fn(d => d?.apiServer || d?.source),
+} }))
 vi.mock('incyclist-services', async importOriginal => ({
     ...await importOriginal(), useRouteList: () => service, useAppsService: () => ({ getName: key => `Source ${key}` }),
 }))
@@ -50,6 +53,12 @@ describe('RouteListItem', () => {
     test('uses the services label for a route source', () => {
         render(<RouteListItem {...route} shape={points} source='catalog' outsideFold={false} />)
         expect(screen.getByText('Source catalog')).toBeInTheDocument()
+    })
+
+    test('shows the name the user gave a route server instead of the source key', () => {
+        render(<RouteListItem {...route} shape={points} source='EbelingHoppe' apiServer='Ebeling Hoppe' outsideFold={false} />)
+        expect(screen.getByText('Ebeling Hoppe')).toBeInTheDocument()
+        expect(screen.queryByText('Source EbelingHoppe')).toBeNull()
     })
 
     test('deletes directly without opening details or a confirmation dialog', () => {

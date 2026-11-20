@@ -249,7 +249,7 @@ const ImportRoutesButton = ({onClick}) => (
  * The merged Routes page (list/tiles, search, filters, sort, Free Ride and Import actions).
  */
 export const RouteListScreen = ({
-        routes, cards, filters={}, units, countries, contentTypes, routeTypes, routeSources,
+        routes, cards, filters={}, units, countries, contentTypes, routeTypes, routeSources, routeSourceLabels,
         totalCount, countText, noMatchHint, activeImports=[],
         loading, displayType='list', sortOrder='suggested', filtersExpanded=false, listKey,
         onChangeFilter, onRemoveFilter, onClearPanelFilters, onClearAllFilters,
@@ -324,7 +324,7 @@ export const RouteListScreen = ({
     const titleWidth = useElementWidth(titleRef)
     const {stackHeader, singleColumnFilters} = getHeaderLayout(freeRideWidth, importWidth, titleWidth, contentWidth)
 
-    const chips = getFilterChips(filters)
+    const chips = getFilterChips(filters, routeSourceLabels)
 
     // --- keyboard ---
 
@@ -449,7 +449,7 @@ export const RouteListScreen = ({
 
                     {filtersExpanded ?
                         <RouteFilterPanel filters={filters} units={units}
-                            countries={countries} contentTypes={contentTypes} routeTypes={routeTypes} routeSources={routeSources}
+                            countries={countries} contentTypes={contentTypes} routeTypes={routeTypes} routeSources={routeSources} routeSourceLabels={routeSourceLabels}
                             onChange={onChangeFilter} singleColumn={singleColumnFilters} />
                         : null}
 

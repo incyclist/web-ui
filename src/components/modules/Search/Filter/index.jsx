@@ -80,7 +80,7 @@ export const SearchFilter = ( props, onFocus ) => {
                     onValueChange={onChangeContentType} />
                 <SingleSelect label='Route Type' labelPosition='before'  labelWidth='16ch' selected={routeType} options={routeTypes}
                     onValueChange={onChangeRouteType} />
-                <SingleSelect label='Source' labelPosition='before'  labelWidth='16ch' selected={routeSource} options={routeSources}
+                <SingleSelect label='Source' labelPosition='before'  labelWidth='16ch' selected={routeSource} options={routeSources} optionLabels={props.routeSourceLabels}
                     onValueChange={onChangeRouteSource} />
             </Column>
         </Row>

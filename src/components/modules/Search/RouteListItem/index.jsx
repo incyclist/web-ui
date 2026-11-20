@@ -13,8 +13,12 @@ export const RouteListItem = ({ outsideFold, ...props }) => {
     const hasShape = Array.isArray(route.shape) && route.shape.length > 0
     const hasPoints = Array.isArray(route.points) && route.points.length > 0
     let sourceLabel
-    try { if (route.source) sourceLabel = apps.getName(route.source) }
-    catch { sourceLabel = route.source }
+    // a route server is shown with the name the user gave it; other sources use the app's display name
+    try {
+        if (route.apiServer) sourceLabel = service.getRouteSourceLabel(route)
+        else if (route.source) sourceLabel = apps.getName(route.source)
+    }
+    catch { sourceLabel = route.apiServer || route.source }
 
     useEffect(() => {
         if (!observer) return
