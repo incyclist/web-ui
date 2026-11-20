@@ -34,9 +34,9 @@ describe('RouteServersView', () => {
         expect(onBack).not.toHaveBeenCalled()
     })
 
-    test("'cancel' just closes the dialog", () => {
+    test("'cancel' returns to the landing view without closing the dialog", () => {
         state.onClosed('cancel')
-        expect(onClose).toHaveBeenCalledTimes(1)
-        expect(onBack).not.toHaveBeenCalled()
+        expect(onBack).toHaveBeenCalledTimes(1)
+        expect(onClose).not.toHaveBeenCalled()
     })
 })

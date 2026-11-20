@@ -14,14 +14,15 @@ const Area = styled.div`
 
 /**
  * "Add a route server" step of the Import Routes dialog: the add view of the route servers replaces the landing
- * tiles in place (no second modal). Back returns to the landing view; once a server was added the whole dialog closes.
+ * tiles in place (no second modal). Once a server was added the whole dialog closes; in every other case
+ * ('back', 'cancel') the user returns to the landing view, as nothing was imported.
  */
 export const RouteServersView = ({ onBack, onClose }) => {
     const onClosed = useCallback((reason) => {
-        if (reason === 'back')
-            onBack?.();
+        if (reason === 'done')
+            onClose?.();
         else
-            onClose?.();   // 'done' (server added) and 'cancel'
+            onBack?.();
     }, [onBack, onClose]);
 
     const { props, actions } = useRouteServersSettings('import', onClosed);
