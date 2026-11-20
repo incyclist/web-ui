@@ -119,7 +119,7 @@ describe('RouteServersSettingsView', () => {
         const renderManual = (state, actions = makeActions()) =>
             render(<RouteServersSettingsView {...addWithKnownProps} manual={manual[state]} actions={actions} />)
 
-        test('Check and add is disabled until the page service allows it', () => {
+        test('Check and add is disabled until the dialog service allows it', () => {
             renderManual('typed')
             expect(screen.getByText('Check and add').disabled).toBe(false)
             expect(screen.getByText(addWithKnownProps.trustNote)).toBeDefined()

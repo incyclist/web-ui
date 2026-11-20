@@ -19,7 +19,7 @@ export const RouteServersSettings = () => {
 }
 
 /**
- * Pure view: renders the display props of the route servers page service. The add view replaces the list in place.
+ * Pure view: renders the display props of the route servers dialog service. The add view replaces the list in place.
  */
 export const RouteServersSettingsView = ({
     view, servers, isEmpty, emptyState, known, knownNote, manual, trustNote, removeDialog, highlightKey, actions = {}

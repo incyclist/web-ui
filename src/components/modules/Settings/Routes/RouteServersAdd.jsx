@@ -214,7 +214,7 @@ const ManualEntry = ({ manual, trustNote, actions }) => {
 
 /**
  * Add view of the route servers: the list of known servers (hidden if there are none) next to the form to enter
- * an address. The page service decides about states and texts, the view only lays them out.
+ * an address. The dialog service decides about states and texts, the view only lays them out.
  */
 export const RouteServersAdd = ({ known = [], knownNote, manual, trustNote, actions = {} }) => {
     return <>

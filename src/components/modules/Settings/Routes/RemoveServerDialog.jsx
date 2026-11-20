@@ -20,7 +20,7 @@ const Option = styled.label`
 
 /**
  * Confirmation before a route server is removed. If the server has routes in the list, the user chooses between
- * keeping and removing them. All texts come from the page service.
+ * keeping and removing them. All texts come from the dialog service.
  */
 export const RemoveServerDialog = ({ dialog, onKeepChange, onConfirm, onCancel }) => {
     if (!dialog)

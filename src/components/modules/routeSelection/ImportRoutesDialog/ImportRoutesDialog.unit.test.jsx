@@ -23,7 +23,7 @@ vi.mock('../../../../bindings/native-ui', () => ({
     useAppUI: () => ({ selectDirectory: mockSelectDirectory }),
 }))
 
-// the add view of the route servers is driven by a page service; replaced by a stub that lets the test close it
+// the add view of the route servers is driven by a dialog service; replaced by a stub that lets the test close it
 vi.mock('./views/RouteServersView', () => ({
     RouteServersView: ({ onBack, onClose }) => (
         <div>
