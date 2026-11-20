@@ -22,13 +22,12 @@ export const RouteServersSettings = () => {
  * Pure view: renders the display props of the route servers dialog service. The add view replaces the list in place.
  */
 export const RouteServersSettingsView = ({
-    view, servers, isEmpty, emptyState, known, knownNote, manual, trustNote, removeDialog, highlightKey, actions = {}
+    view, servers, isEmpty, emptyState, known, knownNote, manual, trustNote, removeDialog, actions = {}
 }) => {
     return <AppThemeProvider>
         <ContentArea>
             {view === 'list' ?
-                <RouteServersList servers={servers} isEmpty={isEmpty} emptyState={emptyState} highlightKey={highlightKey}
-                    onAdd={actions.showAdd} onRemove={actions.requestRemove} /> :
+                <RouteServersList servers={servers} isEmpty={isEmpty} emptyState={emptyState}                    onAdd={actions.showAdd} onRemove={actions.requestRemove} /> :
                 <RouteServersAdd known={known} knownNote={knownNote} manual={manual} trustNote={trustNote} actions={actions} />
             }
             <RemoveServerDialog dialog={removeDialog}

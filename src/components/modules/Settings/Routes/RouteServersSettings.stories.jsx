@@ -27,7 +27,7 @@ const actions = new Proxy({}, { get: (_t, name) => (...args) => console.log('act
 const Template = args => <Frame><RouteServersSettingsView actions={actions} {...args} /></Frame>
 
 export const ListWithStatuses = Template.bind({})
-ListWithStatuses.args = { ...listProps, highlightKey: 'Flanders' }
+ListWithStatuses.args = { ...listProps }
 
 export const Empty = Template.bind({})
 Empty.args = emptyProps

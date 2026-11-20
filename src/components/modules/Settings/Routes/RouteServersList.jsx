@@ -33,7 +33,6 @@ const Row = styled.div`
     gap: 1vw;
     padding: 1.4vh 1vw;
     border-bottom: 1px solid rgba(128, 128, 128, 0.4);
-    background: ${props => props.$highlight ? 'rgba(141, 193, 0, 0.25)' : 'transparent'};
     font-size: 2.2vh;
 `
 
@@ -121,10 +120,10 @@ const dotColor = (status) => {
     return GREY
 }
 
-const RouteServerRow = ({ server, highlight, onRemove }) => {
+const RouteServerRow = ({ server, onRemove }) => {
     const tags = [server.tag, server.note].filter(Boolean)
 
-    return <Row $highlight={highlight} data-testid={`server-${server.key}`}>
+    return <Row data-testid={`server-${server.key}`}>
         <Dot role='img' aria-label={server.statusText} $color={dotColor(server.status)} $pulse={server.status === 'loading'} />
         <Identity>
             <NameLine>
@@ -144,7 +143,7 @@ const RouteServerRow = ({ server, highlight, onRemove }) => {
  * Panel "Route Servers" of the Routes settings: the built-in server, the servers the user added and (as long as
  * there are none) a short explanation with the primary "Add route server" button.
  */
-export const RouteServersList = ({ servers = [], isEmpty, emptyState, highlightKey, onAdd, onRemove }) => {
+export const RouteServersList = ({ servers = [], isEmpty, emptyState, onAdd, onRemove }) => {
     return <>
         <Header>
             <Title>Route Servers</Title>
@@ -153,7 +152,7 @@ export const RouteServersList = ({ servers = [], isEmpty, emptyState, highlightK
         <Description>Collections of routes hosted by other riders and groups.</Description>
 
         {servers.map(server =>
-            <RouteServerRow key={server.key} server={server} highlight={server.key === highlightKey} onRemove={onRemove} />
+            <RouteServerRow key={server.key} server={server} onRemove={onRemove} />
         )}
 
         {isEmpty && emptyState ?
