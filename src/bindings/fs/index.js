@@ -114,6 +114,12 @@ export default class FileSystem {
     }
 
 
+    /** file size, `undefined` if the platform cannot provide it */
+    async stat(path) {
+        const binding = this.getBinding()
+        return binding?.stat ? await binding.stat(path) : undefined
+    }
+
     async ensureDir(path) {
 
         if (this.bindingStr==='node') { 
