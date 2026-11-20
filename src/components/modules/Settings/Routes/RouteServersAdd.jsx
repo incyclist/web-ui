@@ -92,13 +92,13 @@ const FieldWrapper = styled.div`
         box-sizing: border-box;
         font-size: 2vh;
         padding: 0.6vh 0.5vw;
-        border: 1px solid ${props => props.$error ? 'red' : 'rgba(128, 128, 128, 0.7)'};
+        border: 1px solid ${props => props.$error ? '#ff4d4d' : 'rgba(128, 128, 128, 0.7)'};
         border-radius: 3px;
     }
 `
 
 const FieldError = styled.div`
-    color: red;
+    color: #ff7b7b;
     font-size: 1.6vh;
     padding-bottom: 0.5vh;
 `
@@ -139,7 +139,7 @@ const KnownEntry = ({ entry, onAdd, onRetry }) => {
         status = <span>{routeCount ? `Added ✓ · ${routeCount} ${routeCount === 1 ? 'route' : 'routes'}` : 'Added ✓'}</span>
     else if (state === 'error')
         status = <>
-            <span role='alert' style={{ color: 'red' }}>{error}</span>
+            <span role='alert' style={{ color: '#ff7b7b' }}>{error}</span>
             <Button text='Try again' size='small' onClick={() => onRetry?.(entry.id)} />
         </>
 
