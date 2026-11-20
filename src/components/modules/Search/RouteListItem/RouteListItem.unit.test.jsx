@@ -4,10 +4,10 @@ import { render, screen, fireEvent, act } from '@testing-library/react'
 
 const { service } = vi.hoisted(() => ({ service: {
     requestRouteDetails: vi.fn(),
-    getRouteSourceLabel: vi.fn(d => d?.apiServer || d?.source),
+    getRouteSourceLabel: vi.fn(d => d?.apiServer || (d?.source ? `Source ${d.source}` : undefined)),
 } }))
 vi.mock('incyclist-services', async importOriginal => ({
-    ...await importOriginal(), useRouteList: () => service, useAppsService: () => ({ getName: key => `Source ${key}` }),
+    ...await importOriginal(), useRouteList: () => service,
 }))
 vi.mock('../../../molecules/Maps', () => ({
     FreeMap: ({ points }) => <div data-testid='map' data-points={points?.length ?? 0} />,
