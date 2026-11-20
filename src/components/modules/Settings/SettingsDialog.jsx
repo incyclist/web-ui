@@ -4,6 +4,7 @@ import { AppThemeProvider } from "../../../theme"
 import { Dialog, Tabs } from "../../molecules"
 import { RideSettings } from "./Ride"
 import { AppsSettings } from "./Apps"
+import { RouteServersSettings } from "./Routes"
 import { SupportArea } from "./Support"
 import { Button, ButtonBar } from "../../atoms"
 import { GearSettings } from "./Gear"
@@ -48,6 +49,7 @@ export const SettingsDialogView = ({onOK, onCoachesChanged, onSettingsChanged, n
             <Tabs zIndex={10} activeTab={active} onChangeTab={onAreaChanged} buttonBar={true}>
                 {showGear ?  <GearSettings label='Gear' />:null}                
                 <RideSettings label='Ride' /> 
+                <RouteServersSettings label='Routes' />
                 <AppsSettings label='Apps'   />
                 <SupportArea label='Support' />                 
             </Tabs>
