@@ -278,3 +278,12 @@ PhasedAviReady.args = phased('Video', { startPhase:'ready', readyToStart:true, d
 export const PhasedFiveRows = Template.bind({});
 PhasedFiveRows.args = phased('GPX', { startPhase:'devices', startSlow:true,
     devices:[PT('KICKR CORE',{...STARTING, slow:true, canRetry:true}), PS('HRM-Pro',NOT_CONNECTED), PS('Cadence',{udid:'c1',...SLOW_SENSOR})], startContent:MAP('loading') });
+
+// Responsive checks (the box sizes follow the viewport: check at 800x600, 1366x768 and 1920x1080)
+export const PhasedLongDeviceNames = Template.bind({});
+PhasedLongDeviceNames.args = phased('GPX', { startPhase:'devices', startSlow:true,
+    devices:[PT('Wahoo KICKR CORE 1A2B',{...STARTING, slow:true, canRetry:true}), PS('Heart Rate Monitor Pro Strap',SLOW_SENSOR), PS('DCSIM FTMS',{udid:'c1',...NOT_CONNECTED})], startContent:SV('unavailable') });
+
+export const PhasedAviConvertingSlowSensor = Template.bind({});
+PhasedAviConvertingSlowSensor.args = phased('Video', { startPhase:'content', devices:[PT('DCSIM FTMS'), PS('BikeController',SLOW_SENSOR), PS('HRM-Pro',NOT_CONNECTED)],
+    startContent:VIDEO('loading',{convertPct:42, convertSeconds:84}) });
