@@ -1,36 +1,49 @@
 import React from 'react';
-import { Container, ImageContainer, ButtonContainer, DataContainer, Title } from '../base/atoms';
-import { Button,Column,Image,Row} from '../../../../atoms';
+import { Image } from '../../../../atoms';
+import {
+    CreateLogoBox, Heading, SubtleText, WorkoutCardShell
+} from '../base/atoms';
 
-const DEFAULT_TITLE = 'Create Workout'
+const DEFAULT_TITLE = 'Create Workout';
+const CREATE_DESCRIPTION = 'Create or pick a workout on ZwoFactory, download it and import it here.';
 
-export const CreateSummary = ( { id, title=DEFAULT_TITLE, width='20vw',height='30vh',onOK }) => {
-
-
+export const CreateSummary = ({
+    title = DEFAULT_TITLE,
+    layout = 'tiles',
+    width,
+    height,
+    onOK
+}) => {
+    const list = layout === 'list';
+    const titleStr = typeof title === 'string' ? title : DEFAULT_TITLE;
 
     return (
-        <Container width={width} height={height} >
-            
-            <ImageContainer>
-                <Row align='center' justify='center' background='white' height='100%'>
-                        <Image width='80%'  src='images/zwofactory.svg'/>
-                   
-                </Row>
-            </ImageContainer>
-
-
-            <DataContainer width={width} height={height}>
-                <Row> 
-                    <Column width='80%'> <Title bold={true}>{title} </Title></Column>                    
-                </Row>
-
-            </DataContainer>
-
-            <ButtonContainer>                
-                <Button text='OK' disabled={false} logContext={ {title}} onClick={onOK} /> 
-            </ButtonContainer>
-
-            
-        </Container>
-    )
-}
+        <WorkoutCardShell
+            list={list}
+            extraClassName='workout-create-card'
+            ariaLabel={titleStr}
+            width={width}
+            height={height}
+            title={titleStr}
+            disabled={false}
+            onOK={onOK}
+            preview={
+                <CreateLogoBox>
+                    <Image width='100%' src='images/zwofactory.svg' alt='ZwoFactory' />
+                </CreateLogoBox>
+            }
+            identity={
+                <>
+                    <Heading $list={list} title={titleStr}>{titleStr}</Heading>
+                    <SubtleText $list={list}>{CREATE_DESCRIPTION}</SubtleText>
+                </>
+            }
+            stats={list ? <div><strong>ZwoFactory</strong><small>External editor</small></div> : null}
+            profile={
+                <CreateLogoBox $list>
+                    <Image width='100%' src='images/zwofactory.svg' alt='ZwoFactory' />
+                </CreateLogoBox>
+            }
+        />
+    );
+};

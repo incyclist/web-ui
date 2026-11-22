@@ -1,69 +1,63 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { copyPropsExcluding } from '../../../../../utils/props'
-import { FlipCard } from '../../../../atoms'
 import { useUnmountEffect } from '../../../../../hooks'
 
+const EXCLUDED_PROPS = ['observer', 'width', 'height', 'padding', 'Summary', 'Details', 'layout', 'category']
 
 export const Card = (props) => {
-    const {observer,Summary, Details } = props
+    const { observer, Summary, layout, category, width, height } = props
 
-    const initialState = copyPropsExcluding(props,['observer','width','height','padding','Summary','Details'])
-    const [state,setState] = useState(initialState)
-    const [initialized,setInitialized] = useState(false)
-    const refMounted = useRef(false)
+    const [state, setState] = useState(() => copyPropsExcluding(props, EXCLUDED_PROPS))
+    const refMounted = useRef(true)
 
-    const handleUpdate = useCallback((updatedProps)=> {
-
+    const handleUpdate = useCallback((updatedProps) => {
         if (!refMounted.current)
             return
         // selection is no longer part of the card UI, and the observer must not leak into the display state
         // eslint-disable-next-line no-unused-vars
-        const {selected, observer:_observer, ...content} = updatedProps??{}
-        setState( current => {
-            const newState = {...current,...content}
-            return newState
+        const { selected, observer: _observer, ...content } = updatedProps ?? {}
+        setState(current => ({ ...current, ...content }))
+    }, [])
+
+    useEffect(() => {
+        const next = copyPropsExcluding(props, EXCLUDED_PROPS)
+        setState(current => {
+            const keys = new Set([...Object.keys(current ?? {}), ...Object.keys(next)])
+            for (const key of keys) {
+                if (current?.[key] !== next[key])
+                    return next
+            }
+            return current
         })
-    },[])
+    }, [props])
 
-    useEffect( ()=>{
-        if (initialized)
-            return;
-
-        setInitialized(true)
+    useEffect(() => {
         refMounted.current = true
-
-        if (observer) {
-            observer.on('update', handleUpdate)
-        }
-
-    },[handleUpdate, initialized, observer, props])
-
-    useUnmountEffect( ()=> {
-        refMounted.current = false
-        if (observer) {
+        if (!observer)
+            return
+        observer.on('update', handleUpdate)
+        return () => {
             observer.off('update', handleUpdate)
         }
+    }, [handleUpdate, observer])
+
+    useUnmountEffect(() => {
+        refMounted.current = false
     })
 
+    if (!Summary)
+        return null
 
-    let {width, height,padding} = props;
+    const stateProps = state || {}
+    const isList = layout === 'list'
 
-    if ( height && !width && typeof height==='number') {
-        width =  235 / 132 *height/2
-    }
-    if (width && !height && typeof height==='number') {
-        height = width *132/235 *2;
-    }
-
-    const widthStr = typeof width ==='string' ? width : `${width}px`
-    const heightStr = typeof height ==='string' ? height : `${height}px`
-    const paddingStr = `${padding}px`
-
-    const stateProps = state||{}
-    const hidden = !stateProps.visible
-
-    return <FlipCard  hidden={hidden} width={widthStr} height={heightStr} padding={paddingStr} background='linear-gradient(darkred,#180457)' delay='1s' >
-        {Summary ? <Summary {...stateProps} width={width-padding} height={height} />:null}
-        {Details ? <Details {...stateProps} width={width-padding} height={height} />:null}
-    </FlipCard>
+    return (
+        <Summary
+            {...stateProps}
+            layout={layout}
+            category={category}
+            width={isList ? undefined : width}
+            height={isList ? undefined : height}
+        />
+    )
 }

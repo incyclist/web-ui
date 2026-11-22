@@ -1,43 +1,48 @@
-import React, {useEffect, useMemo, useRef, useState } from "react"
+import React, { useEffect, useMemo, useRef, useState } from "react"
+import styled from "styled-components"
 import MainPage from "../../components/molecules/MainPage"
-import { PageTitle,GroupTitle, Loader, Center, Button } from "../../components/atoms"
+import { PageTitle, Loader, Center, Button, Text } from "../../components/atoms"
 import { ImportIcon } from "../../components/atoms/Icons/ImportIcon"
 import { Dropzone } from "../../components/molecules"
+import { DisplayTypeSelection } from "../../components/molecules/Lists/DisplayTypeSelection"
 import { WORKOUT_IMPORT_FILTERS } from "../../components/modules/workout/WorkoutImport/WorkoutImportDialogView"
-import styled from "styled-components"
 import { Column, Row } from "../../components/atoms/layout/View"
 import { useKey } from "../../hooks/ui/useKey"
-import { useMouseSwipe } from "../../hooks/ui/useMouseSwipe"
-import { Carousel } from "../../components/atoms/Carousel"
-import { NavigationBar } from "../../components/molecules/NavigationBar"
 import { AppThemeProvider } from "../../theme"
-import {WorkoutCard} from '../../components/modules/workout/selection/WorkoutCard'
+import { scrollbar } from "../../utils/scrollbar"
+import { NavigationBar } from "../../components/molecules/NavigationBar"
+import { WorkoutCard } from "../../components/modules/workout/selection/WorkoutCard"
 import { WorkoutCreateCard } from "../../components/modules/workout/selection/CreateCard"
 import { ScheduledWorkoutCard } from "../../components/modules/workout/selection/ScheduledWorkoutCard"
+import { TILE_WIDTH, TILE_HEIGHT } from "../../components/modules/workout/selection/base/atoms"
 
 const UP = 'ArrowUp'
 const DOWN = 'ArrowDown'
 const PAGE_UP = 'PageUp'
 const PAGE_DOWN = 'PageDown'
 
+const ROW_STEP_VH = { list: 9, tiles: 32 }
+
 const View = styled(Row)`
-   
     width: 100%;
     height: 100%;
     overflow-y: hidden;
 `
 
 const ContentArea = styled(Column)`
-   
-    width: ${props => props.width ||'100%'};
-    user-select:none;    
+    width: 100%;
+    min-width: 0;
+    user-select: none;
     height: 100%;
-    padding-left:40px;
+    padding-left: 40px;
     padding-right: 40px;
-    overflow-y: hidden;
+    overflow: hidden;
     position: relative;
     box-sizing: border-box;
-   
+    @media (max-width: 650px) {
+        padding-left: 16px;
+        padding-right: 16px;
+    }
 `
 
 // page-level drop overlay, only rendered while a file is dragged over the page
@@ -67,18 +72,31 @@ const HeaderLayout = styled.div`
     display: grid;
     grid-template-columns: 1fr auto 1fr;
     align-items: center;
+    row-gap: 1vh;
     width: 100%;
+    @media (max-width: 650px) {
+        grid-template-columns: 1fr;
+        justify-items: center;
+    }
 `
 
 const TitleCell = styled.div`
     grid-column: 2;
     white-space: nowrap;
+    @media (max-width: 650px) {
+        grid-column: 1;
+        width: 100%;
+    }
 `
 
 const ImportSlot = styled.div`
     grid-column: 3;
     justify-self: end;
     display: flex;
+    @media (max-width: 650px) {
+        grid-column: 1;
+        justify-self: end;
+    }
 `
 
 const HeaderButtonContent = styled.span`
@@ -86,6 +104,16 @@ const HeaderButtonContent = styled.span`
     align-items: center;
     gap: 0.4em;
     flex-shrink: 0;
+`
+
+const Toolbar = styled.div`
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-end;
+    width: 100%;
+    padding: 0.5vh 0 1vh 0;
+    color: white;
 `
 
 export const WORKOUT_DROP_OVERLAY_TITLE = 'Drop a workout file (ZWO or JSON)'
@@ -96,42 +124,88 @@ const ImportWorkoutButton = ({ onClick }) => (
     </Button>
 )
 
-const CardView= styled(Row)`
-    justify-content:center;
-    user-select:none;
-    padding-left: ${props=>props.distance}
-    padding-right: ${props=>props.distance}
-`
-
-export const ListContainer = styled(View)`
+export const ListContainer = styled.div`
+    position: relative;
+    flex: 1 1 0;
+    min-height: 0;
+    width: 100%;
     overflow-x: hidden;
     overflow-y: auto;
-    display: block;
-    
-    &::-webkit-scrollbar-button {
-        display: none;
-    }
+    display: flex;
+    flex-direction: column;
+    padding-bottom: 2vh;
+    box-sizing: border-box;
+    ${scrollbar}
+`
 
-    &::-webkit-scrollbar {
-        width: 2vw;
-        display: none;
-    }
-      
-      /* Track */
-    &::-webkit-scrollbar-track {
-        box-shadow: inset 0 0 5px grey;
-        border-radius: 10px;
-        display: none;
-        
-    }
-    
-    /* Handle */
-    &::-webkit-scrollbar-thumb {
-        background: ${props => props.theme.list.hover.background};
-        border-radius: 10px;
-    }
+const Section = styled.section`
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    width: 100%;
+    margin-bottom: 2.5vh;
+`
 
+const SectionTitle = styled.h2`
+    margin: 0 0 1.2vh 0;
+    font-size: 2.4vh;
+    line-height: 1.2;
+    font-weight: 650;
+    color: white;
+    text-align: left;
+`
 
+const TilesContainer = styled.div`
+    display: flex;
+    flex-flow: row wrap;
+    align-content: flex-start;
+    gap: 1.5vh 1vw;
+    width: 100%;
+`
+
+const TileItem = styled.div`
+    position: relative;
+    width: ${TILE_WIDTH}px;
+    max-width: 100%;
+    height: ${TILE_HEIGHT}px;
+    flex: none;
+    z-index: 0;
+    &:hover, &:focus-within { z-index: 1; }
+`
+
+const RowsContainer = styled.div`
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+`
+
+const RowItem = styled.div`
+    width: 100%;
+`
+
+const StateArea = styled(Column)`
+    height: 100%;
+    width: 100%;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    color: white;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.65);
+`
+
+const StateTitle = styled.div`
+    font-size: 3vh;
+    font-weight: bold;
+    color: white;
+    text-align: center;
+`
+
+const StateText = styled(Text)`
+    max-width: 60ch;
+    margin: 1vh 0 1vh 0;
+    font-size: 2vh;
+    white-space: normal;
 `
 
 const CARD_COMPONENTS = {
@@ -140,14 +214,7 @@ const CARD_COMPONENTS = {
     ScheduledWorkout: ScheduledWorkoutCard
 }
 
-const callback = (fn, listId, e) => {
-    if (!fn)
-        return
-    fn(listId, e)
-}
-
-const WorkoutList = ({ list, cardSize, itemsFit, responsive, onOK, onDelete,
-    onInitialized, onUpdated, onSlideChange, onSlideChanged, setScrolling }) => {
+const WorkoutList = ({ list, displayType, onOK, onDelete }) => {
 
     const [cardData, setCardData] = useState(list.cards)
 
@@ -163,66 +230,62 @@ const WorkoutList = ({ list, cardSize, itemsFit, responsive, onOK, onDelete,
         return () => { observer.off('update', onUpdate) }
     }, [list.observer])
 
+    const isList = displayType === 'list'
+    const header = list.title
+
     const cards = useMemo(() => (cardData ?? []).map((card) => {
         const Card = CARD_COMPONENTS[card.cardType]
         if (!Card)
             return null
 
-        const { observer, selected, ...content } = card.props ?? {}   // selection is no longer part of the UI
-        const innerSize = { ...(cardSize ?? {}) }
-        innerSize.width = cardSize?.width - cardSize?.padding
-        innerSize.padding = 0
+        const { observer, selected, ...content } = card.props ?? {}
+        const ItemWrapper = isList ? RowItem : TileItem
+        const itemClassName = isList ? 'item workout-row' : 'item workout-tile'
 
-        return <CardView className='item' key={card.id} distance={`${(cardSize?.padding ?? 0) / 2}px`}>
-            <Card {...innerSize} {...content}
-                observer={card.observer}
-                hidden={!content.visible}
-                onOK={onOK ? (...args) => { onOK(card.id, ...args) } : undefined}
-                onDelete={onDelete ? () => { onDelete(card.id) } : undefined}
-            />
-        </CardView>
-    }).filter(Boolean), [cardData, cardSize, onOK, onDelete])
+        return (
+            <ItemWrapper className={itemClassName} key={card.id}>
+                <Card
+                    {...content}
+                    observer={card.observer}
+                    layout={isList ? 'list' : 'tiles'}
+                    category={header}
+                    onOK={onOK ? () => { onOK(card.id) } : undefined}
+                    onDelete={onDelete ? () => { onDelete(card.id) } : undefined}
+                />
+            </ItemWrapper>
+        )
+    }).filter(Boolean), [cardData, header, isList, onOK, onDelete])
 
-    const header = list.title
+    const ItemsContainer = isList ? RowsContainer : TilesContainer
+    const containerClass = isList ? 'workout-rows' : 'workout-tiles'
 
     return (
-        <Column className={`list_${list.id}`} >
-            {header ?
-                <Row>
-                    <Column width='50px' />
-                    <Column>
-                        <GroupTitle>{header}</GroupTitle>
-                    </Column>
-                </Row>
-                : null}
-
-            <Row width='100%'>
-                <Carousel cards={cards}
-                    width='100%'
-                    height={`${cardSize.height}px`} renderKey={itemsFit} responsive={responsive}
-                    autoWidth={true}
-                    onInitialized={(e) => { callback(onInitialized, list.id, e) }}
-                    onSlideChange={(e) => { callback(onSlideChange, list.id, e); setScrolling(true) }}
-                    onSlideChanged={(e) => { callback(onSlideChanged, list.id, e); setScrolling(false) }}
-                    onUpdated={(e) => { callback(onUpdated, list.id, e) }}
-                />
-            </Row>
-        </Column>
+        <Section className={`list_${list.id}`}>
+            {header ? <SectionTitle>{header}</SectionTitle> : null}
+            <ItemsContainer className={containerClass}>
+                {cards}
+            </ItemsContainer>
+        </Section>
     )
 }
 
-export const WorkoutsScreen =
-    // displayType: only the tile view exists for now; a list view and a toggle will follow in a separate UI change
-    ({ loading, cardSize, offset = 0, responsive, itemsFit, width, height, lists, upcoming = null,
-        // eslint-disable-next-line no-unused-vars
-        displayType = 'tiles',
-        onInitialized, onUpdated, onSlideChange, onSlideChanged, onOK, closePage, onDelete, onImportWorkout, onDropFiles, dropEnabled = true }) => {
-    const swipeDisabled = useRef(false);
-
+export const WorkoutsScreen = ({
+    loading,
+    lists,
+    upcoming = null,
+    displayType = 'tiles',
+    onDisplayTypeSelected,
+    onOK,
+    closePage,
+    onDelete,
+    onImportWorkout,
+    onDropFiles,
+    dropEnabled = true
+}) => {
     // upcoming (scheduled) workouts come first; keyed by list id so the section mounts/unmounts
     // cleanly (and releases its observer subscription) when it appears or disappears
     const allLists = useMemo(() => [...(upcoming ? [upcoming] : []), ...(lists ?? [])], [upcoming, lists])
-    const refDiv = useRef(null);
+    const refDiv = useRef(null)
 
     // --- page-level drop overlay (same mechanism as the Routes page) ---
     const dragDepth = useRef(0)
@@ -254,98 +317,65 @@ export const WorkoutsScreen =
             onDropFiles(Array.isArray(dropInfo) ? dropInfo : [dropInfo])
     }
 
+    const scroll = (direction, page) => {
+        const div = refDiv.current
+        if (!div)
+            return
 
-    const onScrollUp = (pixels)=> {
-        if (swipeDisabled.current===true)
-            return;
+        const step = page
+            ? (div.clientHeight || window.innerHeight * 0.6)
+            : window.innerHeight * (ROW_STEP_VH[displayType] ?? ROW_STEP_VH.tiles) / 100
+        const top = direction * step
 
-        const div = refDiv?.current
-        if (!div) {
-            return;
+        div.focus?.()
+        if (typeof div.scrollBy === 'function')
+            div.scrollBy({ left: 0, top, behavior: 'smooth' })
+        else
+            div.scrollTop = (div.scrollTop ?? 0) + top
+    }
+
+    const onKey = (info) => {
+        switch (info.code) {
+            case UP: scroll(-1, false); break
+            case PAGE_UP: scroll(-1, true); break
+            case DOWN: scroll(1, false); break
+            case PAGE_DOWN: scroll(1, true); break
+            default: return
+        }
+    }
+
+    useKey([UP, DOWN, PAGE_UP, PAGE_DOWN], onKey)
+
+    const renderContent = () => {
+        if (loading)
+            return <Center><Loader /></Center>
+
+        if (allLists.length === 0) {
+            return (
+                <StateArea className='empty-workouts'>
+                    <StateTitle>No workouts yet</StateTitle>
+                    <StateText align='center' color='white' text='Import a workout file (.zwo or .json) or drop it anywhere on this page.' />
+                </StateArea>
+            )
         }
 
-        const prev = div.offsetTop;
-        const delta = pixels!==undefined ? pixels : cardSize?.height||50
-        const newY = prev-delta //Math.min( prev-delta, 0)// Math.min( prev+cardSize.height, height-cardSize.height)
-        const behavior = pixels!==undefined ? 'instant' : 'smooth'
-        div.focus()
-        div.scrollTo({left:0,top:newY,behavior})
-        
-        return newY
-
+        return allLists.map(list => (
+            <WorkoutList
+                key={list.id}
+                list={list}
+                displayType={displayType}
+                onOK={onOK}
+                onDelete={onDelete}
+            />
+        ))
     }
-
-    const onScrollDown = (pixels,y)=> {
-        if (swipeDisabled.current===true)
-            return;
-
-        const div = refDiv?.current
-        if (!div) {
-            return;
-        }
-
-        const prev = div.offsetTop;
-        const delta = pixels!==undefined ? pixels : cardSize?.height||50
-        const newY = prev+delta;
-        const behavior = pixels!==undefined ? 'instant' : 'smooth'
-
-        //window.scrollTo({top:deltaY,behavior:'smooth'})
-        div.focus()
-        div.scrollTo({left:0,top:newY,behavior})
-        
-        return newY
-            
-        
-        
-    }
-
-    const onKey = ( info)=> {
-            switch (info.code) {
-                case UP: 
-                case PAGE_UP:
-                    onScrollUp()
-                    break;
-                case DOWN: 
-                case PAGE_DOWN:
-                    onScrollDown()
-                    break;
-                    
-                default:
-                    return;
-            }
-    }
-
-    const onSwipe = ( direction, pixels)=> {
-
-        if(swipeDisabled.current)
-            return;
-
-        if(direction==='swipe-up')
-            onScrollDown(pixels)
-        if(direction==='swipe-down')
-            onScrollUp(pixels)
-
-    }
-
-    useKey([UP,DOWN,PAGE_UP,PAGE_DOWN], onKey)
-    useMouseSwipe(['swipe-up','swipe-down'], onSwipe, {div:refDiv.current})
-    
-    
-    const setScrolling = (isScrolling)=>{
-        swipeDisabled.current = isScrolling
-         
-
-    }
-    
 
     return (
-        <MainPage >
-
+        <MainPage>
             <View>
-
                 <NavigationBar closePage={closePage} selected='workouts' />
 
-                <ContentArea width={'100%'} className='workouts-page'
+                <ContentArea width='100%' className='workouts-page'
                     onDragEnterCapture={onContentDragEnterCapture} onDragOverCapture={onContentDragOverCapture}
                     onDragLeaveCapture={onContentDragLeaveCapture} onDropCapture={onContentDropCapture}>
                     <HeaderLayout className='workouts-header'>
@@ -353,30 +383,23 @@ export const WorkoutsScreen =
                         <ImportSlot><ImportWorkoutButton onClick={onImportWorkout} /></ImportSlot>
                     </HeaderLayout>
 
+                    <Toolbar className='workouts-toolbar'>
+                        <DisplayTypeSelection selected={displayType} onSelected={onDisplayTypeSelected} />
+                    </Toolbar>
+
                     <AppThemeProvider>
-                        <ListContainer width='100%' height='100%' ref={refDiv}>
-                        {  !loading && cardSize && lists ?
-                            allLists.map( list => <WorkoutList key={list.id} list={list} cardSize={cardSize} itemsFit={itemsFit} responsive={responsive}
-                                onOK={onOK} onDelete={onDelete}
-                                onInitialized={onInitialized} onUpdated={onUpdated} onSlideChange={onSlideChange} onSlideChanged={onSlideChanged}
-                                setScrolling={setScrolling} />)
-                            :
-                            null
-                        }
+                        <ListContainer ref={refDiv} tabIndex={-1} className='workouts-list-scroll'>
+                            {renderContent()}
                         </ListContainer>
                     </AppThemeProvider>
-                    { (loading || !cardSize ) ?  <Center><Loader /></Center> :null }
 
                     {dragActive && dropEnabled ?
                         <DropOverlay className='workout-drop-overlay' width='100%' height='100%'
                             multiple filters={WORKOUT_IMPORT_FILTERS} onDrop={onOverlayDrop}
                             text={<DropOverlayTitle>{WORKOUT_DROP_OVERLAY_TITLE}</DropOverlayTitle>} />
                         : null}
-
                 </ContentArea>
-
             </View>
-
         </MainPage>
     )
 }

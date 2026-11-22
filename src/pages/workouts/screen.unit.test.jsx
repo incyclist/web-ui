@@ -6,14 +6,13 @@ import { WorkoutsScreen } from './screen'
 vi.mock('../../components/molecules/MainPage', () => ({ default: ({ children }) => <div>{children}</div> }))
 vi.mock('../../components/molecules/NavigationBar', () => ({ NavigationBar: () => null }))
 vi.mock('../../hooks/ui/useKey', () => ({ useKey: () => {} }))
-vi.mock('../../hooks/ui/useMouseSwipe', () => ({ useMouseSwipe: () => {} }))
-vi.mock('../../components/atoms/Carousel', () => ({ Carousel: () => <div data-testid='carousel' /> }))
 
 // Dropzone relies on native drag/drop internals that jsdom lacks - stubbed so a test can hand over a drop
 vi.mock('../../components/molecules', async (importOriginal) => {
     const actual = await importOriginal()
     return {
         ...actual,
+        WorkoutGraph: () => <div data-testid='workout-graph' />,
         Dropzone: (props) => (
             <div className={props.className}
                 onDrop={() => props.onDrop?.([{ type: 'url', url: 'file:///w/a.zwo' }])}>{props.text}</div>
@@ -21,11 +20,16 @@ vi.mock('../../components/molecules', async (importOriginal) => {
     }
 })
 
-const cardSize = { width: 200, height: 300, padding: 0 }
-const list = (id, title, observer) => ({ id, title, observer, cards: [] })
-const renderScreen = (props) => render(<WorkoutsScreen loading={false} cardSize={cardSize} {...props} />)
+const list = (id, title, observer, cards = []) => ({ id, title, observer, cards })
+const renderScreen = (props) => render(<WorkoutsScreen loading={false} {...props} />)
 
 const titles = (container) => [...container.querySelectorAll('[class*="list_"]')].map(e => e.className.split(' ').find(c => c.startsWith('list_')))
+
+const workoutCard = (id, title, extra = {}) => ({
+    id,
+    cardType: 'Workout',
+    props: { title, duration: '45min', workout: { name: title }, visible: false, canDelete: true, ...extra }
+})
 
 describe('WorkoutsScreen', () => {
 
@@ -46,11 +50,11 @@ describe('WorkoutsScreen', () => {
         const { rerender } = renderScreen({ upcoming: list('scheduled', 'S', observer), lists })
         expect(observer.on).toHaveBeenCalledTimes(1)
 
-        rerender(<WorkoutsScreen loading={false} cardSize={cardSize} upcoming={null} lists={lists} />)
+        rerender(<WorkoutsScreen loading={false} upcoming={null} lists={lists} />)
         expect(observer.off).toHaveBeenCalledTimes(1)
         expect(observer.off.mock.calls[0][1]).toBe(observer.on.mock.calls[0][1])
 
-        rerender(<WorkoutsScreen loading={false} cardSize={cardSize} upcoming={list('scheduled', 'S', observer)} lists={lists} />)
+        rerender(<WorkoutsScreen loading={false} upcoming={list('scheduled', 'S', observer)} lists={lists} />)
         expect(observer.on).toHaveBeenCalledTimes(2)
     })
 
@@ -86,5 +90,60 @@ describe('WorkoutsScreen', () => {
         const l = { id: 'myWorkouts', title: 'My Workouts', cards: [{ id: 'Import', cardType: 'WorkoutImport', props: { title: 'Import Workout', visible: true } }] }
         const { container } = renderScreen({ lists: [l] })
         expect(container.querySelectorAll('.item').length).toBe(0)
+    })
+
+    test('renders cards in a wrapping tile grid by default even when visible is false', () => {
+        const { container } = renderScreen({
+            lists: [list('myWorkouts', 'My Workouts', null, [
+                { id: 'Create', cardType: 'WorkoutCreate', props: { title: 'Create Workout', visible: true } },
+                workoutCard('w1', 'Sweet Spot'),
+            ])]
+        })
+        expect(container.querySelector('.workout-tiles')).not.toBeNull()
+        expect(container.querySelector('.workout-rows')).toBeNull()
+        expect(screen.getByText('Create Workout')).toBeInTheDocument()
+        expect(screen.getByText('Sweet Spot')).toBeInTheDocument()
+    })
+
+    test('renders list rows when displayType is list and forwards display toggle clicks', () => {
+        const onDisplayTypeSelected = vi.fn()
+        const { container } = renderScreen({
+            displayType: 'list',
+            onDisplayTypeSelected,
+            upcoming: list('scheduled', 'Scheduled Workouts', null, [
+                { id: 's1', cardType: 'ScheduledWorkout', props: { title: 'Today Ride', duration: '30min', date: new Date(), isToday: true, workout: { name: 'Today Ride' }, visible: false } }
+            ]),
+            lists: [list('myWorkouts', 'My Workouts', null, [workoutCard('w1', 'Sweet Spot')])]
+        })
+        expect(container.querySelector('.workout-rows')).not.toBeNull()
+        expect(container.querySelector('.workout-tiles')).toBeNull()
+        expect(screen.getByText('Today')).toBeInTheDocument()
+        expect(screen.getByText('Sweet Spot')).toBeInTheDocument()
+
+        fireEvent.click(container.querySelector('#tiles'))
+        expect(onDisplayTypeSelected).toHaveBeenCalledWith('tiles')
+        fireEvent.click(container.querySelector('#list'))
+        expect(onDisplayTypeSelected).toHaveBeenCalledWith('list')
+    })
+
+    test('invokes onOK and onDelete independently on workout items', () => {
+        const onOK = vi.fn(), onDelete = vi.fn()
+        renderScreen({
+            lists: [list('myWorkouts', 'My Workouts', null, [workoutCard('w1', 'Sweet Spot')])]
+            , onOK, onDelete
+        })
+        fireEvent.click(screen.getByRole('button', { name: 'OK' }))
+        expect(onOK).toHaveBeenCalledWith('w1')
+        fireEvent.click(screen.getByRole('button', { name: 'Delete Sweet Spot' }))
+        expect(onDelete).toHaveBeenCalledWith('w1')
+        expect(onOK).toHaveBeenCalledTimes(1)
+    })
+
+    test('renders loading and empty states appropriately', () => {
+        const { container, rerender } = renderScreen({ loading: true, lists: [] })
+        expect(container.querySelector('.empty-workouts')).toBeNull()
+
+        rerender(<WorkoutsScreen loading={false} lists={[]} upcoming={null} />)
+        expect(screen.getByText('No workouts yet')).toBeInTheDocument()
     })
 })
