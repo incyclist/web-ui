@@ -1,7 +1,7 @@
 import React from 'react';
-import styled from 'styled-components';
+import styled, { keyframes } from 'styled-components';
 
-import { Button, Overlay} from '../../../../atoms'
+import { Button, LinkButton, Overlay} from '../../../../atoms'
 
 const DEFAULT_WIDTH = '30vw';
 const DEFAULT_LEFT='35vw' 
@@ -97,6 +97,266 @@ const Success = styled.div`
 const Warning = styled.div`
     color:	#FFBF00;
 `
+
+// ---------------------------------------------------------------------------------------------
+// Phased start overlay (only used when the services provide `startPhase`)
+// ---------------------------------------------------------------------------------------------
+
+const spin = keyframes`
+    to { transform: rotate(360deg); }
+`
+
+const Spinner = styled.span`
+    display: inline-block;
+    box-sizing: border-box;
+    width: 1.3vh;
+    height: 1.3vh;
+    min-width: 10px;
+    min-height: 10px;
+    margin-right: 0.5vw;
+    border: 2px solid currentColor;
+    border-right-color: transparent;
+    border-radius: 50%;
+    vertical-align: middle;
+    animation: ${spin} 0.9s linear infinite;
+
+    @media (prefers-reduced-motion: reduce) {
+        animation: none;
+        border-right-color: currentColor;
+        opacity: 0.6;
+    }
+`
+
+const Muted = styled.span`
+    color: #999999;
+`
+
+const HelperLine = styled.div`
+    height: 2.6vh;
+    line-height: 2.6vh;
+    text-align: center;
+    color: #999999;
+    font-size: 90%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+`
+
+const PhasedDetails = styled.div`
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    text-align: left;
+    padding: 0 1vw;
+`
+
+const PhasedRow = styled.div`
+    height: 2.6vh;
+    line-height: 2.6vh;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+`
+
+const RowLabel = styled.div`
+    width: 40%;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+`
+
+const RowStatus = styled.div`
+    width: 32%;
+    white-space: nowrap;
+`
+
+const RowActions = styled.div`
+    width: 28%;
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.8vw;
+    font-size: 90%;
+`
+
+const Divider = styled.div`
+    height: 1.5vh;
+    display: flex;
+    align-items: center;
+    gap: 0.5vw;
+    color: #999999;
+    font-size: 70%;
+
+    &::after {
+        content: '';
+        flex: 1;
+        border-top: 1px solid #666666;
+    }
+`
+
+// Seconds of converted video after which an AVI ride can start
+const AVI_PLAYABLE_SECONDS = 200
+
+export const getPhaseHeading = (startPhase, startContent) => {
+    if (startPhase === 'ready')
+        return 'Ready to ride'
+    if (startPhase === 'content') {
+        switch (startContent?.kind) {
+            case 'streetview': return 'Preparing Street View ...'
+            case 'video': return startContent.progress ? 'Preparing video ...' : 'Loading video ...'
+            case 'map':
+            case 'satellite': return 'Loading map ...'
+            default: return 'Preparing route ...'
+        }
+    }
+    return 'Starting devices ...'
+}
+
+/** progress towards "playable" (not towards the end of the file), capped at 99 until the video is loaded */
+export const getConvertPercent = (progress) => {
+    const pct = progress?.convertPct ?? 0
+    const byTime = progress?.convertSeconds ? (progress.convertSeconds / AVI_PLAYABLE_SECONDS) * 100 : 0
+    return Math.min(99, Math.round(Math.max(pct, byTime)))
+}
+
+export const getReadyHelperText = (info) => {
+    const pending = info?.pendingSensors ?? []
+    const notConnected = info?.notConnectedSensors ?? []
+    const total = pending.length + notConnected.length
+
+    if (total > 1)
+        return 'Some sensors aren\'t connected yet. You can start without them.'
+    if (pending.length === 1)
+        return `${pending[0]} is still connecting. You can start without it.`
+    if (notConnected.length === 1)
+        return `${notConnected[0]} isn't connected. You can start without it.`
+    if (info?.viewFallback)
+        return 'Street View isn\'t available right now. You\'ll ride with the Map.'
+    return null
+}
+
+const getDeviceState = (device) => {
+    if (device.startState)
+        return device.startState
+    const { state, status } = device
+    if (state === GEAR_STATES.START_OK || status === 'Started') return 'started'
+    if (state === GEAR_STATES.START_FAILURE || state === GEAR_STATES.ERROR || status === 'Error')
+        return (device.isControl || device.isMandatory) ? 'failed' : 'not-connected'
+    return 'starting'
+}
+
+const PhasedDeviceStatus = ({ device }) => {
+    const startState = getDeviceState(device)
+    switch (startState) {
+        case 'started':
+            return <Success>✓ Started</Success>
+        case 'failed':
+            return <ErrorText>Failed</ErrorText>
+        case 'not-connected':
+            return <Warning>▲ Not connected</Warning>
+        case 'ignored':
+            return <Muted>– Ignored</Muted>
+        case 'uploading':
+            return <><Spinner aria-hidden='true' />{device.stateText?.length > 0 ? device.stateText : 'Uploading ...'}</>
+        case 'starting':
+        default:
+            return <><Spinner aria-hidden='true' />{device.slow ? 'Still starting ...' : 'Starting ...'}</>
+    }
+}
+
+const PhasedContentStatus = ({ content, videoProgress, mapStateText }) => {
+    const { kind, state, progress } = content
+
+    if (state === 'ready')
+        return <Success>✓ {kind === 'video' ? 'Started' : 'Loaded'}</Success>
+    if (state === 'unavailable')
+        return <Warning>▲ Unavailable – using Map</Warning>
+    if (state === 'failed')
+        return <ErrorText>Failed</ErrorText>
+    if (state === 'waiting')
+        return <Muted>○ Waiting</Muted>
+
+    // loading
+    let text = 'Loading ...'
+    if (kind === 'video') {
+        if (progress)
+            text = `Preparing (${getConvertPercent(progress)}%)`
+        else if (videoProgress?.loaded && videoProgress?.bufferTime > 0)
+            text = `Buffering (${Math.round(videoProgress.bufferTime)}s)`
+        else if (videoProgress?.loaded)
+            text = 'Buffering ...'
+        else
+            text = 'Starting ...'
+    }
+    else if (kind === 'streetview' && mapStateText)
+        text = mapStateText
+    return <><Spinner aria-hidden='true' />{text}</>
+}
+
+export const OverlayStartingPhased = (props) => {
+    const { devices, startPhase, startSlow, startContent, startReadyInfo, readyToStart, videoProgress,
+        viewState, width = DEFAULT_WIDTH, height = DEFAULT_HEIGHT, top = DEFAULT_TOP, left = DEFAULT_LEFT } = props
+
+    const isControl = (d) => d.isControl || d.isMandatory
+    const controls = (devices ?? []).filter(isControl)
+    const sensors = (devices ?? []).filter(d => !isControl(d))
+
+    const heading = getPhaseHeading(startPhase, startContent)
+
+    const isConverting = startContent?.kind === 'video' && startContent.progress !== undefined && startContent.state === 'loading'
+    let line = null
+    if (startSlow)
+        line = 'This is taking longer than usual.'
+    else if (isConverting)
+        line = 'This video has to be prepared before it can play. This can take a minute.'
+    else if (startPhase === 'ready')
+        line = getReadyHelperText(startReadyInfo)
+
+    const svSlow = startContent?.kind === 'streetview' && viewState === 'slow'
+    const contentSlowText = svSlow ? 'Still loading ...' : undefined
+
+    const renderRow = (device) => {
+        const startState = getDeviceState(device)
+        const logContext = { device: device.name, isControl: isControl(device) }
+        return <PhasedRow key={device.udid ?? device.name}>
+            <RowLabel title={device.name}>{device.name}</RowLabel>
+            <RowStatus><PhasedDeviceStatus device={device} /></RowStatus>
+            <RowActions>
+                {device.canRetry && startState !== 'started' ?
+                    <LinkButton label='Retry' ariaLabel={`Retry ${device.name}`} logContext={logContext}
+                        onClick={() => props.onRetryDevice?.(device.udid)} /> : null}
+                {device.canIgnore && startState !== 'started' && startState !== 'ignored' ?
+                    <LinkButton label='Ignore' ariaLabel={`Ignore ${device.name}`} logContext={logContext}
+                        onClick={() => props.onIgnoreDevice?.(device.udid)} /> : null}
+            </RowActions>
+        </PhasedRow>
+    }
+
+    return (
+        <OverlayView visible={true} width={width} left={left} height={height} top={top}>
+            <OverlayText>
+                <b>{heading}</b>
+            </OverlayText>
+            <HelperLine>{line}</HelperLine>
+            <PhasedDetails className='startoverlay-details'>
+                {controls.map(renderRow)}
+                {startContent ? <PhasedRow>
+                    <RowLabel>{startContent.label}</RowLabel>
+                    <RowStatus><PhasedContentStatus content={startContent} videoProgress={videoProgress} mapStateText={contentSlowText} /></RowStatus>
+                    <RowActions />
+                </PhasedRow> : null}
+                {sensors.length > 0 ? <Divider role='separator'>Optional</Divider> : null}
+                {sensors.map(renderRow)}
+            </PhasedDetails>
+            <OverlayButtons>
+                {readyToStart ? <Button margin={'1.2vh 1.1vw'} primary={startPhase === 'ready'} onClick={() => props.onIgnore?.()}>Start </Button> : null}
+                {startContent?.kind === 'streetview' && viewState === 'slow' ? <Button margin={'1.2vh 1.1vw'} onClick={() => props.onStartWithMap?.()}>Start with Map </Button> : null}
+                <Button margin={'1.2vh 1.1vw'} onClick={() => props.onCancel?.()}>Cancel </Button>
+            </OverlayButtons>
+        </OverlayView>
+    )
+}
 
 export const StartRideOverlay = (props) => {
     const {mode,rideState,devices,videoState,mapType, mapState,mapStateError, videoStateError,
@@ -324,8 +584,13 @@ export const StartRideOverlay = (props) => {
 
     if (isVideoError()) 
         return OverlayVideoError(props);  
-    if (isSensorError()) 
-        return OverlaySensorError(props);  
+
+    // phased renderer: failed sensors are handled inline on their row, so no separate sensor-error screen
+    if (props.startPhase !== undefined)
+        return <OverlayStartingPhased {...props} />
+
+    if (isSensorError())
+        return OverlaySensorError(props);
 
     return OverlayStarting(props);
 
