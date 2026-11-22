@@ -27,16 +27,16 @@ describe('StartRideOverlay', () => {
         vi.clearAllMocks()
     })
 
-    describe('renderer selection', () => {
-        test('without startPhase: legacy heading', () => {
-            render(<StartRideOverlay mode='GPX' devices={[trainer({ startState: undefined })]} />)
-            expect(screen.getByText('Starting activity ...')).not.toBeNull()
-        })
-
-        test('with startPhase: phased heading and no legacy heading', () => {
+    describe('renderer', () => {
+        test('starting state always uses the phased renderer', () => {
             render(<StartRideOverlay mode='GPX' startPhase='devices' devices={[trainer({ startState: 'starting', status: 'Starting' })]} />)
             expect(screen.getByText('Starting devices ...')).not.toBeNull()
             expect(screen.queryByText('Starting activity ...')).toBeNull()
+        })
+
+        test('without startPhase it still renders the phased overlay', () => {
+            render(<StartRideOverlay mode='GPX' devices={[trainer({ startState: 'starting', status: 'Starting' })]} />)
+            expect(screen.getByText('Starting devices ...')).not.toBeNull()
         })
     })
 

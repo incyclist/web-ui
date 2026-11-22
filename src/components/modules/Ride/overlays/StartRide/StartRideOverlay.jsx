@@ -72,23 +72,6 @@ const OverlayDetails = styled.div`
   text-align:left;
 `
 
-const OverlayDetailsItem = styled.div`
-  min-height: max(2.6vh, 1.6em);
-  vertical-align: middle;
-  line-height: 100%;
-  display: flex;
-  flex-direction: row;
-  justify-content: center;
-  text-align:left;
-`
-
-const Label = styled.div`
-    width: 45%;
-`
-const Status = styled.div`
-    width: 45%;
-`
-
 const OverlayButtons = styled.div`
   flex: none;
   text-align:center;
@@ -110,7 +93,7 @@ const Warning = styled.div`
 `
 
 // ---------------------------------------------------------------------------------------------
-// Phased start overlay (only used when the services provide `startPhase`)
+// Phased start overlay
 // ---------------------------------------------------------------------------------------------
 
 const spin = keyframes`
@@ -386,40 +369,22 @@ export const OverlayStartingPhased = (props) => {
 }
 
 export const StartRideOverlay = (props) => {
-    const {mode,rideState,devices,videoState,mapType, mapState,mapStateError, videoStateError,
-        viewState,
-        visible=true,width=DEFAULT_WIDTH,height=DEFAULT_HEIGHT,videoProgress={}
+    const {mode,devices,videoState,mapStateError, videoStateError,
+        visible=true,width=DEFAULT_WIDTH,height=DEFAULT_HEIGHT
     } = props;
 
-    // Street View-specific content only - gated on viewState so Video, Workout-only and
-    // Map/Satellite starts render exactly as today.
-    const isStreetViewStart = viewState !== undefined
-
     const bikeError = devices?.find( d=>(d.isControl||d.isMandatory) && (d.state===GEAR_STATES.START_FAILURE || d.status==='Error') )!==undefined
-    const sensorError = devices?.find( d=>!(d.isControl||d.isMandatory) && (d.state===GEAR_STATES.START_FAILURE || d.status==='Error')) !==undefined
 
-    const onCancel = (reason) => {    
-        if (props.onCancel) props.onCancel(reason);    
+    const onCancel = (reason) => {
+        if (props.onCancel) props.onCancel(reason);
     }
 
-    const onRetry = () => {    
-        if (props.onRetry) props.onRetry();    
-    }
-
-    const onIgnore = () => {
-        if (props.onIgnore) props.onIgnore();
-    }
-
-    const onStartWithMap = () => {
-        if (props.onStartWithMap) props.onStartWithMap();
+    const onRetry = () => {
+        if (props.onRetry) props.onRetry();
     }
 
     const isDeviceError = ()=>{
         return bikeError
-    }
-
-    const isSensorError = ()=>{
-        return sensorError && !bikeError && (rideState==='startError' || rideState==='Error')
     }
 
     const isVideoError = ()=>{
@@ -428,102 +393,6 @@ export const StartRideOverlay = (props) => {
         return (videoState===VIDEO_STATES.START_FAILED || videoState==='Error');
     }
 
-    
-    
-    const mapStateText = ()=> {
-        if (mapState==='Loaded')
-            return <Success>Loaded</Success>
-        if (mapState==='Loading')
-            return 'Loading ...'
-
-        return mapState
-    }
-
-    // Street View row text - only used when isStreetViewStart
-    const viewStateText = ()=> {
-        switch (viewState) {
-            case 'loaded': return <Success>Loaded</Success>
-            case 'unavailable': return <Warning>Unavailable – using Map</Warning>
-            case 'loading': return 'Loading ...'
-            case 'slow': return 'Still loading ...'
-            case 'waiting':
-            default: return 'Waiting'
-        }
-    }
-
-    const videoStateText = ()=> {
-        if (videoState===VIDEO_STATES.STARTED || videoState==='Started')
-            return <Success>Started</Success>
-        
-        if (videoState===VIDEO_STATES.STARTING || videoState==='Starting') {
-            let text = 'Starting ...';
-            if ( videoProgress?.loaded && !videoProgress?.bufferTime ) 
-                text = 'Buffering ...';
-            if ( videoProgress?.loaded && videoProgress?.bufferTime>0 ) 
-                text = `Buffering (${Math.round(videoProgress?.bufferTime)}s)`;
-            return <span>{text}</span>;
-        }
-        else if (videoState) {
-            return <span>{videoState}</span>;
-        }
-
-        return null
-    }
-
-    const deviceStateText = (device)=> {
-        const {state,status,stateText} = device
-        if (stateText?.length>0)
-            return stateText
-        
-        if (state===GEAR_STATES.START_OK || status==='Started')
-            return <Success>Started</Success>
-        if (state===GEAR_STATES.STARTING || status==='Starting')
-            return 'Starting ...';
-        if (state===GEAR_STATES.START_FAILURE )
-            return <ErrorText>Failed</ErrorText>
-        if (state===GEAR_STATES.ERROR || status==='Error')
-            return <ErrorText>Failed</ErrorText>
-        return state;
-    }
-    
-    const OverlayStarting = (props) => {
-        // "Preparing Street View ..." only while it's actually loading.
-        // Every other case - including every non-Street-View start - keeps today's heading.
-        const heading = isStreetViewStart && (viewState==='loading' || viewState==='slow')
-            ? 'Preparing Street View ...'
-            : 'Starting activity ...'
-
-        return (
-            <OverlayView visible={true} width={width} height={height}>
-                <OverlayText >
-                    <b>{heading}</b>
-                </OverlayText>
-                <OverlayDetails className='startoverlay-details'>
-
-                    { devices ? devices.map( (device,idx) =>
-                        <OverlayDetailsItem key={idx}>
-                            <Label>{device.name}</Label>
-                            <Status>{deviceStateText(device)}</Status>
-                        </OverlayDetailsItem>
-                        ) : null}
-                    { (mode===RIDE_MODES.VIDEO || mode==='Video') ? <OverlayDetailsItem>
-                        <Label>Video</Label>
-                        <Status>{videoStateText()}</Status>
-                    </OverlayDetailsItem> : null}
-                    { mapType ? <OverlayDetailsItem>
-                        <Label>{mapType}</Label>
-                        <Status>{isStreetViewStart ? viewStateText() : mapStateText()}</Status>
-                    </OverlayDetailsItem> : null}
-                </OverlayDetails>
-                <OverlayButtons >
-                    {props.readyToStart ? <Button margin={'1.2vh 1.1vw'} onClick={()=>onIgnore()}>Start </Button> : null}
-                    {isStreetViewStart && viewState==='slow' ? <Button margin={'1.2vh 1.1vw'} onClick={()=>onStartWithMap()}>Start with Map </Button> : null}
-                    <Button margin={'1.2vh 1.1vw'} onClick={()=>onCancel()}>Cancel </Button>
-                </OverlayButtons>
-            </OverlayView>
-        )
-    }
-    
     const OverlayDeviceError = (props) => {
         return(
             <OverlayView visible={true} width={width} height={height}>
@@ -541,33 +410,6 @@ export const StartRideOverlay = (props) => {
         )
     }
 
-    const OverlaySensorError = (props) => {
-        return(
-        <OverlayView visible={true} width={width} height={height}>
-            <OverlayText >
-                <Warning><b>Could not start Sensor(s)</b></Warning>
-            </OverlayText>
-            <OverlayDetails className='startoverlay-details'>
-                { devices ? devices.map( (device,idx) => 
-                    <OverlayDetailsItem key={idx}> 
-                        <Label>{device.name}</Label> 
-                        <Status>{deviceStateText(device)}</Status>
-                    </OverlayDetailsItem>       
-                    ) : null}
-                { (mode===RIDE_MODES.VIDEO || mode==='Video') ? <OverlayDetailsItem> 
-                    <Label>Video</Label> 
-                    <Status>{videoStateText()}</Status>
-                </OverlayDetailsItem> : null}
-            </OverlayDetails>
-            <OverlayButtons  >
-                <Button margin={'1.2vh 1.1vw'} primary onClick={ ()=> onRetry() } >Retry</Button>
-                <Button margin={'1.2vh 1.1vw'} primary onClick={ ()=> onIgnore() } >Ignore</Button>
-                <Button margin={'1.2vh 1.1vw'} onClick={ ()=>{onCancel({device:true})}}>Cancel </Button>
-            </OverlayButtons>
-        </OverlayView>
-        )
-    }
-    
     const OverlayVideoError = (props) => {
         return(
             <OverlayView visible={true} width={width} height={height}>
@@ -612,16 +454,8 @@ export const StartRideOverlay = (props) => {
     if (isVideoError()) 
         return OverlayVideoError(props);  
 
-    // phased renderer: failed sensors are handled inline on their row, so no separate sensor-error screen
-    if (props.startPhase !== undefined)
-        return <OverlayStartingPhased {...props} />
-
-    if (isSensorError())
-        return OverlaySensorError(props);
-
-    return OverlayStarting(props);
-
-
+    // failed sensors are handled inline on their row of the phased overlay
+    return <OverlayStartingPhased {...props} />
 }
 
 
