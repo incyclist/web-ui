@@ -19,6 +19,7 @@ import { initSerialBinding } from "./devices"
 import getAntBinding from "./devices/ant"
 import getBleBinding from "./devices/ble"
 import getDirectConnectBinding from "./devices/wifi"
+import { getLocalLinkBinding } from "./local-link"
 
 export class BindingFactory {
 
@@ -45,6 +46,7 @@ export class BindingFactory {
             bindings.ant = getAntBinding()
             bindings.ble = getBleBinding()
             bindings.wifi = getDirectConnectBinding() 
+            bindings.localLink = getLocalLinkBinding()
 
             return bindings
             
