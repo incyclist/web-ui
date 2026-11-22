@@ -6,3 +6,5 @@ export * from './Ride'
 export * from './SettingsDialog'
 export * from './Workout'
 export * from './Routes'
+
+export * from './RouteSharing'
