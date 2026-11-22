@@ -25,7 +25,7 @@ export const FollowRouteRidePage = ( { workout, activity, route, state,initializ
                                        map,upcomingElevation,totalElevation,dbColumns,xScale, yScale,
                                        prevRides,nearbyRides, showShiftingButtons, showDashboard, showWorkout,
                                        screenshotRequested, onScreenshot, onSettings,
-                                       onStartRetry, onStartIgnore, onStartCancel, onStartWithMap, onToggleCyclingMode
+                                       onStartRetry, onStartIgnore, onStartCancel, onStartWithMap, onStartRetryDevice, onStartIgnoreDevice, onToggleCyclingMode
                                     } ) => {
 
 
@@ -86,7 +86,7 @@ export const FollowRouteRidePage = ( { workout, activity, route, state,initializ
 
 
     if (initialized && isStarting) {
-        const childProps = {...startOverlayProps, onRetry:onStartRetry, onIgnore:onStartIgnore, onCancel:onStartCancel, onStartWithMap:onStartWithMap}
+        const childProps = {...startOverlayProps, onRetry:onStartRetry, onIgnore:onStartIgnore, onCancel:onStartCancel, onStartWithMap:onStartWithMap, onRetryDevice:onStartRetryDevice, onIgnoreDevice:onStartIgnoreDevice}
         View = ()=><StartRideOverlay {...childProps} />
     }
 

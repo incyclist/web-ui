@@ -12,7 +12,7 @@ export const cameraSound = new Audio(CAMERA_SOUND);
 
 
 export const WorkoutRidePage = ( {workout, activity, state,initialized,onScreenshot, onSettings, startOverlayProps= {},
-                                    onStartRetry, onStartIgnore, onStartCancel, onToggleCyclingMode
+                                    onStartRetry, onStartIgnore, onStartCancel, onStartRetryDevice, onStartIgnoreDevice, onToggleCyclingMode
                                     } ) => { 
 
     // time, distance, speed, power, slope, heartrate, cadence
@@ -24,7 +24,7 @@ export const WorkoutRidePage = ( {workout, activity, state,initialized,onScreens
 
     
     if (initialized && isStarting) {
-        const childProps = {...startOverlayProps, onRetry:onStartRetry, onIgnore:onStartIgnore, onCancel:onStartCancel}
+        const childProps = {...startOverlayProps, onRetry:onStartRetry, onIgnore:onStartIgnore, onCancel:onStartCancel, onRetryDevice:onStartRetryDevice, onIgnoreDevice:onStartIgnoreDevice}
         View = ()=><StartRideOverlay {...childProps} />
     }
 
