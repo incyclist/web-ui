@@ -3,12 +3,19 @@ import styled, { keyframes } from 'styled-components';
 
 import { Button, LinkButton, Overlay} from '../../../../atoms'
 
-const DEFAULT_WIDTH = '30vw';
-const DEFAULT_LEFT='35vw' 
-const DEFAULT_HEIGHT='30vh' 
-const DEFAULT_TOP='35vh' 
+const DEFAULT_WIDTH = 'max(30vw, 480px)';
+const DEFAULT_HEIGHT = 'fit-content';
 
+// The box grows with its content (never below 30vh) and is centred without fixed offsets.
+// Width is a floor so that the text columns keep a usable size in small windows.
 const OverlayView = styled(Overlay)`
+    box-sizing: border-box;
+    inset: 0;
+    margin: auto;
+    max-width: calc(100vw - 32px);
+    min-height: 30vh;
+    max-height: calc(100vh - 32px);
+    container: startoverlay / inline-size;
     display: flex;
     flex-direction: column;
 `
@@ -40,7 +47,8 @@ export const GEAR_STATES = {
 
 
 const OverlayText = styled.div`
-  height: 4.8vh;
+  flex: none;
+  min-height: max(4.8vh, 2em);
   vertical-align: middle;
   line-height: 100%;
   display: flex;
@@ -51,19 +59,21 @@ const OverlayText = styled.div`
 `
 
 const OverlayDetails = styled.div`
-  height: calc(100% - 11.6vh);
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
   vertical-align: middle;
   line-height: 100%;
   display: flex;
   flex-direction: row;
-  justify-content: center;
+  justify-content: safe center;
   align-content: center;
   flex-direction: column;
   text-align:left;
 `
 
 const OverlayDetailsItem = styled.div`
-  height: 2.6vh;
+  min-height: max(2.6vh, 1.6em);
   vertical-align: middle;
   line-height: 100%;
   display: flex;
@@ -80,6 +90,7 @@ const Status = styled.div`
 `
 
 const OverlayButtons = styled.div`
+  flex: none;
   text-align:center;
   height: 6.8vh;
   display: flex;
@@ -109,11 +120,9 @@ const spin = keyframes`
 const Spinner = styled.span`
     display: inline-block;
     box-sizing: border-box;
-    width: 1.3vh;
-    height: 1.3vh;
-    min-width: 10px;
-    min-height: 10px;
-    margin-right: 0.5vw;
+    width: 1em;
+    height: 1em;
+    margin-right: 0.4em;
     border: 2px solid currentColor;
     border-right-color: transparent;
     border-radius: 50%;
@@ -132,61 +141,80 @@ const Muted = styled.span`
 `
 
 const HelperLine = styled.div`
-    height: 2.6vh;
-    line-height: 2.6vh;
+    flex: none;
+    min-height: max(2.6vh, 1.5em);
+    line-height: 1.3;
     text-align: center;
     color: #999999;
     font-size: 90%;
-    white-space: nowrap;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
     overflow: hidden;
-    text-overflow: ellipsis;
 `
 
 const PhasedDetails = styled.div`
-    flex: 1;
+    flex: 1 1 auto;
     min-height: 0;
+    overflow-y: auto;
     display: flex;
     flex-direction: column;
-    justify-content: center;
+    justify-content: safe center;
     text-align: left;
     padding: 0 1vw;
 `
 
+// One grid template for every row, so the columns line up across rows
 const PhasedRow = styled.div`
-    height: 2.6vh;
-    line-height: 2.6vh;
-    display: flex;
-    flex-direction: row;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 9.5em 7em;
+    column-gap: 0.75em;
     align-items: center;
+    min-height: max(2.6vh, 1.6em);
+    line-height: 1.25;
+
+    @container startoverlay (max-width: 440px) {
+        grid-template-columns: minmax(0, 1fr) 9.5em;
+    }
 `
 
 const RowLabel = styled.div`
-    width: 40%;
     overflow: hidden;
     white-space: nowrap;
     text-overflow: ellipsis;
 `
 
+// rows without actions let the status use the actions column as well
 const RowStatus = styled.div`
-    width: 32%;
     white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    ${props => props.$wide ? 'grid-column: 2 / -1;' : ''}
 `
 
 const RowActions = styled.div`
-    width: 28%;
     display: flex;
     justify-content: flex-end;
-    gap: 0.8vw;
+    gap: 0.75em;
     font-size: 90%;
+
+    @container startoverlay (max-width: 440px) {
+        grid-column: 2;
+        grid-row: 2;
+        justify-self: end;
+    }
 `
 
 const Divider = styled.div`
-    height: 1.5vh;
     display: flex;
     align-items: center;
-    gap: 0.5vw;
+    gap: 0.5em;
+    min-height: 1.5em;
+    padding: 0.35em 0;
+    line-height: 1;
     color: #999999;
-    font-size: 70%;
+    font-size: max(12px, 0.75em);
 
     &::after {
         content: '';
@@ -296,7 +324,7 @@ const PhasedContentStatus = ({ content, videoProgress, mapStateText }) => {
 
 export const OverlayStartingPhased = (props) => {
     const { devices, startPhase, startSlow, startContent, startReadyInfo, readyToStart, videoProgress,
-        viewState, width = DEFAULT_WIDTH, height = DEFAULT_HEIGHT, top = DEFAULT_TOP, left = DEFAULT_LEFT } = props
+        viewState, width = DEFAULT_WIDTH, height = DEFAULT_HEIGHT } = props
 
     const isControl = (d) => d.isControl || d.isMandatory
     const controls = (devices ?? []).filter(isControl)
@@ -334,7 +362,7 @@ export const OverlayStartingPhased = (props) => {
     }
 
     return (
-        <OverlayView visible={true} width={width} left={left} height={height} top={top}>
+        <OverlayView visible={true} width={width} height={height}>
             <OverlayText>
                 <b>{heading}</b>
             </OverlayText>
@@ -342,9 +370,8 @@ export const OverlayStartingPhased = (props) => {
             <PhasedDetails className='startoverlay-details'>
                 {controls.map(renderRow)}
                 {startContent ? <PhasedRow>
-                    <RowLabel>{startContent.label}</RowLabel>
-                    <RowStatus><PhasedContentStatus content={startContent} videoProgress={videoProgress} mapStateText={contentSlowText} /></RowStatus>
-                    <RowActions />
+                    <RowLabel title={startContent.label}>{startContent.label}</RowLabel>
+                    <RowStatus $wide><PhasedContentStatus content={startContent} videoProgress={videoProgress} mapStateText={contentSlowText} /></RowStatus>
                 </PhasedRow> : null}
                 {sensors.length > 0 ? <Divider role='separator'>Optional</Divider> : null}
                 {sensors.map(renderRow)}
@@ -361,7 +388,7 @@ export const OverlayStartingPhased = (props) => {
 export const StartRideOverlay = (props) => {
     const {mode,rideState,devices,videoState,mapType, mapState,mapStateError, videoStateError,
         viewState,
-        visible=true,width=DEFAULT_WIDTH,height=DEFAULT_HEIGHT,top=DEFAULT_TOP,left=DEFAULT_LEFT,videoProgress={}
+        visible=true,width=DEFAULT_WIDTH,height=DEFAULT_HEIGHT,videoProgress={}
     } = props;
 
     // Street View-specific content only - gated on viewState so Video, Workout-only and
@@ -467,7 +494,7 @@ export const StartRideOverlay = (props) => {
             : 'Starting activity ...'
 
         return (
-            <OverlayView visible={true}  width={width} left={left} height={height} top={top}>
+            <OverlayView visible={true} width={width} height={height}>
                 <OverlayText >
                     <b>{heading}</b>
                 </OverlayText>
@@ -499,7 +526,7 @@ export const StartRideOverlay = (props) => {
     
     const OverlayDeviceError = (props) => {
         return(
-            <OverlayView visible={true}  width={width} left={left} height={height} top={top}>
+            <OverlayView visible={true} width={width} height={height}>
             <OverlayText>
                 <ErrorText><b>Start failed</b></ErrorText>
             </OverlayText>
@@ -516,7 +543,7 @@ export const StartRideOverlay = (props) => {
 
     const OverlaySensorError = (props) => {
         return(
-        <OverlayView visible={true}  width={width} left={left} height={height} top={top}>
+        <OverlayView visible={true} width={width} height={height}>
             <OverlayText >
                 <Warning><b>Could not start Sensor(s)</b></Warning>
             </OverlayText>
@@ -543,7 +570,7 @@ export const StartRideOverlay = (props) => {
     
     const OverlayVideoError = (props) => {
         return(
-            <OverlayView visible={true}  width={width} left={left} height={height} top={top}>
+            <OverlayView visible={true} width={width} height={height}>
             <OverlayText>
                 <ErrorText><b>Start failed</b></ErrorText>                
             </OverlayText>
@@ -559,7 +586,7 @@ export const StartRideOverlay = (props) => {
     }    
     const OverlayMapError = (props) => {
         return(
-            <OverlayView visible={true}  width={width} left={left} height={height} top={top}>
+            <OverlayView visible={true} width={width} height={height}>
             <OverlayText>
                 <ErrorText><b>Start failed</b></ErrorText>                
             </OverlayText>
