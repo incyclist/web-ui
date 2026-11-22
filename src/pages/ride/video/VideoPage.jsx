@@ -22,7 +22,7 @@ export const VideoRidePage = ( { route, state,initialized,startOverlayProps= {},
                                        video, videos, map,upcomingElevation,totalElevation,dbColumns,xScale, yScale,
                                        prevRides,nearbyRides, showShiftingButtons, showDashboard, showWorkout,
                                        screenshotRequested, onScreenshot, onSettings, 
-                                       onStartRetry, onStartIgnore, onStartCancel, onToggleCyclingMode
+                                       onStartRetry, onStartIgnore, onStartCancel, onStartRetryDevice, onStartIgnoreDevice, onToggleCyclingMode
                                     } ) => { 
 
 
@@ -68,7 +68,7 @@ export const VideoRidePage = ( { route, state,initialized,startOverlayProps= {},
 
 
     if (initialized && isStarting) {
-        const childProps = {...startOverlayProps, onRetry:onStartRetry, onIgnore:onStartIgnore, onCancel:onStartCancel}
+        const childProps = {...startOverlayProps, onRetry:onStartRetry, onIgnore:onStartIgnore, onCancel:onStartCancel, onRetryDevice:onStartRetryDevice, onIgnoreDevice:onStartIgnoreDevice}
         View = ()=><StartRideOverlay {...childProps} />
     }
 

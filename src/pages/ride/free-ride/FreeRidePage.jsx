@@ -27,7 +27,7 @@ export const FreeRideRidePage = ( { workout, activity, route, state,initialized,
                                        showShiftingButtons, showDashboard, showWorkout,
                                        map,optionProps,dbColumns,
                                        screenshotRequested, onScreenshot, onSettings, onFreeRideOptionSelected,
-                                       onStartRetry, onStartIgnore, onStartCancel, onStartWithMap, onToggleCyclingMode
+                                       onStartRetry, onStartIgnore, onStartCancel, onStartWithMap, onStartRetryDevice, onStartIgnoreDevice, onToggleCyclingMode
                                     } ) => { 
 
 
@@ -58,7 +58,7 @@ export const FreeRideRidePage = ( { workout, activity, route, state,initialized,
 
     let View = ()=><Center><Loader/></Center>
     if (initialized && isStarting) {
-        const childProps = {...startOverlayProps, onRetry:onStartRetry, onIgnore:onStartIgnore, onCancel:onStartCancel, onStartWithMap:onStartWithMap}
+        const childProps = {...startOverlayProps, onRetry:onStartRetry, onIgnore:onStartIgnore, onCancel:onStartCancel, onStartWithMap:onStartWithMap, onRetryDevice:onStartRetryDevice, onIgnoreDevice:onStartIgnoreDevice}
         View = ()=><StartRideOverlay {...childProps} />
     }
 

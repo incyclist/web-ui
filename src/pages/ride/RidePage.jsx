@@ -100,6 +100,14 @@ export const RidePage = ({simulate}) => {
         ride.startWithMissingSensors();
     };
 
+    const onStartRetryDevice = (udid) => {
+        ride.retryStartDevice(udid);
+    };
+
+    const onStartIgnoreDevice = (udid) => {
+        ride.ignoreStartDevice(udid);
+    };
+
     const onStartWithMap = () => {
         ride.startWithMapFallback();
     };
@@ -506,6 +514,8 @@ export const RidePage = ({simulate}) => {
             onStartRetry={onStartRetry}
             onStartIgnore={onStartIgnore}
             onStartWithMap={onStartWithMap}
+            onStartRetryDevice={onStartRetryDevice}
+            onStartIgnoreDevice={onStartIgnoreDevice}
             onSettings={openSettings}
             onScreenshot={onTakeScreenShot} 
             onFreeRideOptionSelected={onFreeRideOptionSelected}    
