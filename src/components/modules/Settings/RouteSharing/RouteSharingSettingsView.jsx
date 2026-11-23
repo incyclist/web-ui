@@ -12,6 +12,16 @@ const Intro = styled.div`
     font-size: 2vh;
     padding: 0.5vh 1vw 1.5vh 1vw;
 `
+const PanelTitle = styled.div`
+    font-size: 2.6vh;
+    font-weight: 500;
+    padding: 0 1vw;
+`
+const PanelDescription = styled.div`
+    font-size: 1.8vh;
+    opacity: 0.8;
+    padding: 0.5vh 1vw 1.5vh 1vw;
+`
 const Title = styled.div`
     font-size: 2.4vh;
     font-weight: 500;
@@ -134,7 +144,7 @@ const RemoveDialog = ({ device, isLast, onConfirm, onCancel }) => {
 }
 
 /**
- * Pure view of the "Route Sharing" tab: renders the display props of the link service.
+ * Pure view of the "Route Sharing" panel of the Routes tab: renders the display props of the link service.
  *
  * `actions`: connect, setEnabled(on), setName(name), requestRemove(id), confirmRemove, cancelRemove, retry,
  * denyPairing, closePairing. `removeTarget` is the device awaiting confirmation, `nameChanged` shows the rename note.
@@ -147,6 +157,8 @@ export const RouteSharingSettingsView = ({
 
     return <AppThemeProvider>
         <ContentArea>
+            <PanelTitle>{copy.PANEL_TITLE}</PanelTitle>
+            <PanelDescription>{copy.PANEL_DESCRIPTION}</PanelDescription>
             {neverConnected ? <Intro>{copy.INTRO}</Intro> : null}
             {neverConnected ? null : <Connected state={state} routeCount={routeCount} devices={devices} actions={actions} />}
             {showError ? <StartError onRetry={actions.retry} /> : null}

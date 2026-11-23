@@ -126,7 +126,7 @@ describe('RouteSharingSettings', () => {
         await waitFor(() => expect(screen.getByText(/show the new name the next time they connect/)).toBeDefined())
     })
 
-    test('closes pairing when the tab goes away while the connect window is open', () => {
+    test('closes pairing when the panel goes away while the connect window is open', () => {
         mocks.service = makeService({ ...fx.on, connectWindow: fx.windowWaiting })
         const { unmount } = render(<RouteSharingSettings />)
 

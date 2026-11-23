@@ -1,11 +1,10 @@
 import React, { useState } from "react"
-import { useDeviceConfiguration, useLocalLink } from "incyclist-services"
+import { useDeviceConfiguration } from "incyclist-services"
 import { AppThemeProvider } from "../../../theme"
 import { Dialog, Tabs } from "../../molecules"
 import { RideSettings } from "./Ride"
 import { AppsSettings } from "./Apps"
-import { RouteServersSettings } from "./Routes"
-import { RouteSharingSettings } from "./RouteSharing"
+import { RoutesSettings } from "./Routes"
 import { SupportArea } from "./Support"
 import { Button, ButtonBar } from "../../atoms"
 import { GearSettings } from "./Gear"
@@ -14,20 +13,19 @@ export const SettingsDialog = ({onOK})=> {
 
     const deviceConfig = useDeviceConfiguration()
     const gearOK = deviceConfig.canStartRide()
-    const showRouteSharing = useLocalLink().isAvailable()
 
     const onOKClicked = ()=> {
         if (onOK)
             onOK()
     }
 
-    return <SettingsDialogView noGear={!gearOK} showRouteSharing={showRouteSharing}
+    return <SettingsDialogView noGear={!gearOK}
         onOK={onOKClicked} 
         />
 
 }
 
-export const SettingsDialogView = ({onOK, onCoachesChanged, onSettingsChanged, noGear, showRouteSharing }) => {
+export const SettingsDialogView = ({onOK, onCoachesChanged, onSettingsChanged, noGear }) => {
     const defArea = 'Ride'
     const [area,setArea] = useState( defArea)
 
@@ -51,8 +49,7 @@ export const SettingsDialogView = ({onOK, onCoachesChanged, onSettingsChanged, n
             <Tabs zIndex={10} activeTab={active} onChangeTab={onAreaChanged} buttonBar={true}>
                 {showGear ?  <GearSettings label='Gear' />:null}                
                 <RideSettings label='Ride' /> 
-                <RouteServersSettings label='Routes' />
-                {showRouteSharing ? <RouteSharingSettings label='Route Sharing' /> : null}
+                <RoutesSettings label='Routes' />
                 <AppsSettings label='Apps'   />
                 <SupportArea label='Support' />                 
             </Tabs>

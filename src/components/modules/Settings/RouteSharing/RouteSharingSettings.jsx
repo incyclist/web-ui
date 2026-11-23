@@ -4,7 +4,7 @@ import { useLocalLink } from 'incyclist-services'
 import { RouteSharingSettingsView } from './RouteSharingSettingsView'
 
 /**
- * "Route Sharing" tab of the Settings dialog (desktop host side). Follows the display props of the link service
+ * "Route Sharing" panel of the Routes tab in the Settings dialog (desktop host side). Follows the display props of the link service
  * and forwards the user's actions to it.
  */
 export const RouteSharingSettings = () => {
@@ -28,7 +28,7 @@ export const RouteSharingSettings = () => {
         }
     }, [service])
 
-    // a connect window must not outlive the tab: closing it closes pairing
+    // a connect window must not outlive the panel: closing it closes pairing
     const pairingOpen = useRef(false)
     pairingOpen.current = !!props?.connectWindow
     useEffect(() => () => {

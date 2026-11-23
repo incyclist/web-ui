@@ -3,6 +3,8 @@
 export const NAME_MAX_LENGTH = 40
 export const CODE_VALID_SECONDS = 120
 
+export const PANEL_TITLE = 'Route Sharing'
+export const PANEL_DESCRIPTION = 'Let your phone or tablet ride the videos stored on this computer.'
 export const INTRO = 'Ride the video routes on this computer from the Incyclist app on your phone or tablet — including routes stored on a NAS or an external drive. Nothing is uploaded anywhere; both devices only need to be on the same network.'
 
 export const FIREWALL_NOTE_TITLE = 'Before you click'
