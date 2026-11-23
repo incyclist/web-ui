@@ -1,13 +1,12 @@
 import React from 'react'
 import { AppThemeProvider } from '../../../../theme'
 import { useRouteServersSettings } from '../../../../hooks/routes/useRouteServersSettings'
-import { ContentArea } from '../Apps/AppsSettings'
 import { RouteServersList } from './RouteServersList'
 import { RouteServersAdd } from './RouteServersAdd'
 import { RemoveServerDialog } from './RemoveServerDialog'
 
 /**
- * "Routes" tab of the Settings dialog. Route Servers is the only panel for now.
+ * Route Servers panel of the Routes tab of the Settings dialog.
  */
 export const RouteServersSettings = () => {
     const { props, actions } = useRouteServersSettings('settings')
@@ -25,13 +24,13 @@ export const RouteServersSettingsView = ({
     view, servers, isEmpty, emptyState, known, knownNote, manual, trustNote, removeDialog, actions = {}
 }) => {
     return <AppThemeProvider>
-        <ContentArea>
+        <>
             {view === 'list' ?
-                <RouteServersList servers={servers} isEmpty={isEmpty} emptyState={emptyState}                    onAdd={actions.showAdd} onRemove={actions.requestRemove} /> :
+                <RouteServersList servers={servers} isEmpty={isEmpty} emptyState={emptyState} onAdd={actions.showAdd} onRemove={actions.requestRemove} /> :
                 <RouteServersAdd known={known} knownNote={knownNote} manual={manual} trustNote={trustNote} actions={actions} />
             }
             <RemoveServerDialog dialog={removeDialog}
                 onKeepChange={actions.setRemoveRoutes} onConfirm={actions.confirmRemove} onCancel={actions.cancelRemove} />
-        </ContentArea>
+        </>
     </AppThemeProvider>
 }
