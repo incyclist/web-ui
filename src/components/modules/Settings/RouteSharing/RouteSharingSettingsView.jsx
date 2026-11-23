@@ -7,7 +7,7 @@ import { MessageBox } from '../../../molecules/dialogs/MessageBox'
 import { ConnectWindow } from './ConnectWindow'
 import { Panel, PanelHeader, Row, Dot, Identity, SubLine, StatusText, RemoveArea, BodyLine, ListLabel, GREEN, GREY } from '../Routes/Panel'
 import * as copy from './copy'
-import { clipName, formatDay, formatLastUsed } from './utils'
+import { clipName, formatDay, formatLastUsed, logError } from './utils'
 
 const TITLE_ID = 'route-sharing-title'
 
@@ -42,15 +42,26 @@ const NameEditor = ({ computerName, onSave }) => {
     const [length, setLength] = useState(computerName?.length ?? 0)
 
     const checkInput = (value) => {
-        const clipped = clipName(value)
-        setLength(clipped.length)
-        return clipped
+        try {
+            const clipped = clipName(value)
+            setLength(clipped.length)
+            return clipped
+        }
+        catch (err) {
+            logError('RouteSharingSettingsView', 'checkInput', err)
+            return value
+        }
     }
 
     // Enter saves like leaving the field does
     const onKeyDown = (e) => {
-        if (e.key === 'Enter' && e.target?.tagName === 'INPUT')
-            e.target.blur()
+        try {
+            if (e.key === 'Enter' && e.target?.tagName === 'INPUT')
+                e.target.blur()
+        }
+        catch (err) {
+            logError('RouteSharingSettingsView', 'onKeyDown', err)
+        }
     }
 
     return <div onKeyDown={onKeyDown}>
@@ -78,14 +89,24 @@ const NameSection = ({ computerName, connected, showChangedNote, onNameChange })
     const lineRef = useRef(null)
 
     useEffect(() => {
-        if (wasEditing.current && !editing)
-            lineRef.current?.querySelector('button')?.focus()
-        wasEditing.current = editing
+        try {
+            if (wasEditing.current && !editing)
+                lineRef.current?.querySelector('button')?.focus()
+            wasEditing.current = editing
+        }
+        catch (err) {
+            logError('RouteSharingSettingsView', 'restoreFocus', err)
+        }
     }, [editing])
 
     const save = (name) => {
-        setEditing(false)
-        onNameChange?.(name)
+        try {
+            setEditing(false)
+            onNameChange?.(name)
+        }
+        catch (err) {
+            logError('RouteSharingSettingsView', 'save', err)
+        }
     }
 
     return <>

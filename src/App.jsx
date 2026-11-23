@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Route,Routes, MemoryRouter} from "react-router";
 import { useIncyclist, useLocalLink } from 'incyclist-services';
 import {version} from '../package.json'
+import { EventLogger } from 'gd-eventlog';
 
 import {AppLoadingPage,ActivitiesPage,RidePage, PairingPage,RouteListPage,ExitPage,WorkoutsPage} from './pages';
 import { UpdateChecker, FirewallUpdateNotice } from './components/modules';
@@ -79,7 +80,15 @@ export const App = ()=> {
         
         service.onAppLaunch(platform,version,features).then( ()=> {
             // user settings are loaded now: starts Route Sharing if a phone is connected and it is not switched off
-            useLocalLink().init()
+            try {
+                // init() may be async: a rejection must not become unhandled
+                Promise.resolve(useLocalLink().init()).catch( err => {
+                    new EventLogger('App').logEvent({ message: 'error', fn: 'localLink.init', error: err?.message })
+                })
+            }
+            catch (err) {
+                try { new EventLogger('App').logEvent({ message: 'error', fn: 'localLink.init', error: err?.message }) } catch { /* ignore */ }
+            }
             setInitialized(true)
         }) 
 

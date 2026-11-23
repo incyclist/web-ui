@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { EventLogger } from 'gd-eventlog'
 import { useLocalLink } from 'incyclist-services'
 import { RouteSharingSettingsView } from './RouteSharingSettingsView'
+import { logError } from './utils'
 
 /**
  * "Route Sharing" panel of the Routes tab in the Settings dialog (desktop host side). Follows the display props of the link service
@@ -16,15 +17,32 @@ export const RouteSharingSettings = () => {
     const [nameChanged, setNameChanged] = useState(false)
 
     useEffect(() => {
-        const onUpdate = (updated) => setProps(updated ?? service.getDisplayProps())
+        const onUpdate = (updated) => {
+            try {
+                setProps(updated ?? service.getDisplayProps())
+            }
+            catch (err) {
+                logError('RouteSharingSettings', 'onUpdate', err)
+            }
+        }
 
-        service.on('state-changed', onUpdate)
-        service.on('pairing-changed', onUpdate)
-        onUpdate()
+        try {
+            service.on('state-changed', onUpdate)
+            service.on('pairing-changed', onUpdate)
+            onUpdate()
+        }
+        catch (err) {
+            logError('RouteSharingSettings', 'subscribe', err)
+        }
 
         return () => {
-            service.off('state-changed', onUpdate)
-            service.off('pairing-changed', onUpdate)
+            try {
+                service.off('state-changed', onUpdate)
+                service.off('pairing-changed', onUpdate)
+            }
+            catch (err) {
+                logError('RouteSharingSettings', 'unsubscribe', err)
+            }
         }
     }, [service])
 
@@ -32,40 +50,100 @@ export const RouteSharingSettings = () => {
     const pairingOpen = useRef(false)
     pairingOpen.current = !!props?.connectWindow
     useEffect(() => () => {
-        if (pairingOpen.current)
-            service.closePairing()
+        try {
+            if (pairingOpen.current)
+                service.closePairing()
+        }
+        catch (err) {
+            logError('RouteSharingSettings', 'closePairingOnUnmount', err)
+        }
     }, [service])
 
     const connect = useCallback(() => {
-        logger.logEvent({ message: 'connect window opened', eventSource: 'user' })
-        service.openPairing()
+        try {
+            logger.logEvent({ message: 'connect window opened', eventSource: 'user' })
+            service.openPairing()
+        }
+        catch (err) {
+            logError('RouteSharingSettings', 'connect', err)
+        }
     }, [service, logger])
 
     const setName = useCallback(async (name) => {
-        const res = await service.setDisplayName(name)
-        if (res?.ok)
-            setNameChanged(true)
+        try {
+            const res = await service.setDisplayName(name)
+            if (res?.ok)
+                setNameChanged(true)
+        }
+        catch (err) {
+            logError('RouteSharingSettings', 'setName', err)
+        }
     }, [service])
 
     const actions = useMemo(() => ({
         connect,
-        retry: () => service.setEnabled(true),
+        retry: () => {
+            try {
+                service.setEnabled(true)
+            }
+            catch (err) {
+                logError('RouteSharingSettings', 'retry', err)
+            }
+        },
         setEnabled: (on) => {
-            logger.logEvent({ message: 'route sharing switched', enabled: on, eventSource: 'user' })
-            service.setEnabled(on)
+            try {
+                logger.logEvent({ message: 'route sharing switched', enabled: on, eventSource: 'user' })
+                service.setEnabled(on)
+            }
+            catch (err) {
+                logError('RouteSharingSettings', 'setEnabled', err)
+            }
         },
         setName,
-        requestRemove: (id) => setRemoveId(id),
-        cancelRemove: () => setRemoveId(null),
-        confirmRemove: () => {
-            logger.logEvent({ message: 'device removed', eventSource: 'user' })
-            const id = removeId
-            setRemoveId(null)
-            if (id)
-                service.removeClient(id)
+        requestRemove: (id) => {
+            try {
+                setRemoveId(id)
+            }
+            catch (err) {
+                logError('RouteSharingSettings', 'requestRemove', err)
+            }
         },
-        denyPairing: () => service.denyPairing(),
-        closePairing: () => service.closePairing()
+        cancelRemove: () => {
+            try {
+                setRemoveId(null)
+            }
+            catch (err) {
+                logError('RouteSharingSettings', 'cancelRemove', err)
+            }
+        },
+        confirmRemove: () => {
+            try {
+                logger.logEvent({ message: 'device removed', eventSource: 'user' })
+                const id = removeId
+                setRemoveId(null)
+                if (id)
+                    service.removeClient(id)
+            }
+            catch (err) {
+                logError('RouteSharingSettings', 'confirmRemove', err)
+            }
+        },
+        denyPairing: () => {
+            try {
+                service.denyPairing()
+            }
+            catch (err) {
+                logError('RouteSharingSettings', 'denyPairing', err)
+            }
+        },
+        closePairing: () => {
+            try {
+                service.closePairing()
+            }
+            catch (err) {
+                logError('RouteSharingSettings', 'closePairing', err)
+            }
+        }
     }), [service, logger, connect, setName, removeId])
 
     if (!props?.available)

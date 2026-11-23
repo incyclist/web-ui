@@ -1,7 +1,8 @@
 import React from 'react'
-import { describe, test, expect, vi, beforeEach } from 'vitest'
+import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render, screen, fireEvent, act, waitFor } from '@testing-library/react'
 import { EventEmitter } from 'node:events'
+import { EventLogger } from 'gd-eventlog'
 
 import * as fx from './fixtures.mock'
 
@@ -158,5 +159,71 @@ describe('FirewallUpdateNotice', () => {
 
         fireEvent.click(screen.getByText('OK'))
         expect(mocks.service.dismissFirewallNotice).toHaveBeenCalledTimes(1)
+    })
+})
+
+describe('never throws when the link service throws', () => {
+    let logSpy
+    beforeEach(() => {
+        logSpy = vi.spyOn(EventLogger.prototype, 'logEvent').mockImplementation(() => {})
+        mocks.service = makeService(fx.neverConnected)
+    })
+    afterEach(() => { logSpy.mockRestore() })
+
+    const boom = () => { throw new Error('boom') }
+
+    test('Connect: openPairing throws', () => {
+        mocks.service.openPairing = vi.fn(boom)
+        render(<RouteSharingSettings />)
+        expect(() => fireEvent.click(screen.getByText('Connect your phone or tablet'))).not.toThrow()
+        expect(logSpy).toHaveBeenCalledWith(expect.objectContaining({ fn: 'connect', error: 'boom' }))
+    })
+
+    test('subscription: getDisplayProps throwing in an update is logged', () => {
+        render(<RouteSharingSettings />)
+        mocks.service.getDisplayProps = vi.fn(boom)
+        expect(() => act(() => { mocks.service.emit('state-changed') })).not.toThrow()
+        expect(logSpy).toHaveBeenCalledWith(expect.objectContaining({ fn: 'onUpdate' }))
+    })
+
+    test('subscription: service.on throwing is logged', () => {
+        mocks.service.on = vi.fn(boom)
+        expect(() => render(<RouteSharingSettings />)).not.toThrow()
+        expect(logSpy).toHaveBeenCalledWith(expect.objectContaining({ fn: 'subscribe' }))
+    })
+
+    test('setDisplayName rejecting is logged and does not reject', async () => {
+        mocks.service = makeService(fx.on)
+        mocks.service.setDisplayName = vi.fn().mockRejectedValue(new Error('boom'))
+        render(<RouteSharingSettings />)
+        fireEvent.click(screen.getByText('Change'))
+        const input = screen.getByRole('textbox')
+        fireEvent.change(input, { target: { value: 'Office' } })
+        fireEvent.blur(input)
+        await waitFor(() => expect(logSpy).toHaveBeenCalledWith(expect.objectContaining({ fn: 'setName', error: 'boom' })))
+    })
+
+    test('unmount while pairing open: closePairing throwing is logged', () => {
+        mocks.service = makeService({ ...fx.neverConnected, connectWindow: { phase: 'starting' } })
+        mocks.service.closePairing = vi.fn(boom)
+        const { unmount } = render(<RouteSharingSettings />)
+        expect(() => unmount()).not.toThrow()
+        expect(logSpy).toHaveBeenCalledWith(expect.objectContaining({ fn: 'closePairingOnUnmount' }))
+    })
+
+    test('FirewallUpdateNotice: getDisplayProps throws', () => {
+        mocks.service.getDisplayProps = vi.fn(boom)
+        let res
+        expect(() => { res = render(<FirewallUpdateNotice />) }).not.toThrow()
+        expect(res.container.textContent).toBe('')
+        expect(logSpy).toHaveBeenCalledWith(expect.objectContaining({ fn: 'initialState' }))
+    })
+
+    test('FirewallUpdateNotice: OK with dismiss throwing is logged', () => {
+        mocks.service.getDisplayProps = vi.fn(() => ({ showUpdateFirewallNotice: true }))
+        mocks.service.dismissFirewallNotice = vi.fn(boom)
+        render(<FirewallUpdateNotice />)
+        expect(() => fireEvent.click(screen.getByText('OK'))).not.toThrow()
+        expect(logSpy).toHaveBeenCalledWith(expect.objectContaining({ fn: 'onOK' }))
     })
 })

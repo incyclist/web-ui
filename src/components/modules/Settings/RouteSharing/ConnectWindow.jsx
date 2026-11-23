@@ -3,7 +3,7 @@ import styled from 'styled-components'
 import { MessageBox } from '../../../molecules/dialogs/MessageBox'
 import { ProgressBar } from '../../../atoms'
 import * as copy from './copy'
-import { getRemaining, groupCode } from './utils'
+import { getRemaining, groupCode, logError } from './utils'
 
 const Body = styled.div`
     font-size: 2.2vh;
@@ -42,11 +42,31 @@ const useRemaining = (expiresAt) => {
     const [now, setNow] = useState(Date.now())
 
     useEffect(() => {
-        if (!expiresAt)
-            return
-        setNow(Date.now())
-        const timer = setInterval(() => setNow(Date.now()), 1000)
-        return () => clearInterval(timer)
+        let timer
+        try {
+            if (!expiresAt)
+                return
+            setNow(Date.now())
+            timer = setInterval(() => {
+                try {
+                    setNow(Date.now())
+                }
+                catch (err) {
+                    logError('ConnectWindow', 'tick', err)
+                }
+            }, 1000)
+        }
+        catch (err) {
+            logError('ConnectWindow', 'useRemaining', err)
+        }
+        return () => {
+            try {
+                clearInterval(timer)
+            }
+            catch (err) {
+                logError('ConnectWindow', 'clearTimer', err)
+            }
+        }
     }, [expiresAt])
 
     return getRemaining(expiresAt, now)
