@@ -117,6 +117,7 @@ describe('RouteSharingSettings', () => {
     test('a rename is saved and noted when devices are connected', async () => {
         mocks.service = makeService(fx.on)
         render(<RouteSharingSettings />)
+        fireEvent.click(screen.getByText('Change'))
         const input = screen.getByRole('textbox')
 
         fireEvent.change(input, { target: { value: 'Office' } })

@@ -10,6 +10,8 @@ const Frame = styled.div`
     width: 1100px;
     height: 640px;
     overflow: auto;
+    padding: 1vw;
+    box-sizing: border-box;
     background: #1c2833;
     color: white;
 `

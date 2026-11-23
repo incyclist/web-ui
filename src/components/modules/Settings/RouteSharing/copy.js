@@ -5,29 +5,31 @@ export const CODE_VALID_SECONDS = 120
 
 export const PANEL_TITLE = 'Route Sharing'
 export const PANEL_DESCRIPTION = 'Let your phone or tablet ride the videos stored on this computer.'
-export const INTRO = 'Ride the video routes on this computer from the Incyclist app on your phone or tablet — including routes stored on a NAS or an external drive. Nothing is uploaded anywhere; both devices only need to be on the same network.'
+export const REASSURANCE = 'Also works with videos on a NAS or an external drive. Nothing is uploaded; both only need to be on the same Wi‑Fi.'
 
-export const FIREWALL_NOTE_TITLE = 'Before you click'
-export const FIREWALL_NOTE = {
-    windows: 'Windows may show "Windows Defender Firewall has blocked some features of this app". Keep "Private networks" ticked and click "Allow" (on some versions "Allow access"). Without this, your phone or tablet can\'t find this computer.',
-    macos: 'If the macOS firewall is on, your Mac asks whether "Incyclist" may accept incoming network connections. Click "Allow". Without this, your phone or tablet can\'t find this computer.'
+export const FIREWALL_LINE = {
+    windows: 'After you click Connect, Windows may ask about Incyclist: keep "Private networks" ticked and click "Allow".',
+    macos: 'After you click Connect, your Mac may ask about incoming connections: click "Allow".'
 }
 
 export const NAME_LABEL = 'Name of this computer'
-export const NAME_WARNING = 'Everyone on the same network can see this name — including guests, and other people on public Wi‑Fi. Don\'t use your own name.'
-export const NAME_CHANGED_NOTE = 'Connected phones and tablets show the new name the next time they connect — unless it was renamed on the phone.'
+export const NAME_WARNING = 'Don\'t use your own name. Guests and people on public Wi‑Fi can see it too.'
+export const NAME_CHANGED_NOTE = 'Connected phones and tablets show the new name the next time they connect, unless it was renamed on the phone.'
+export const CHANGE_LABEL = 'Change'
+export const nameLine = (name, connected) =>
+    `Everyone on the same network ${connected ? 'sees' : 'will see'} this computer as "${name}".`
 
 export const CONNECT_BUTTON = 'Connect your phone or tablet'
 export const CONNECT_ANOTHER_BUTTON = 'Connect another phone or tablet'
 
 export const SWITCH_LABEL = 'Share routes with my phones and tablets'
-export const ANY_NETWORK_NOTE = 'While this is on, Route Sharing runs whenever Incyclist is open, also on other networks such as a hotel\'s Wi‑Fi. Others on that network can see this computer\'s name; only the phones and tablets listed below can play your routes.'
-export const STATUS_OFF = 'Off • your phones and tablets show this computer as not reachable until you switch it back on.'
-export const STATUS_ON_EMPTY = 'On • no routes to share yet — routes with a video you add to Incyclist appear on your phones automatically.'
-
+export const SWITCH_NOTE_ON = 'Runs whenever Incyclist is open, also on other networks such as a hotel\'s Wi‑Fi. Only the phones and tablets below can play your routes.'
+export const SWITCH_NOTE_OFF = 'Your phones and tablets show this computer as not reachable.'
+export const STATUS_OFF = 'Not sharing'
+export const STATUS_NO_ROUTES = 'No video routes yet'
 export const statusOn = (routeCount) => routeCount > 0
-    ? `On • sharing ${routeCount} ${routeCount === 1 ? 'route' : 'routes'}`
-    : STATUS_ON_EMPTY
+    ? `Sharing ${routeCount} ${routeCount === 1 ? 'route' : 'routes'}`
+    : STATUS_NO_ROUTES
 
 export const DEVICES_TITLE = 'Connected phones and tablets'
 export const REMOVE_LABEL = 'Remove'
@@ -35,7 +37,7 @@ export const removeTitle = (device) => `Remove ${device}?`
 export const removeText = (device, isLast) =>
     `${device} will no longer be able to play routes from this computer. To use it again, connect it again.${isLast ? ' This computer stops sharing until you connect a phone or tablet again.' : ''}`
 
-export const START_ERROR = 'Route Sharing couldn\'t start on this computer. Close Incyclist, open it again, and try once more.'
+export const START_ERROR = 'Route Sharing couldn\'t start. Close Incyclist, open it again, and try once more.'
 export const TRY_AGAIN = 'Try Again'
 
 export const HELP_TITLE = 'Phone or tablet can\'t find this computer?'

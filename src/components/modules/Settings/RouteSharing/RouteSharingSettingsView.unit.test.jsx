@@ -15,42 +15,51 @@ const makeActions = () => new Proxy({}, {
 describe('RouteSharingSettingsView', () => {
 
     describe('never connected (D-1)', () => {
-        test('shows the intro, name warning and the connect button, but no switch', () => {
+        test('shows the reassurance line, the name line and the connect button in the header, but no switch', () => {
             const actions = makeActions()
             render(<RouteSharingSettingsView {...fx.neverConnected} actions={actions} />)
 
-            expect(screen.getByText(/Ride the video routes on this computer/)).toBeDefined()
-            expect(screen.getByText(/Everyone on the same network can see this name/)).toBeDefined()
+            expect(screen.getByRole('region', { name: 'Route Sharing' })).toBeDefined()
+            expect(screen.getByText(/Also works with videos on a NAS or an external drive/)).toBeDefined()
+            expect(screen.getByText('Everyone on the same network will see this computer as "Incyclist Computer".')).toBeDefined()
             expect(screen.queryByText('Share routes with my phones and tablets')).toBeNull()
+            expect(screen.queryByText('Connected phones and tablets')).toBeNull()
 
             fireEvent.click(screen.getByText('Connect your phone or tablet'))
             expect(actions.connect).toHaveBeenCalledTimes(1)
         })
 
-        test('shows the Windows firewall note', () => {
+        test('the name field and its warning only appear after Change', () => {
             render(<RouteSharingSettingsView {...fx.neverConnected} actions={makeActions()} />)
 
-            expect(screen.getByText('ⓘ Before you click')).toBeDefined()
-            expect(screen.getByText(/Windows Defender Firewall has blocked some features/)).toBeDefined()
-        })
+            expect(screen.queryByRole('textbox')).toBeNull()
+            expect(screen.queryByText(/Don't use your own name/)).toBeNull()
 
-        test('shows the macOS firewall note', () => {
-            render(<RouteSharingSettingsView {...fx.neverConnected} platform='macos' actions={makeActions()} />)
-            expect(screen.getByText(/accept incoming network connections/)).toBeDefined()
-        })
+            fireEvent.click(screen.getByText('Change'))
 
-        test('shows no firewall note on Linux', () => {
-            render(<RouteSharingSettingsView {...fx.neverConnected} platform='linux' actions={makeActions()} />)
-            expect(screen.queryByText('ⓘ Before you click')).toBeNull()
-        })
-
-        test('shows the name length', () => {
-            render(<RouteSharingSettingsView {...fx.neverConnected} actions={makeActions()} />)
+            expect(screen.getByRole('textbox').value).toBe('Incyclist Computer')
+            expect(screen.getByText(/Don't use your own name/)).toBeDefined()
             expect(screen.getByText('18/40')).toBeDefined()
+        })
+
+        test('shows the Windows firewall line', () => {
+            render(<RouteSharingSettingsView {...fx.neverConnected} actions={makeActions()} />)
+            expect(screen.getByText(/After you click Connect, Windows may ask about Incyclist/)).toBeDefined()
+        })
+
+        test('shows the macOS firewall line', () => {
+            render(<RouteSharingSettingsView {...fx.neverConnected} platform='macos' actions={makeActions()} />)
+            expect(screen.getByText(/your Mac may ask about incoming connections/)).toBeDefined()
+        })
+
+        test('shows no firewall line on Linux', () => {
+            render(<RouteSharingSettingsView {...fx.neverConnected} platform='linux' actions={makeActions()} />)
+            expect(screen.queryByText(/After you click Connect/)).toBeNull()
         })
 
         test('clips the name at 40 characters', () => {
             render(<RouteSharingSettingsView {...fx.neverConnected} actions={makeActions()} />)
+            fireEvent.click(screen.getByText('Change'))
             const input = screen.getByRole('textbox')
 
             fireEvent.change(input, { target: { value: 'x'.repeat(55) } })
@@ -59,42 +68,67 @@ describe('RouteSharingSettingsView', () => {
             expect(screen.getByText('40/40')).toBeDefined()
         })
 
-        test('reports the new name on blur', () => {
+        test('saves the new name on blur and closes the editor', () => {
             const actions = makeActions()
             render(<RouteSharingSettingsView {...fx.neverConnected} actions={actions} />)
+            fireEvent.click(screen.getByText('Change'))
             const input = screen.getByRole('textbox')
 
             fireEvent.change(input, { target: { value: 'Office' } })
             fireEvent.blur(input)
 
             expect(actions.setName).toHaveBeenCalledWith('Office')
+            expect(screen.queryByRole('textbox')).toBeNull()
+            expect(screen.getByText('Change')).toBeDefined()
+        })
+
+        test('Enter saves the name', () => {
+            const actions = makeActions()
+            render(<RouteSharingSettingsView {...fx.neverConnected} actions={actions} />)
+            fireEvent.click(screen.getByText('Change'))
+            const input = screen.getByRole('textbox')
+            input.focus()
+
+            fireEvent.change(input, { target: { value: 'Office' } })
+            fireEvent.keyDown(input, { key: 'Enter' })
+
+            expect(actions.setName).toHaveBeenCalledWith('Office')
+            expect(screen.queryByRole('textbox')).toBeNull()
         })
     })
 
     describe('connected (D-2, D-3)', () => {
-        test('on: shows the status, the devices and the any-network note', () => {
+        test('on: one switch row with status and note, the devices under a label, the header offers another connect', () => {
             render(<RouteSharingSettingsView {...fx.on} actions={makeActions()} />)
 
-            expect(screen.getByText('On • sharing 128 routes')).toBeDefined()
-            expect(screen.getByText(/While this is on, Route Sharing runs whenever/)).toBeDefined()
+            expect(screen.getByText('Sharing 128 routes')).toBeDefined()
+            expect(screen.getByText(/Runs whenever Incyclist is open, also on other networks/)).toBeDefined()
+            expect(screen.getByText('Everyone on the same network sees this computer as "Home PC".')).toBeDefined()
             expect(screen.getByText('Connected phones and tablets')).toBeDefined()
-            expect(within(screen.getByTestId('device-a')).getByText(/Active now/)).toBeDefined()
+            expect(within(screen.getByTestId('device-a')).getByText('Active now')).toBeDefined()
+            expect(within(screen.getByTestId('device-a')).getByText(/^Connected /)).toBeDefined()
             expect(within(screen.getByTestId('device-b')).getByText(/Last used yesterday/)).toBeDefined()
             expect(screen.getByText('Connect another phone or tablet')).toBeDefined()
             expect(screen.queryByText('Connect your phone or tablet')).toBeNull()
         })
 
+        test('every device status dot has a text label', () => {
+            render(<RouteSharingSettingsView {...fx.on} actions={makeActions()} />)
+            expect(within(screen.getByTestId('device-a')).getByRole('img', { name: 'Active now' })).toBeDefined()
+        })
+
         test('on without routes: states the fact', () => {
             render(<RouteSharingSettingsView {...fx.noRoutes} actions={makeActions()} />)
-            expect(screen.getByText(/On • no routes to share yet/)).toBeDefined()
+            expect(screen.getByText('No video routes yet')).toBeDefined()
         })
 
         test('off: shows what the phones will show, and keeps the devices usable', () => {
             const actions = makeActions()
             render(<RouteSharingSettingsView {...fx.off} actions={actions} />)
 
-            expect(screen.getByText(/Off • your phones and tablets show this computer as not reachable/)).toBeDefined()
-            expect(screen.queryByText(/While this is on/)).toBeNull()
+            expect(screen.getByText('Not sharing')).toBeDefined()
+            expect(screen.getByText('Your phones and tablets show this computer as not reachable.')).toBeDefined()
+            expect(screen.queryByText(/Runs whenever Incyclist is open/)).toBeNull()
             fireEvent.click(within(screen.getByTestId('device-a')).getByText('Remove'))
             expect(actions.requestRemove).toHaveBeenCalledWith('a')
         })
@@ -155,7 +189,8 @@ describe('RouteSharingSettingsView', () => {
             const actions = makeActions()
             render(<RouteSharingSettingsView {...fx.startError} actions={actions} />)
 
-            expect(screen.getByRole('alert').textContent).toMatch(/Route Sharing couldn't start on this computer/)
+            expect(screen.getByRole('alert').textContent).toMatch(/Route Sharing couldn't start\./)
+            expect(screen.queryByText('Share routes with my phones and tablets')).toBeNull()
             expect(screen.getByText('Connected phones and tablets')).toBeDefined()
             fireEvent.click(screen.getByText('Try Again'))
             expect(actions.retry).toHaveBeenCalledTimes(1)

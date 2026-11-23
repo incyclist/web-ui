@@ -1,66 +1,30 @@
-import React, { useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import styled from 'styled-components'
+import { AlertIcon, DeviceDesktopIcon, InfoIcon } from '@primer/octicons-react'
 import { AppThemeProvider } from '../../../../theme'
 import { Button, CheckBox, EditText, LinkButton } from '../../../atoms'
 import { MessageBox } from '../../../molecules/dialogs/MessageBox'
-import { ContentArea } from '../Apps/AppsSettings'
 import { ConnectWindow } from './ConnectWindow'
+import { Panel, PanelHeader, Row, Dot, Identity, SubLine, StatusText, RemoveArea, BodyLine, ListLabel, GREEN, GREY } from '../Routes/Panel'
 import * as copy from './copy'
 import { clipName, formatDay, formatLastUsed } from './utils'
 
-const Intro = styled.div`
-    font-size: 2vh;
-    padding: 0.5vh 1vw 1.5vh 1vw;
-`
-const PanelTitle = styled.div`
-    font-size: 2.6vh;
-    font-weight: 500;
-    padding: 0 1vw;
-`
-const PanelDescription = styled.div`
-    font-size: 1.8vh;
-    opacity: 0.8;
-    padding: 0.5vh 1vw 1.5vh 1vw;
-`
-const Title = styled.div`
-    font-size: 2.4vh;
-    font-weight: 500;
-    padding: 1vh 1vw 0.5vh 1vw;
-`
+const TITLE_ID = 'route-sharing-title'
+
 const Text = styled.div`
     font-size: 1.8vh;
     padding: 0.5vh 1vw;
-    opacity: ${props => props.$dim ? 0.8 : 1};
 `
-const Warning = styled(Text)`
-    display: flex;
-    flex-direction: row;
-    gap: 0.5vw;
+const NameRow = styled(Row)`
+    flex-wrap: wrap;
+    gap: 0.6vw;
 `
-const Note = styled.div`
-    margin: 1vh 1vw;
-    padding: 1vh 1vw;
-    border: 1px solid rgba(128, 128, 128, 0.6);
-    border-radius: 4px;
-    font-size: 1.8vh;
-`
-const Row = styled.div`
+const EditorLabelRow = styled.div`
     display: flex;
     flex-direction: row;
     align-items: center;
-    gap: 1vw;
-    padding: 1.2vh 1vw;
-    border-bottom: 1px solid rgba(128, 128, 128, 0.4);
     font-size: 2vh;
-`
-const Grow = styled.div`
-    flex: 1;
-    min-width: 0;
-`
-const Center = styled.div`
-    display: flex;
-    justify-content: center;
-    padding: 1vh 0;
+    & > div { padding-bottom: 0; }
 `
 const Counter = styled.span`
     font-size: 1.6vh;
@@ -70,11 +34,11 @@ const Counter = styled.span`
 const Help = styled.details`
     padding: 1vh 1vw;
     font-size: 1.8vh;
-    & > summary { cursor: pointer; padding: 0.5vh 0; }
+    & > summary { cursor: pointer; opacity: 0.8; padding: 0.5vh 0; }
     & li { padding: 0.3vh 0; }
 `
 
-const NameField = ({ computerName, showChangedNote, onNameChange }) => {
+const NameEditor = ({ computerName, onSave }) => {
     const [length, setLength] = useState(computerName?.length ?? 0)
 
     const checkInput = (value) => {
@@ -83,22 +47,67 @@ const NameField = ({ computerName, showChangedNote, onNameChange }) => {
         return clipped
     }
 
-    return <>
+    // Enter saves like leaving the field does
+    const onKeyDown = (e) => {
+        if (e.key === 'Enter' && e.target?.tagName === 'INPUT')
+            e.target.blur()
+    }
+
+    return <div onKeyDown={onKeyDown}>
         <Row>
-            <EditText label={copy.NAME_LABEL} labelPosition='before' value={computerName} maxLength={copy.NAME_MAX_LENGTH}
-                checkInput={checkInput} onValueChange={onNameChange} />
-            <Counter>{`${length}/${copy.NAME_MAX_LENGTH}`}</Counter>
+            <EditorLabelRow>
+                <EditText label={copy.NAME_LABEL} labelPosition='before' value={computerName} maxLength={copy.NAME_MAX_LENGTH}
+                    autoFocus={true} checkInput={checkInput} onValueChange={onSave} />
+                <Counter>{`${length}/${copy.NAME_MAX_LENGTH}`}</Counter>
+            </EditorLabelRow>
         </Row>
-        <Warning><span aria-hidden='true'>⚠</span><span>{copy.NAME_WARNING}</span></Warning>
-        {showChangedNote ? <Text $dim role='status'>{copy.NAME_CHANGED_NOTE}</Text> : null}
+        <BodyLine>
+            <AlertIcon size={16} aria-hidden='true' />
+            <span>{copy.NAME_WARNING}</span>
+        </BodyLine>
+    </div>
+}
+
+/**
+ * "Everyone on the same network will see this computer as <Name>. Change". The editor and its full warning appear
+ * only after Change; saving (Enter or leaving the field) closes it again and returns the focus to Change.
+ */
+const NameSection = ({ computerName, connected, showChangedNote, onNameChange }) => {
+    const [editing, setEditing] = useState(false)
+    const wasEditing = useRef(false)
+    const lineRef = useRef(null)
+
+    useEffect(() => {
+        if (wasEditing.current && !editing)
+            lineRef.current?.querySelector('button')?.focus()
+        wasEditing.current = editing
+    }, [editing])
+
+    const save = (name) => {
+        setEditing(false)
+        onNameChange?.(name)
+    }
+
+    return <>
+        {editing ?
+            <NameEditor computerName={computerName} onSave={save} /> :
+            <BodyLine ref={lineRef}>
+                <span>{copy.nameLine(computerName, connected)}</span>
+                <LinkButton label={copy.CHANGE_LABEL} onClick={() => setEditing(true)} />
+            </BodyLine>
+        }
+        {showChangedNote ? <BodyLine role='status'>{copy.NAME_CHANGED_NOTE}</BodyLine> : null}
     </>
 }
 
-const FirewallNote = ({ platform }) => {
-    const text = copy.FIREWALL_NOTE[platform]
+const FirewallLine = ({ platform }) => {
+    const text = copy.FIREWALL_LINE[platform]
     if (!text)
         return null
-    return <Note><strong>{`ⓘ ${copy.FIREWALL_NOTE_TITLE}`}</strong><div>{text}</div></Note>
+    return <BodyLine>
+        <InfoIcon size={16} aria-hidden='true' />
+        <span>{text}</span>
+    </BodyLine>
 }
 
 const HelpSection = ({ platform }) => <Help>
@@ -106,33 +115,39 @@ const HelpSection = ({ platform }) => <Help>
     <ul>{copy.helpItems(platform).map(item => <li key={item}>{item}</li>)}</ul>
 </Help>
 
-const DeviceRow = ({ device, onRemove }) => <Row data-testid={`device-${device.id}`}>
-    <Grow>
-        <div>{device.name}</div>
-        <Text $dim>{[
-            `Connected ${formatDay(device.connectedAt)}`,
-            device.active ? 'Active now' : (device.lastSeenAt ? formatLastUsed(device.lastSeenAt) : null)
-        ].filter(Boolean).join(' · ')}</Text>
-    </Grow>
-    <LinkButton label={copy.REMOVE_LABEL} ariaLabel={`Remove ${device.name}`} onClick={() => onRemove?.(device.id)} />
-</Row>
+const DeviceRow = ({ device, onRemove }) => {
+    const status = device.active ? 'Active now' : (device.lastSeenAt ? formatLastUsed(device.lastSeenAt) : '')
 
-const StartError = ({ onRetry }) => <Note role='alert'>
-    <div>{copy.START_ERROR}</div>
-    <Center><Button text={copy.TRY_AGAIN} primary={true} onClick={onRetry} /></Center>
-</Note>
-
-const Connected = ({ state, routeCount, devices, actions }) => <>
-    <Row>
-        <CheckBox label={copy.SWITCH_LABEL} value={state !== 'off'}
-            onValueChange={(on) => actions.setEnabled?.(on)} />
+    return <Row data-testid={`device-${device.id}`}>
+        <Dot role='img' aria-label={status || 'Not active'} $color={device.active ? GREEN : GREY} />
+        <Identity>
+            <span>{device.name}</span>
+            <SubLine>{`Connected ${formatDay(device.connectedAt)}`}</SubLine>
+        </Identity>
+        <StatusText>{status}</StatusText>
+        <RemoveArea>
+            <LinkButton label={copy.REMOVE_LABEL} ariaLabel={`Remove ${device.name}`} onClick={() => onRemove?.(device.id)} />
+        </RemoveArea>
     </Row>
-    {state === 'error' ? null : <Text role='status'>{state === 'off' ? copy.STATUS_OFF : copy.statusOn(routeCount)}</Text>}
-    {state === 'on' ? <Text $dim>{copy.ANY_NETWORK_NOTE}</Text> : null}
-    <Title>{copy.DEVICES_TITLE}</Title>
-    {devices.map(device => <DeviceRow key={device.id} device={device} onRemove={actions.requestRemove} />)}
-    <Center><Button text={copy.CONNECT_ANOTHER_BUTTON} secondary={true} onClick={() => actions.connect?.()} /></Center>
-</>
+}
+
+// one row: switch, what it means right now, and the status
+const SwitchRow = ({ state, routeCount, onChange }) => {
+    const on = state !== 'off'
+    return <Row>
+        <Identity>
+            <CheckBox label={copy.SWITCH_LABEL} value={on} onValueChange={onChange} />
+            <SubLine>{on ? copy.SWITCH_NOTE_ON : copy.SWITCH_NOTE_OFF}</SubLine>
+        </Identity>
+        <StatusText role='status'>{on ? copy.statusOn(routeCount) : copy.STATUS_OFF}</StatusText>
+    </Row>
+}
+
+const StartErrorRow = ({ onRetry }) => <Row role='alert'>
+    <AlertIcon size={20} aria-hidden='true' />
+    <Identity>{copy.START_ERROR}</Identity>
+    <Button text={copy.TRY_AGAIN} secondary={true} onClick={onRetry} />
+</Row>
 
 const RemoveDialog = ({ device, isLast, onConfirm, onCancel }) => {
     if (!device)
@@ -153,23 +168,31 @@ export const RouteSharingSettingsView = ({
     state, computerName, suffix, platform, routeCount = 0, devices = [], connectWindow, removeTarget, nameChanged, actions = {}
 }) => {
     const neverConnected = state === 'never-connected'
-    const showError = state === 'error' && !connectWindow
+    const failed = state === 'error'
+    const showError = failed && !connectWindow
+    const hasDevices = devices.length > 0
+
+    const connectLabel = neverConnected || !hasDevices ? copy.CONNECT_BUTTON : copy.CONNECT_ANOTHER_BUTTON
 
     return <AppThemeProvider>
-        <ContentArea>
-            <PanelTitle>{copy.PANEL_TITLE}</PanelTitle>
-            <PanelDescription>{copy.PANEL_DESCRIPTION}</PanelDescription>
-            {neverConnected ? <Intro>{copy.INTRO}</Intro> : null}
-            {neverConnected ? null : <Connected state={state} routeCount={routeCount} devices={devices} actions={actions} />}
-            {showError ? <StartError onRetry={actions.retry} /> : null}
+        <Panel titleId={TITLE_ID}>
+            <PanelHeader id={TITLE_ID} icon={<DeviceDesktopIcon size={24} />} title={copy.PANEL_TITLE} description={copy.PANEL_DESCRIPTION}
+                action={<Button text={connectLabel} secondary={true} onClick={() => actions.connect?.()} />} />
 
-            <NameField key={computerName} computerName={computerName} showChangedNote={nameChanged && devices.length > 0}
-                onNameChange={actions.setName} />
-
-            {neverConnected ? <>
-                <FirewallNote platform={platform} />
-                <Center><Button text={copy.CONNECT_BUTTON} primary={true} onClick={() => actions.connect?.()} /></Center>
+            {showError ? <StartErrorRow onRetry={actions.retry} /> : null}
+            {neverConnected && !showError ? <>
+                <BodyLine>{copy.REASSURANCE}</BodyLine>
+                <FirewallLine platform={platform} />
             </> : null}
+            {!neverConnected && !failed ? <SwitchRow state={state} routeCount={routeCount} onChange={(on) => actions.setEnabled?.(on)} /> : null}
+
+            {hasDevices ? <>
+                <ListLabel>{copy.DEVICES_TITLE}</ListLabel>
+                {devices.map(device => <DeviceRow key={device.id} device={device} onRemove={actions.requestRemove} />)}
+            </> : null}
+
+            <NameSection computerName={computerName} connected={!neverConnected} showChangedNote={nameChanged && hasDevices}
+                onNameChange={actions.setName} />
 
             <HelpSection platform={platform} />
 
@@ -177,6 +200,6 @@ export const RouteSharingSettingsView = ({
                 onConfirm={actions.confirmRemove} onCancel={actions.cancelRemove} />
             <ConnectWindow connectWindow={connectWindow} computerName={computerName} suffix={suffix} platform={platform}
                 onDeny={actions.denyPairing} onClose={actions.closePairing} onRetry={actions.connect} />
-        </ContentArea>
+        </Panel>
     </AppThemeProvider>
 }

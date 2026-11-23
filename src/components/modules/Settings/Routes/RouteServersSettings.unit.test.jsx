@@ -63,15 +63,28 @@ describe('RouteServersSettingsView', () => {
             expect(actions.showAdd).toHaveBeenCalledTimes(1)
         })
 
-        test('shows the explanation and one primary Add button if there are no servers', () => {
+        test('shows the header with the panel description and the Add button also when there are no added servers', () => {
             const actions = makeActions()
             render(<RouteServersSettingsView {...emptyProps} actions={actions} />)
 
-            expect(screen.getByText('Get more routes from other providers')).toBeDefined()
+            expect(screen.getByRole('region', { name: 'Route Servers' })).toBeDefined()
+            expect(screen.getByText('Collections of routes hosted by other riders and groups.')).toBeDefined()
             expect(screen.getAllByText('Add route server')).toHaveLength(1)
 
             fireEvent.click(screen.getByText('Add route server'))
             expect(actions.showAdd).toHaveBeenCalledTimes(1)
+        })
+
+        test('shows the explanation as one plain line, without its title', () => {
+            render(<RouteServersSettingsView {...emptyProps} actions={makeActions()} />)
+
+            expect(screen.getByText(emptyProps.emptyState.text)).toBeDefined()
+            expect(screen.queryByText('Get more routes from other providers')).toBeNull()
+        })
+
+        test('shows no explanation while there are added servers', () => {
+            render(<RouteServersSettingsView {...listProps} actions={makeActions()} />)
+            expect(screen.queryByText(emptyProps.emptyState.text)).toBeNull()
         })
     })
 

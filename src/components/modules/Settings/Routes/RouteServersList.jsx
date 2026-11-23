@@ -1,70 +1,10 @@
 import React from 'react'
-import styled, { keyframes } from 'styled-components'
+import styled from 'styled-components'
+import { CloudIcon } from '@primer/octicons-react'
 import { Button, LinkButton } from '../../../atoms'
-
-const pulse = keyframes`
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.3; }
-`
-
-const Header = styled.div`
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0 1vw;
-`
-
-const Title = styled.div`
-    font-size: 2.6vh;
-    font-weight: 500;
-`
-
-const Description = styled.div`
-    font-size: 1.8vh;
-    opacity: 0.8;
-    padding: 0.5vh 1vw 1.5vh 1vw;
-`
-
-const Row = styled.div`
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    gap: 1vw;
-    padding: 1.4vh 1vw;
-    border-bottom: 1px solid rgba(128, 128, 128, 0.4);
-    font-size: 2.2vh;
-`
-
-const Dot = styled.span`
-    flex: none;
-    width: 1.4vh;
-    height: 1.4vh;
-    border-radius: 50%;
-    background: ${props => props.$color};
-    animation: ${props => props.$pulse ? pulse : 'none'} 1.2s ease-in-out infinite;
-`
-
-const Identity = styled.div`
-    flex: 1;
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
-`
-
-const NameLine = styled.div`
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    gap: 0.8vw;
-`
-
-const Host = styled.div`
-    font-size: 1.6vh;
-    opacity: 0.7;
-    overflow: hidden;
-    text-overflow: ellipsis;
-`
+import {
+    Panel, PanelHeader, Row, Dot, Identity, NameLine, SubLine, StatusText, RemoveArea, BodyLine, AMBER, GREEN, GREY
+} from './Panel'
 
 const Tag = styled.span`
     font-size: 1.4vh;
@@ -74,43 +14,6 @@ const Tag = styled.span`
     opacity: 0.8;
     white-space: nowrap;
 `
-
-const StatusText = styled.div`
-    flex: 0 1 38%;
-    font-size: 1.7vh;
-    text-align: right;
-    opacity: 0.9;
-`
-
-const RemoveArea = styled.div`
-    flex: none;
-    width: 7vw;
-    text-align: right;
-    font-size: 1.8vh;
-`
-
-const EmptyState = styled.div`
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 1vh;
-    padding: 3vh 1vw 1vh 1vw;
-`
-
-const EmptyTitle = styled.div`
-    font-size: 2.4vh;
-    font-weight: 500;
-`
-
-const EmptyText = styled.div`
-    font-size: 1.9vh;
-    max-width: 50vw;
-    opacity: 0.85;
-`
-
-const AMBER = '#e0a000'
-const GREEN = 'green'
-const GREY = 'lightgrey'
 
 const dotColor = (status) => {
     if (status === 'unreachable')
@@ -130,7 +33,7 @@ const RouteServerRow = ({ server, onRemove }) => {
                 <span>{server.name}</span>
                 {tags.map(tag => <Tag key={tag}>{tag}</Tag>)}
             </NameLine>
-            {server.host ? <Host>{server.host}</Host> : null}
+            {server.host ? <SubLine>{server.host}</SubLine> : null}
         </Identity>
         <StatusText>{server.statusText}</StatusText>
         <RemoveArea>
@@ -139,28 +42,23 @@ const RouteServerRow = ({ server, onRemove }) => {
     </Row>
 }
 
+const PANEL_DESCRIPTION = 'Collections of routes hosted by other riders and groups.'
+const TITLE_ID = 'route-servers-title'
+
 /**
- * Panel "Route Servers" of the Routes settings: the built-in server, the servers the user added and (as long as
- * there are none) a short explanation with the primary "Add route server" button.
+ * Panel "Route Servers" of the Routes settings: a card with the built-in server and the servers the user added. The
+ * secondary "Add route server" button is always in the header; while there are no added servers, one plain line
+ * explains what a route server is (the empty state's title is not shown here).
  */
 export const RouteServersList = ({ servers = [], isEmpty, emptyState, onAdd, onRemove }) => {
-    return <>
-        <Header>
-            <Title>Route Servers</Title>
-            {isEmpty ? null : <Button text='Add route server' secondary={true} onClick={() => onAdd?.()} />}
-        </Header>
-        <Description>Collections of routes hosted by other riders and groups.</Description>
+    return <Panel titleId={TITLE_ID}>
+        <PanelHeader id={TITLE_ID} icon={<CloudIcon size={24} />} title='Route Servers' description={PANEL_DESCRIPTION}
+            action={<Button text='Add route server' secondary={true} onClick={() => onAdd?.()} />} />
 
         {servers.map(server =>
             <RouteServerRow key={server.key} server={server} onRemove={onRemove} />
         )}
 
-        {isEmpty && emptyState ?
-            <EmptyState>
-                <EmptyTitle>{emptyState.title}</EmptyTitle>
-                <EmptyText>{emptyState.text}</EmptyText>
-                <Button text='Add route server' primary={true} onClick={() => onAdd?.()} />
-            </EmptyState> : null
-        }
-    </>
+        {isEmpty && emptyState?.text ? <BodyLine>{emptyState.text}</BodyLine> : null}
+    </Panel>
 }
