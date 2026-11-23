@@ -37,7 +37,7 @@ describe('ConnectWindow', () => {
             renderWindow(fx.windowWaiting, { suffix: 'K3F9' })
 
             expect(screen.getByText('1. On your phone or tablet, open Incyclist.')).toBeDefined()
-            expect(screen.getByText('2. Go to Settings › Route Sharing › Add Computer.')).toBeDefined()
+            expect(screen.getByText('2. Go to Settings › Routes › Route Sharing › Add Computer.')).toBeDefined()
             expect(screen.getByText('3. Choose "Home PC".')).toBeDefined()
             expect(screen.getByText('If "Home PC" is listed more than once, choose "Home PC (K3F9)".')).toBeDefined()
             expect(screen.getByText('Waiting for your phone or tablet…')).toBeDefined()

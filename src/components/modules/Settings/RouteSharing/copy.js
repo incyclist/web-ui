@@ -62,7 +62,7 @@ export const STARTING_HINT = {
 }
 export const WAITING_STEPS = (name) => [
     'On your phone or tablet, open Incyclist.',
-    'Go to Settings › Route Sharing › Add Computer.',
+    'Go to Settings › Routes › Route Sharing › Add Computer.',
     `Choose "${name}".`
 ]
 export const suffixLine = (name, suffix) => `If "${name}" is listed more than once, choose "${name} (${suffix})".`
