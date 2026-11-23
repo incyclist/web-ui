@@ -109,10 +109,17 @@ describe('ConnectWindow', () => {
         const { onClose } = renderWindow(fx.windowConnected)
 
         expect(screen.getByText('Pixel 8 is connected')).toBeDefined()
-        expect(screen.getByText('Its routes appear on Pixel 8 in a moment.')).toBeDefined()
+        expect(screen.getByText('Your routes will show up on it in a moment.')).toBeDefined()
         expect(screen.queryByText('Close')).toBeNull()
         fireEvent.click(screen.getByText('Done'))
         expect(onClose).toHaveBeenCalledTimes(1)
+    })
+
+    test.each(['Android device', 'iOS device', 'Guido\'s tablet'])('connected: reads correctly with the name "%s"', (device) => {
+        renderWindow({ phase: 'connected', device })
+
+        expect(screen.getByText(`${device} is connected`)).toBeDefined()
+        expect(screen.getByText('Your routes will show up on it in a moment.')).toBeDefined()
     })
 
     test('error: offers Try Again and Close', () => {

@@ -5,9 +5,35 @@ import { ProgressBar } from '../../../atoms'
 import * as copy from './copy'
 import { getRemaining, groupCode, logError } from './utils'
 
+// Fills the body of the message box (which has no background of its own), so the settings page behind the dialog
+// cannot show through, and centers the content vertically so a short phase is not stuck at the top.
 const Body = styled.div`
+    box-sizing: border-box;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: ${props => props.$centered ? 'center' : 'stretch'};
+    text-align: ${props => props.$centered ? 'center' : 'left'};
     font-size: 2.2vh;
-    padding: 0.5vh 0.5vw;
+    padding: 1.5vh 1.5vw;
+    background: ${props => props.theme?.dialog?.background2 ?? props.theme?.dialog?.background ?? 'white'};
+    color: ${props => props.theme?.dialog?.text ?? 'inherit'};
+`
+const Title = styled.div`
+    font-size: 2.8vh;
+    font-weight: 600;
+    padding: 0.8vh 0 0.4vh 0;
+`
+const Badge = styled.div`
+    width: 7vh;
+    height: 7vh;
+    border-radius: 50%;
+    background: #3E9B4F;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 `
 const Step = styled.div`
     padding: 0.4vh 0;
@@ -72,7 +98,11 @@ const useRemaining = (expiresAt) => {
     return getRemaining(expiresAt, now)
 }
 
-const Starting = ({ platform }) => <Body>
+const CheckIcon = () => <svg width='60%' height='60%' viewBox='0 0 24 24' aria-hidden='true' focusable='false'>
+    <path d='M5 12.5l4.5 4.5L19 7.5' fill='none' stroke='white' strokeWidth='3' strokeLinecap='round' strokeLinejoin='round' />
+</svg>
+
+const Starting = ({ platform }) => <Body $centered>
     <div role='status'>{copy.STARTING}</div>
     {copy.STARTING_HINT[platform] ? <Hint>{copy.STARTING_HINT[platform]}</Hint> : null}
 </Body>
@@ -91,7 +121,8 @@ const CodeView = ({ device, pin, expiresAt, attemptsLeft, notice }) => {
     const announce = seconds === 0 ? 'The code has expired' : seconds <= 30 ? 'The code expires in 30 seconds' : ''
     const name = device ?? 'the device'
 
-    return <Body>
+    return <>
+        <strong>{copy.wantsToConnect(device ?? 'A device')}</strong>
         <div>{copy.typeThisCode(name)}</div>
         <Code aria-label={`Code ${pin ? pin.split('').join(' ') : ''}`}>{groupCode(pin)}</Code>
         <div>{copy.expiresIn(m, ss)}</div>
@@ -99,7 +130,7 @@ const CodeView = ({ device, pin, expiresAt, attemptsLeft, notice }) => {
         {attemptsLeft !== undefined && attemptsLeft < 3 ? <Notice>{copy.wrongTry(name, attemptsLeft)}</Notice> : null}
         {notice === 'replaced' ? <Notice>{copy.REPLACED(name)}</Notice> : null}
         <Hidden role='status' aria-live='polite'>{announce}</Hidden>
-    </Body>
+    </>
 }
 
 /**
@@ -111,29 +142,32 @@ export const ConnectWindow = ({ connectWindow, computerName, suffix, platform, o
         return null
 
     const { phase, device, pin, expiresAt, attemptsLeft, notice } = connectWindow
-    const common = { id: 'ConnectWindow', title: copy.CONNECT_TITLE, width: '40vw', height: '46vh', onNo: onClose }
+    // each phase sizes the window to its content; the button bar always sits directly below the body
+    const common = { id: 'ConnectWindow', title: copy.CONNECT_TITLE, width: '40vw', onNo: onClose }
 
     if (phase === 'code')
         // no default button: Enter must neither deny nor close by accident
-        return <MessageBox {...common} yes='Deny' no='Close' defaultButton='' onYes={onDeny}>
-            <Body><strong>{copy.wantsToConnect(device ?? 'A device')}</strong></Body>
-            <CodeView device={device} pin={pin} expiresAt={expiresAt} attemptsLeft={attemptsLeft} notice={notice} />
+        return <MessageBox {...common} height='46vh' yes='Deny' no='Close' defaultButton='' onYes={onDeny}>
+            <Body>
+                <CodeView device={device} pin={pin} expiresAt={expiresAt} attemptsLeft={attemptsLeft} notice={notice} />
+            </Body>
         </MessageBox>
 
     if (phase === 'connected')
-        return <MessageBox {...common} yes='Done' defaultButton='Done' noNo onYes={onClose}>
-            <Body>
-                <strong>{copy.connectedTitle(device ?? 'The device')}</strong>
-                <Hint>{copy.connectedText(device ?? 'the device')}</Hint>
+        return <MessageBox {...common} height='34vh' yes='Done' defaultButton='Done' noNo onYes={onClose}>
+            <Body $centered>
+                <Badge><CheckIcon /></Badge>
+                <Title>{copy.connectedTitle(device ?? 'The device')}</Title>
+                <Hint>{copy.CONNECTED_TEXT}</Hint>
             </Body>
         </MessageBox>
 
     if (phase === 'error')
-        return <MessageBox {...common} yes={copy.TRY_AGAIN} no='Close' defaultButton={copy.TRY_AGAIN} onYes={onRetry}>
-            <Body>{copy.CONNECT_ERROR}</Body>
+        return <MessageBox {...common} height='30vh' yes={copy.TRY_AGAIN} no='Close' defaultButton={copy.TRY_AGAIN} onYes={onRetry}>
+            <Body $centered>{copy.CONNECT_ERROR}</Body>
         </MessageBox>
 
-    return <MessageBox {...common} noYes no='Close' defaultButton='Close'>
+    return <MessageBox {...common} height={phase === 'starting' ? '30vh' : '46vh'} noYes no='Close' defaultButton='Close'>
         {phase === 'starting' ?
             <Starting platform={platform} /> :
             <Waiting computerName={computerName} suffix={suffix} notice={notice} device={device} />}

@@ -35,6 +35,12 @@ Off.args = { ...fx.off }
 export const StartFailed = Template.bind({})
 StartFailed.args = { ...fx.startError }
 
+export const ConnectStarting = Template.bind({})
+ConnectStarting.args = { ...fx.neverConnected, connectWindow: fx.windowStarting }
+
+export const ConnectError = Template.bind({})
+ConnectError.args = { ...fx.neverConnected, connectWindow: fx.windowError }
+
 export const ConnectWaiting = Template.bind({})
 ConnectWaiting.args = { ...fx.neverConnected, connectWindow: fx.windowWaiting, suffix: 'K3F9' }
 
@@ -43,3 +49,6 @@ ConnectCode.args = { ...fx.neverConnected, connectWindow: fx.windowCode }
 
 export const ConnectConnected = Template.bind({})
 ConnectConnected.args = { ...fx.on, connectWindow: fx.windowConnected }
+
+export const ConnectConnectedGenericName = Template.bind({})
+ConnectConnectedGenericName.args = { ...fx.on, connectWindow: { phase: 'connected', device: 'Android device' } }

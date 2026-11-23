@@ -78,7 +78,7 @@ export const wrongTry = (device, n) => `Wrong code typed on ${device} — ${n} $
 export const REPLACED = (device) => `A new request from ${device} replaced the previous one.`
 
 export const connectedTitle = (device) => `${device} is connected`
-export const connectedText = (device) => `Its routes appear on ${device} in a moment.`
+export const CONNECTED_TEXT = 'Your routes will show up on it in a moment.'
 
 export const NOTICES = {
     denied: (device) => `You turned down the request from ${device}.`,
