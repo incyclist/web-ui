@@ -58,6 +58,10 @@ export const Video = ( { src, startTime, observer, width, height,muted=true,loop
 
 
     const onPlayFailed = useCallback( (e) => {
+        // play() is rejected (AbortError) when the element is removed while it is pending - that is expected
+        if (refInfo.current.unmounted)
+            return
+
         const video = refVideo.current
         const giveUp = handlePlayFailure({ tracker:refTracker.current, error:e, video, src, resolvedSrc, segment, log:logEvent })
         if (giveUp && !refInfo.current.errorReported) {
@@ -75,15 +79,34 @@ export const Video = ( { src, startTime, observer, width, height,muted=true,loop
             return
 
         refInfo.current.startPlaying = true
+        refInfo.current.pauseRequested = false
         refInfo.current.ended = false
         refVideo.current.play()       
-            .then( ()=>  { refInfo.current.playing = true; refTracker.current.recordSuccess() })
+            .then( ()=>  { 
+                refInfo.current.playing = true; 
+                refTracker.current.recordSuccess() 
+                applyPendingPause()
+            })
             .catch( onPlayFailed )
             .finally( ()=> refInfo.current.startPlaying = false)
     },[onPlayFailed])
 
+    // a pause that was requested while play() was still pending has to be applied once play() resolved
+    const applyPendingPause = () => {
+        if (!refInfo.current.pauseRequested)
+            return
+        refInfo.current.pauseRequested = false
+        try { refVideo.current?.pause() } catch {}
+        refInfo.current.playing = false
+    }
+
     const pausePlay = ()=> {
-        if (!refVideo.current || refInfo.current.paused || refInfo.current.startPlaying) 
+        if (refInfo.current.startPlaying) {
+            refInfo.current.pauseRequested = true
+            return
+        }
+
+        if (!refVideo.current || refInfo.current.paused) 
             return;
 
         refVideo.current.pause()            
@@ -315,7 +338,12 @@ export const Video = ( { src, startTime, observer, width, height,muted=true,loop
     },[setTime, src, startTime])
 
 
+    useEffect( ()=>{
+        refInfo.current.unmounted = false
+    },[])
+
     useUnmountEffect( ()=>{
+        refInfo.current.unmounted = true
         if (observer) {
             observer.stop()
         }

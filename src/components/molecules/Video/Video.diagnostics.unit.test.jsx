@@ -122,4 +122,53 @@ describe('Video diagnostics', () => {
         expect(container.querySelector('video').playbackRate).toBe(0.0625)
         expect(messages()).not.toContain('failed to set rate')
     })
+
+    describe('play() rejection', () => {
+        const abortError = () => Object.assign(
+            new Error('The play() request was interrupted because the media was removed from the document'), { name: 'AbortError' })
+
+        test('is not logged when it arrives after the component was unmounted', async () => {
+            let rejectPlay
+            playSpy.mockReturnValue(new Promise((_, rej) => { rejectPlay = rej }))
+            const observer = createObserver()
+            const onLoadError = vi.fn()
+            const onPlaybackError = vi.fn()
+            const { unmount } = render(<Video src="video:///local/route.mp4" observer={observer} onLoadError={onLoadError} onPlaybackError={onPlaybackError} />)
+
+            await act(async () => { observer.emit('rate-update', 1.5) })
+            unmount()
+            await act(async () => { rejectPlay(abortError()) })
+
+            expect(logEventMock.mock.calls.map(c => c[0]).filter(e => e.fn === 'startPlay')).toHaveLength(0)
+            expect(onLoadError).not.toHaveBeenCalled()
+            expect(onPlaybackError).not.toHaveBeenCalled()
+        })
+
+        test('is still logged while the component is mounted', async () => {
+            let rejectPlay
+            playSpy.mockReturnValue(new Promise((_, rej) => { rejectPlay = rej }))
+            const observer = createObserver()
+            render(<Video src="video:///local/route.mp4" observer={observer} />)
+
+            await act(async () => { observer.emit('rate-update', 1.5) })
+            await act(async () => { rejectPlay(abortError()) })
+
+            expect(logEventMock.mock.calls.map(c => c[0]).filter(e => e.fn === 'startPlay')).toHaveLength(1)
+        })
+    })
+
+    test('a pause request (rate 0) arriving while play() is pending is applied once play() resolved', async () => {
+        let resolvePlay
+        playSpy.mockReturnValue(new Promise(res => { resolvePlay = res }))
+        const pauseSpy = window.HTMLMediaElement.prototype.pause
+        const observer = createObserver()
+        render(<Video src="video:///local/route.mp4" observer={observer} />)
+
+        await tick(observer, 1.5)
+        await tick(observer, 0)
+        pauseSpy.mockClear()
+        await act(async () => { resolvePlay() })
+
+        expect(pauseSpy).toHaveBeenCalledTimes(1)
+    })
 })
