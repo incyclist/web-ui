@@ -1,17 +1,16 @@
 import React, { useCallback, useEffect, useRef, useState } from "react"
 import { useLocation } from "react-router"
 import { getWorkoutListPageService } from "incyclist-services"
-import { EventLogger } from "gd-eventlog"
 import styled from "styled-components"
 
 import { WorkoutsScreen } from "./screen"
-import { getResponsiveHorizontal } from "./utils"
-import { useWindowDimensions, usePageLogger } from "../../hooks"
+import { usePageLogger } from "../../hooks"
 import { usePageService } from "../../hooks/pages"
 import { WorkoutDetailsDialog } from "../../components/modules/workout/selection/WorkoutDetails"
 import { WorkoutImportDialog } from "../../components/modules/workout/WorkoutImport"
 import { ScheduledWorkoutPrompt } from "../../components/modules/workout/ScheduledWorkoutPrompt"
 import { Button, CheckBox, Column, Row, Overlay } from "../../components/atoms"
+import { MessageBox } from "../../components/molecules"
 
 const PAGE_ID = 'WorkoutsList'
 
@@ -61,48 +60,15 @@ export const WorkoutsPage = () => {
     const props = usePageService(service)
     const location = useLocation()
 
-    const [screenProps, setScreenProps] = useState(() => service.getScreenProps())
     const [pageState, setPageState] = useState(null)
     const refAutoOpened = useRef(null)
     const [importOpen, setImportOpen] = useState(false)
     const [importSource, setImportSource] = useState(null)
+    const [confirmDeleteId, setConfirmDeleteId] = useState(null)
 
-    const [logger, closePageLogger] = usePageLogger(PAGE_ID, pageState)
+    const [, closePageLogger] = usePageLogger(PAGE_ID, pageState)
 
     useEffect(() => { setPageState('open') }, [])
-
-    const updateScreenProps = useCallback((w, h) => {
-
-        const respList = getResponsiveHorizontal(w, h, { offset: 210, padding: 0 })
-        const { cardSize } = respList
-        delete respList.cardSize
-
-        const limits = Object.keys(respList)
-        const aboveIdx = limits.findIndex(limit => limit > w)
-
-        const updated = aboveIdx !== -1 ? respList[limits[aboveIdx - 1]].items : -1
-
-        const sp = { itemsFit: updated, responsive: respList, cardSize, offset: 210, width: w, height: h }
-        setScreenProps(sp)
-        service.setScreenProps(sp)
-
-        const cards = Math.floor((w - 210) / cardSize.width)
-        new EventLogger('WorkoutsPage').logEvent({ message: 'carousel calculated', width: w, height: h, cardSize, cardsCnt: cards })
-
-    }, [service])
-
-    let { height, width } = useWindowDimensions((current) => {
-        service.onResize()
-        updateScreenProps(current.width, current.height)
-        width = current.width
-        height = current.height
-    })
-
-    useEffect(() => {
-        if (screenProps)
-            return
-        updateScreenProps(width, height)
-    }, [screenProps, updateScreenProps, width, height])
 
     // opened from outside (e.g. scheduled-workout prompt): open the details dialog once per distinct id
     const autoOpenDetailsId = location?.state?.autoOpenDetailsId
@@ -115,17 +81,17 @@ export const WorkoutsPage = () => {
 
     const closePage = useCallback(() => { closePageLogger() }, [closePageLogger])
 
-    const onInitialized = useCallback((listId, e) => {
-        service.onCarouselInitialized(listId, e?.item, e?.itemsInSlide)
-        logger.logEvent({ message: 'Carousel initialized', list: listId, item: e?.item, itemsInSlide: e?.itemsInSlide })
-    }, [service, logger])
-
-    const onSlideChanged = useCallback((listId, e) => {
-        service.onCarouselUpdated(listId, e?.item, e?.itemsInSlide)
-    }, [service])
-
     const onOK = useCallback((id) => { service.onCardOK(id) }, [service])
-    const onDelete = useCallback((id) => { service.onDelete(id) }, [service])
+    const onCreateWorkout = useCallback(() => { service.onCardOK('Create') }, [service])
+    const onDelete = useCallback((id) => { setConfirmDeleteId(id) }, [])
+    const onDeleteYes = useCallback(() => {
+        const id = confirmDeleteId
+        setConfirmDeleteId(null)
+        if (id)
+            service.onDelete(id)
+    }, [confirmDeleteId, service])
+    const onDeleteNo = useCallback(() => { setConfirmDeleteId(null) }, [])
+    const onDisplayTypeSelected = useCallback((type) => { service.onDisplayTypeSelected(type) }, [service])
 
     const onImportWorkout = useCallback(() => {
         service.onImportOpen()
@@ -146,19 +112,36 @@ export const WorkoutsPage = () => {
     const { loading = true, lists = [], upcoming = null, displayType = 'tiles', detailWorkoutId, createInfo } = props ?? {}
 
     return <>
-        <WorkoutsScreen lists={lists} upcoming={upcoming} displayType={displayType} loading={loading} {...screenProps}
+        <WorkoutsScreen
+            lists={lists}
+            upcoming={upcoming}
+            displayType={displayType}
+            loading={loading}
             closePage={closePage}
             onOK={onOK}
+            onCreateWorkout={onCreateWorkout}
             onDelete={onDelete}
+            onDisplayTypeSelected={onDisplayTypeSelected}
             onImportWorkout={onImportWorkout}
             onDropFiles={onDropFiles}
-            dropEnabled={!importOpen}
-            onInitialized={onInitialized}
-            onSlideChanged={onSlideChanged} />
+            dropEnabled={!importOpen && !confirmDeleteId}
+        />
 
         {detailWorkoutId ? <WorkoutDetailsDialog id={detailWorkoutId} /> : null}
 
         {importOpen ? <WorkoutImportDialog source={importSource} onClose={onImportClose} /> : null}
+
+        {confirmDeleteId ? (
+            <MessageBox
+                title='Delete Workout'
+                id='DeleteWorkout'
+                defaultButton='No'
+                center
+                text='This will permanently delete this workout. Are you sure?'
+                onYes={onDeleteYes}
+                onNo={onDeleteNo}
+            />
+        ) : null}
 
         <ScheduledWorkoutPrompt />
 

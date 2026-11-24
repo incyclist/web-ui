@@ -9,16 +9,12 @@ const { service, screenCalls } = vi.hoisted(() => ({
         openPage: vi.fn(() => ({ on: vi.fn(), off: vi.fn() })),
         closePage: vi.fn(),
         getPageDisplayProperties: vi.fn(),
-        getScreenProps: vi.fn(() => ({ cardSize: { width: 200, height: 300 } })),
-        setScreenProps: vi.fn(),
-        onResize: vi.fn(),
+        onDisplayTypeSelected: vi.fn(),
         onOpenDetails: vi.fn(),
         onCardOK: vi.fn(),
         onDelete: vi.fn(),
         onImportOpen: vi.fn(),
         onImportFiles: vi.fn(),
-        onCarouselInitialized: vi.fn(),
-        onCarouselUpdated: vi.fn(),
         onCreateInfoClosed: vi.fn(),
     },
     screenCalls: [],
@@ -43,11 +39,6 @@ vi.mock('../../components/modules/workout/selection/WorkoutDetails', () => ({
 vi.mock('../../components/modules/workout/WorkoutImport', () => ({
     WorkoutImportDialog: ({ source, onClose }) => <div>import-dialog:{source}<button onClick={onClose}>close-import</button></div>,
 }))
-
-vi.mock('../../hooks', async (importOriginal) => {
-    const actual = await importOriginal()
-    return { ...actual, useWindowDimensions: () => ({ width: 1000, height: 800 }) }
-})
 
 const props = (over = {}) => ({ loading: false, lists: [{ id: 'myWorkouts', title: 'My Workouts', cards: [] }], detailWorkoutId: null, createInfo: null, ...over })
 
@@ -98,18 +89,37 @@ describe('WorkoutsPage', () => {
         expect(service.closePage).toHaveBeenCalled()
     })
 
-    test('card actions and carousel callbacks are forwarded by id', () => {
+    test('card actions, create button and display type changes are forwarded to the service', () => {
         renderPage()
         const p = screenCalls.at(-1)
-        p.onOK('w1')
-        p.onDelete('w1')
-        p.onInitialized('myWorkouts', { item: 1, itemsInSlide: 4 })
-        p.onSlideChanged('myWorkouts', { item: 2, itemsInSlide: 4 })
+        act(() => { p.onOK('w1') })
+        act(() => { p.onCreateWorkout() })
+        act(() => { p.onDisplayTypeSelected('list') })
         expect(service.onCardOK).toHaveBeenCalledWith('w1')
-        expect(service.onDelete).toHaveBeenCalledWith('w1')
+        expect(service.onCardOK).toHaveBeenCalledWith('Create')
+        expect(service.onDisplayTypeSelected).toHaveBeenCalledWith('list')
         expect(screenCalls.at(-1).onRetry).toBeUndefined()
-        expect(service.onCarouselInitialized).toHaveBeenCalledWith('myWorkouts', 1, 4)
-        expect(service.onCarouselUpdated).toHaveBeenCalledWith('myWorkouts', 2, 4)
+    })
+
+    test('delete asks for confirmation via MessageBox; No cancels, Yes deletes', () => {
+        renderPage()
+        expect(screen.queryByText('This will permanently delete this workout. Are you sure?')).toBeNull()
+
+        act(() => { screenCalls.at(-1).onDelete('w1') })
+        expect(service.onDelete).not.toHaveBeenCalled()
+        expect(screen.getByText('This will permanently delete this workout. Are you sure?')).toBeTruthy()
+        expect(screenCalls.at(-1).dropEnabled).toBe(false)
+
+        fireEvent.click(screen.getByText('No'))
+        expect(service.onDelete).not.toHaveBeenCalled()
+        expect(screen.queryByText('This will permanently delete this workout. Are you sure?')).toBeNull()
+        expect(screenCalls.at(-1).dropEnabled).toBe(true)
+
+        act(() => { screenCalls.at(-1).onDelete('w1') })
+        fireEvent.click(screen.getByText('Yes'))
+        expect(service.onDelete).toHaveBeenCalledTimes(1)
+        expect(service.onDelete).toHaveBeenCalledWith('w1')
+        expect(screen.queryByText('This will permanently delete this workout. Are you sure?')).toBeNull()
     })
 
     test('renders the details dialog only when detailWorkoutId is set', () => {
