@@ -75,4 +75,41 @@ describe('AutoConvertVideo diagnostics', () => {
             vi.useRealTimers()
         }
     })
+
+    describe('play() rejection', () => {
+        const abortError = () => Object.assign(
+            new Error('The play() request was interrupted because the media was removed from the document'), { name: 'AbortError' })
+        const createConversion = () => ({ getObserver: () => new EventEmitter(), convert: vi.fn(), stop: vi.fn(), getUrl: () => 'file:///a/b.avi' })
+
+        test('is not logged when it arrives after the component was unmounted', async () => {
+            let rejectPlay
+            vi.spyOn(window.HTMLMediaElement.prototype, 'play').mockReturnValue(new Promise((_, rej) => { rejectPlay = rej }))
+            const observer = new EventEmitter()
+            observer.stop = vi.fn()
+            const onLoadError = vi.fn()
+            const onPlaybackError = vi.fn()
+            const { unmount } = render(<AutoConvertVideo src={createConversion()} observer={observer} onLoadError={onLoadError} onPlaybackError={onPlaybackError} />)
+
+            await act(async () => { observer.emit('rate-update', 1.5) })
+            unmount()
+            await act(async () => { rejectPlay(abortError()) })
+
+            expect(logEventMock.mock.calls.map(c => c[0]).filter(e => e.fn === 'startPlay')).toHaveLength(0)
+            expect(onLoadError).not.toHaveBeenCalled()
+            expect(onPlaybackError).not.toHaveBeenCalled()
+        })
+
+        test('is still logged while the component is mounted', async () => {
+            let rejectPlay
+            vi.spyOn(window.HTMLMediaElement.prototype, 'play').mockReturnValue(new Promise((_, rej) => { rejectPlay = rej }))
+            const observer = new EventEmitter()
+            observer.stop = vi.fn()
+            render(<AutoConvertVideo src={createConversion()} observer={observer} />)
+
+            await act(async () => { observer.emit('rate-update', 1.5) })
+            await act(async () => { rejectPlay(abortError()) })
+
+            expect(logEventMock.mock.calls.map(c => c[0]).filter(e => e.fn === 'startPlay')).toHaveLength(1)
+        })
+    })
 })
