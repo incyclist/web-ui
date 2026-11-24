@@ -89,12 +89,14 @@ describe('WorkoutsPage', () => {
         expect(service.closePage).toHaveBeenCalled()
     })
 
-    test('card actions and display type changes are forwarded to the service', () => {
+    test('card actions, create button and display type changes are forwarded to the service', () => {
         renderPage()
         const p = screenCalls.at(-1)
         act(() => { p.onOK('w1') })
+        act(() => { p.onCreateWorkout() })
         act(() => { p.onDisplayTypeSelected('list') })
         expect(service.onCardOK).toHaveBeenCalledWith('w1')
+        expect(service.onCardOK).toHaveBeenCalledWith('Create')
         expect(service.onDisplayTypeSelected).toHaveBeenCalledWith('list')
         expect(screenCalls.at(-1).onRetry).toBeUndefined()
     })

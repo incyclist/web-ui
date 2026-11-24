@@ -15,6 +15,38 @@ const formatSize = (value) => {
     return undefined;
 };
 
+const listGridStyles = css`
+    display: grid;
+    grid-template-columns: minmax(0, 1.6fr) 220px minmax(150px, 1fr) 142px;
+    align-items: center;
+    gap: 12px;
+    height: 84px;
+    min-height: 84px;
+    padding: 8px 12px;
+    @media (max-width: 1100px) {
+        height: 112px;
+        min-height: 112px;
+        grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+        grid-template-rows: 1fr 1fr;
+        gap: 0 12px;
+        > :first-child { grid-column: 1; grid-row: 1; }
+        > :nth-child(2) { grid-column: 1; grid-row: 2; }
+        > :nth-child(3) { grid-column: 2; grid-row: 1; }
+        > :nth-child(4) { grid-column: 2; grid-row: 2; justify-self: end; }
+    }
+    @media (max-width: 650px) {
+        height: auto;
+        min-height: 184px;
+        grid-template-columns: 1fr;
+        grid-template-rows: auto auto auto auto;
+        gap: 6px;
+        > :first-child { grid-column: 1; grid-row: 1; }
+        > :nth-child(2) { grid-column: 1; grid-row: 2; }
+        > :nth-child(3) { grid-column: 1; grid-row: 3; }
+        > :nth-child(4) { grid-column: 1; grid-row: 4; justify-self: stretch; }
+    }
+`;
+
 export const Surface = styled.article`
     position: relative;
     display: flex;
@@ -24,54 +56,62 @@ export const Surface = styled.article`
     height: ${p => p.$list ? "84px" : (p.$height || "100%")};
     overflow: hidden;
     border-radius: 12px;
-    background: ${p => p.theme?.pageLists?.background ?? "#1c1824"};
-    border: 1px solid ${p => p.$today ? "#dd9933" : "#3a3248"};
+    background: ${p => p.theme?.card?.background};
+    border: 1px solid ${p => p.$today ? p.theme?.card?.highlightBorder : p.theme?.card?.border};
     ${p => p.$today && css`
-        border-left: 4px solid #dd9933;
-        box-shadow: 0 4px 18px rgba(221, 153, 51, 0.16);
+        border-left: 4px solid ${p.theme?.card?.highlightAccent};
+        box-shadow: 0 4px 18px ${p.theme?.card?.highlightGlow};
     `}
-    color: ${p => p.theme?.dialog?.text ?? "#f7f5fa"};
+    color: ${p => p.theme?.card?.text};
     text-align: left;
     font-family: inherit;
     cursor: pointer;
     isolation: isolate;
-    &:hover, &:focus-within { border-color: ${p => p.theme?.button?.primary?.background ?? "#dd9933"}; }
-    &:focus-visible { outline: 3px solid ${p => p.theme?.button?.hover?.background ?? "#8dc100"}; outline-offset: -3px; }
+    &:hover, &:focus-within { border-color: ${p => p.theme?.card?.hoverBorder}; }
+    &:focus-visible { outline: 3px solid ${p => p.theme?.card?.focusOutline}; outline-offset: -3px; }
     button { font-family: inherit; cursor: pointer; }
-    button:focus-visible { outline: 3px solid ${p => p.theme?.button?.hover?.background ?? "#8dc100"}; outline-offset: 2px; }
+    button:focus-visible { outline: 3px solid ${p => p.theme?.card?.focusOutline}; outline-offset: 2px; }
     button:disabled { cursor: default; opacity: .5; }
+    ${p => p.$list && listGridStyles}
+`;
+
+const SkeletonSurface = styled.div`
+    position: relative;
+    box-sizing: border-box;
+    width: 100%;
+    height: ${p => p.$list ? "84px" : "100%"};
+    overflow: hidden;
+    border-radius: 12px;
+    border: 1px solid ${p => p.theme?.card?.border};
+    background: ${p => p.theme?.card?.background};
+    &::before {
+        content: "";
+        position: absolute;
+        ${p => p.$list ? css`
+            top: 18px;
+            left: 14px;
+            width: min(36%, 240px);
+            height: 15px;
+            border-radius: 4px;
+            background: ${p.theme?.card?.skeletonBackground};
+            box-shadow: 0 24px 0 -3px ${p.theme?.card?.skeletonBackground};
+        ` : css`
+            inset: 0 0 auto 0;
+            height: 132px;
+            background: ${p.theme?.card?.previewBackground};
+        `}
+    }
     ${p => p.$list && css`
-        display: grid;
-        grid-template-columns: minmax(0, 1.6fr) 220px minmax(150px, 1fr) 142px;
-        align-items: center;
-        gap: 12px;
-        height: 84px;
-        min-height: 84px;
-        padding: 8px 12px;
-        @media (max-width: 1100px) {
-            height: 112px;
-            min-height: 112px;
-            grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
-            grid-template-rows: 1fr 1fr;
-            gap: 0 12px;
-            > :first-child { grid-column: 1; grid-row: 1; }
-            > :nth-child(2) { grid-column: 1; grid-row: 2; }
-            > :nth-child(3) { grid-column: 2; grid-row: 1; }
-            > :nth-child(4) { grid-column: 2; grid-row: 2; justify-self: end; }
-        }
-        @media (max-width: 650px) {
-            height: auto;
-            min-height: 184px;
-            grid-template-columns: 1fr;
-            grid-template-rows: auto auto auto auto;
-            gap: 6px;
-            > :first-child { grid-column: 1; grid-row: 1; }
-            > :nth-child(2) { grid-column: 1; grid-row: 2; }
-            > :nth-child(3) { grid-column: 1; grid-row: 3; }
-            > :nth-child(4) { grid-column: 1; grid-row: 4; justify-self: stretch; }
-        }
+        @media (max-width: 1100px) { height: 112px; }
+        @media (max-width: 650px) { height: 184px; }
     `}
 `;
+
+export const WorkoutCardSkeleton = ({ list = false }) => (
+    <AppThemeProvider>
+        <SkeletonSurface $list={list} data-testid="workout-card-skeleton" aria-hidden="true" />
+    </AppThemeProvider>
+);
 
 export const Preview = styled.div`
     position: relative;
@@ -79,7 +119,7 @@ export const Preview = styled.div`
     height: 132px;
     flex-shrink: 0;
     overflow: hidden;
-    background: #252330;
+    background: ${p => p.theme?.card?.previewBackground};
     box-sizing: border-box;
     padding: 10px;
     display: flex;
@@ -125,7 +165,7 @@ export const Heading = styled.h3`
 
 export const SubtleText = styled.div`
     font-size: 12px;
-    color: #bfb6ce;
+    color: ${p => p.theme?.card?.subtleText};
     line-height: 1.35;
     ${p => p.$list && css`
         overflow: hidden;
@@ -140,7 +180,7 @@ export const Stats = styled.div`
     gap: 12px;
     min-width: 0;
     strong { display: block; font-size: 20px; font-weight: 650; letter-spacing: -.5px; white-space: nowrap; }
-    small { display: block; margin-top: 3px; font-size: 11px; color: #bfb6ce; }
+    small { display: block; margin-top: 3px; font-size: 11px; color: ${p => p.theme?.card?.subtleText}; }
     ${p => p.$list && css`
         gap: 8px;
         strong { font-size: 17px; }
@@ -149,7 +189,7 @@ export const Stats = styled.div`
 `;
 
 export const TodayText = styled.span`
-    color: #dd9933;
+    color: ${p => p.theme?.card?.highlightAccent};
     font-weight: 700;
 `;
 
@@ -159,7 +199,7 @@ export const Profile = styled.div`
     display: flex;
     flex-direction: column;
     justify-content: center;
-    small { display: block; margin-top: 3px; font-size: 10px; color: #a99db9; }
+    small { display: block; margin-top: 3px; font-size: 10px; color: ${p => p.theme?.card?.mutedText}; }
 `;
 
 export const Chart = styled.div`
@@ -203,15 +243,15 @@ export const DeleteButton = styled.button`
     flex-shrink: 0;
     width: 38px;
     height: 38px;
-    border: 1px solid #5c506a;
+    border: 1px solid ${p => p.theme?.card?.actionBorder};
     border-radius: 8px;
     background: ${p => p.theme?.button?.secondary?.background};
-    color: ${p => p.theme?.button?.secondary?.text ?? "#f7f5fa"};
-    &:hover { background: ${p => p.theme?.button?.hover?.background ?? "#8dc100"}; }
+    color: ${p => p.theme?.button?.secondary?.text};
+    &:hover { background: ${p => p.theme?.button?.hover?.background}; }
 `;
 
 export const CreateLogoBox = styled.div`
-    background: #f7f5fa;
+    background: ${p => p.theme?.card?.logoSurface};
     border-radius: 8px;
     padding: ${p => p.$list ? "6px 10px" : "10px 16px"};
     display: flex;
@@ -261,6 +301,9 @@ export const WorkoutCardShell = ({
     width,
     height,
     title = "",
+    buttonText = "View details",
+    listButtonText = "Details",
+    buttonAriaLabel,
     disabled = false,
     canDelete = false,
     onOK,
@@ -300,10 +343,13 @@ export const WorkoutCardShell = ({
         onDelete?.(e);
     };
 
+    const actionText = list ? listButtonText : buttonText;
+    const actionLabel = buttonAriaLabel ?? `View details for ${title || "workout"}`;
+
     const actions = (
         <>
-            <OpenButton responsive shape="rounded" primary no3D type="button" text="OK"
-                disabled={disabled} logContext={{ title }}
+            <OpenButton responsive shape="rounded" primary no3D type="button" text={actionText}
+                disabled={disabled} logContext={{ title }} aria-label={actionLabel}
                 onClick={e => { e?.stopPropagation?.(); activate(e); }}>
                 <ArrowRightIcon size={16} />
             </OpenButton>

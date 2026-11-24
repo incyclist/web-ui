@@ -18,7 +18,7 @@ describe('CreateSummary', () => {
         expect(screen.getByRole('heading', { name: 'Create Workout' })).toBeInTheDocument()
         expect(screen.getByAltText('ZwoFactory')).toBeInTheDocument()
 
-        fireEvent.click(screen.getByRole('button', { name: 'OK' }))
+        fireEvent.click(screen.getByRole('button', { name: 'Create Workout' }))
         fireEvent.keyDown(screen.getByRole('article', { name: 'Create Workout' }), { key: 'Enter' })
         expect(onOK).toHaveBeenCalledTimes(2)
     })

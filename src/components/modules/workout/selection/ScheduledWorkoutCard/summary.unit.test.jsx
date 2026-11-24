@@ -17,10 +17,10 @@ const base = { visible: true, title: 'Sweet Spot', duration: '60min', date: new 
 
 describe('ScheduledWorkoutSummary', () => {
 
-    test('always shows OK and never Unselect or Delete', () => {
+    test('always shows View details and never Unselect or Delete', () => {
         render(<ScheduledWorkoutSummary {...base} selected canDelete onDelete={vi.fn()} />)
 
-        expect(screen.getByRole('button', { name: 'OK' })).not.toBeNull()
+        expect(screen.getByRole('button', { name: 'View details for Sweet Spot' })).toHaveTextContent('View details')
         expect(screen.queryByText('Unselect')).toBeNull()
         expect(screen.queryByRole('button', { name: /Delete/i })).toBeNull()
     })
@@ -39,13 +39,14 @@ describe('ScheduledWorkoutSummary', () => {
         expect(screen.queryByText(base.date.toLocaleDateString())).toBeNull()
     })
 
-    test('renders in list mode with category and ignores visible=false', () => {
+    test('renders in list mode with Details button, category and ignores visible=false', () => {
         const onOK = vi.fn()
         render(<ScheduledWorkoutSummary {...base} visible={false} layout='list' category='Scheduled Workouts' isToday onOK={onOK} />)
 
         expect(screen.getByText('Sweet Spot')).toBeInTheDocument()
         expect(screen.getByText('Scheduled Workouts')).toBeInTheDocument()
         expect(screen.getByText('Today')).toBeInTheDocument()
+        expect(screen.getByRole('button', { name: 'View details for Sweet Spot' })).toHaveTextContent('Details')
 
         const card = screen.getByRole('article', { name: 'Scheduled workout Sweet Spot' })
         fireEvent.keyDown(card, { key: 'Enter' })

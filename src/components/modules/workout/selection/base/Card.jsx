@@ -8,6 +8,10 @@ export const Card = (props) => {
     const { observer, Summary, layout, category, width, height } = props
 
     const [state, setState] = useState(() => copyPropsExcluding(props, EXCLUDED_PROPS))
+    const prevPropsRef = useRef(null)
+    if (prevPropsRef.current === null) {
+        prevPropsRef.current = copyPropsExcluding(props, EXCLUDED_PROPS)
+    }
     const refMounted = useRef(true)
 
     const handleUpdate = useCallback((updatedProps) => {
@@ -21,14 +25,23 @@ export const Card = (props) => {
 
     useEffect(() => {
         const next = copyPropsExcluding(props, EXCLUDED_PROPS)
-        setState(current => {
-            const keys = new Set([...Object.keys(current ?? {}), ...Object.keys(next)])
-            for (const key of keys) {
-                if (current?.[key] !== next[key])
-                    return next
+        const prev = prevPropsRef.current ?? {}
+        const changed = {}
+        let hasChanges = false
+
+        const keys = new Set([...Object.keys(prev), ...Object.keys(next)])
+        for (const key of keys) {
+            if (prev[key] !== next[key]) {
+                changed[key] = next[key]
+                hasChanges = true
             }
-            return current
-        })
+        }
+
+        prevPropsRef.current = next
+
+        if (hasChanges) {
+            setState(current => ({ ...current, ...changed }))
+        }
     }, [props])
 
     useEffect(() => {

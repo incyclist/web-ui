@@ -17,7 +17,7 @@ const base = { visible: true, title: 'Threshold Builder', duration: '50min', wor
 
 describe('WorkoutSummary', () => {
 
-    test('renders tile view with title, duration, graph, OK and delete even when visible is false', () => {
+    test('renders tile view with title, duration, graph, View details and delete even when visible is false', () => {
         const onOK = vi.fn(), onDelete = vi.fn()
         render(<WorkoutSummary {...base} visible={false} canDelete onOK={onOK} onDelete={onDelete} />)
 
@@ -25,7 +25,9 @@ describe('WorkoutSummary', () => {
         expect(screen.getByText('50min')).toBeInTheDocument()
         expect(screen.getByTestId('workout-graph')).toBeInTheDocument()
 
-        fireEvent.click(screen.getByRole('button', { name: 'OK' }))
+        const openBtn = screen.getByRole('button', { name: 'View details for Threshold Builder' })
+        expect(openBtn).toHaveTextContent('View details')
+        fireEvent.click(openBtn)
         expect(onOK).toHaveBeenCalledOnce()
 
         fireEvent.click(screen.getByRole('button', { name: 'Delete Threshold Builder' }))
@@ -33,11 +35,12 @@ describe('WorkoutSummary', () => {
         expect(onOK).toHaveBeenCalledOnce()
     })
 
-    test('renders list view with category and handles keyboard activation', () => {
+    test('renders list view with Details label, category and handles keyboard activation', () => {
         const onOK = vi.fn()
         render(<WorkoutSummary {...base} layout='list' category='My Workouts' canDelete={false} onOK={onOK} />)
 
         expect(screen.getByText('My Workouts')).toBeInTheDocument()
+        expect(screen.getByRole('button', { name: 'View details for Threshold Builder' })).toHaveTextContent('Details')
         expect(screen.queryByRole('button', { name: /Delete/i })).toBeNull()
 
         const card = screen.getByRole('article', { name: 'Workout Threshold Builder' })
@@ -45,12 +48,12 @@ describe('WorkoutSummary', () => {
         expect(onOK).toHaveBeenCalledOnce()
     })
 
-    test('disables OK when workout data is not yet loaded', () => {
+    test('disables action button when workout data is not yet loaded', () => {
         const onOK = vi.fn()
         render(<WorkoutSummary title='Loading Workout' workout={undefined} onOK={onOK} />)
 
-        const okBtn = screen.getByRole('button', { name: 'OK' })
-        expect(okBtn).toBeDisabled()
+        const openBtn = screen.getByRole('button', { name: 'View details for Loading Workout' })
+        expect(openBtn).toBeDisabled()
         fireEvent.click(screen.getByRole('article', { name: 'Workout Loading Workout' }))
         expect(onOK).not.toHaveBeenCalled()
     })

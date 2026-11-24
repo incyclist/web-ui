@@ -1,5 +1,6 @@
-import React, { useEffect, useMemo, useRef, useState } from "react"
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import styled from "styled-components"
+import { PlusIcon } from "@primer/octicons-react"
 import MainPage from "../../components/molecules/MainPage"
 import { PageTitle, Loader, Center, Button, Text } from "../../components/atoms"
 import { ImportIcon } from "../../components/atoms/Icons/ImportIcon"
@@ -12,9 +13,8 @@ import { AppThemeProvider } from "../../theme"
 import { scrollbar } from "../../utils/scrollbar"
 import { NavigationBar } from "../../components/molecules/NavigationBar"
 import { WorkoutCard } from "../../components/modules/workout/selection/WorkoutCard"
-import { WorkoutCreateCard } from "../../components/modules/workout/selection/CreateCard"
 import { ScheduledWorkoutCard } from "../../components/modules/workout/selection/ScheduledWorkoutCard"
-import { TILE_WIDTH, TILE_HEIGHT } from "../../components/modules/workout/selection/base/atoms"
+import { TILE_WIDTH, TILE_HEIGHT, WorkoutCardSkeleton } from "../../components/modules/workout/selection/base/atoms"
 
 const UP = 'ArrowUp'
 const DOWN = 'ArrowDown'
@@ -22,6 +22,7 @@ const PAGE_UP = 'PageUp'
 const PAGE_DOWN = 'PageDown'
 
 const ROW_STEP_VH = { list: 9, tiles: 32 }
+const FOLD_ROOT_MARGIN = '400px 0px'
 
 const View = styled(Row)`
     width: 100%;
@@ -55,11 +56,11 @@ const DropOverlay = styled(Dropzone)`
     box-sizing: border-box;
     margin: 0;
     z-index: 20;
-    background-color: rgba(0,0,0,0.6);
+    background-color: ${p => p.theme?.card?.dropOverlayBackground};
     border-width: 3px;
-    border-color: #dd9933;
+    border-color: ${p => p.theme?.card?.dropOverlayBorder};
     border-radius: 8px;
-    color: white;
+    color: ${p => p.theme?.title?.text};
 `
 
 const DropOverlayTitle = styled.div`
@@ -67,35 +68,32 @@ const DropOverlayTitle = styled.div`
     font-weight: bold;
 `
 
-// title stays centred, the Import button sits on the right
+// Header, one row, three slots mirroring RouteListScreen: Create Workout (left) / title (center) / Import Workout (right).
 const HeaderLayout = styled.div`
     display: grid;
     grid-template-columns: 1fr auto 1fr;
+    grid-template-areas: "create title import";
     align-items: center;
     row-gap: 1vh;
     width: 100%;
-    @media (max-width: 650px) {
-        grid-template-columns: 1fr;
-        justify-items: center;
+    @media (max-width: 700px) {
+        grid-template-columns: 1fr 1fr;
+        grid-template-areas: "title title" "create import";
     }
+`
+
+const HeaderSlot = styled.div`
+    display: flex;
+    width: max-content;
+    grid-area: ${p => p.$area};
+    justify-self: ${p => p.$end ? 'end' : 'start'};
 `
 
 const TitleCell = styled.div`
-    grid-column: 2;
+    grid-area: title;
     white-space: nowrap;
-    @media (max-width: 650px) {
-        grid-column: 1;
+    @media (max-width: 700px) {
         width: 100%;
-    }
-`
-
-const ImportSlot = styled.div`
-    grid-column: 3;
-    justify-self: end;
-    display: flex;
-    @media (max-width: 650px) {
-        grid-column: 1;
-        justify-self: end;
     }
 `
 
@@ -113,10 +111,16 @@ const Toolbar = styled.div`
     justify-content: flex-end;
     width: 100%;
     padding: 0.5vh 0 1vh 0;
-    color: white;
+    color: ${p => p.theme?.title?.text};
 `
 
 export const WORKOUT_DROP_OVERLAY_TITLE = 'Drop a workout file (ZWO or JSON)'
+
+const CreateWorkoutButton = ({ onClick }) => (
+    <Button id='createWorkout' outline no3D margin='0' onClick={onClick}>
+        <HeaderButtonContent><PlusIcon size={16} />Create Workout</HeaderButtonContent>
+    </Button>
+)
 
 const ImportWorkoutButton = ({ onClick }) => (
     <Button id='importWorkout' outline no3D margin='0' onClick={onClick}>
@@ -151,7 +155,7 @@ const SectionTitle = styled.h2`
     font-size: 2.4vh;
     line-height: 1.2;
     font-weight: 650;
-    color: white;
+    color: ${p => p.theme?.title?.text};
     text-align: left;
 `
 
@@ -190,14 +194,14 @@ const StateArea = styled(Column)`
     justify-content: center;
     align-items: center;
     text-align: center;
-    color: white;
-    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.65);
+    color: ${p => p.theme?.title?.text};
+    text-shadow: 0 2px 10px ${p => p.theme?.card?.textShadow};
 `
 
 const StateTitle = styled.div`
     font-size: 3vh;
     font-weight: bold;
-    color: white;
+    color: ${p => p.theme?.title?.text};
     text-align: center;
 `
 
@@ -209,12 +213,79 @@ const StateText = styled(Text)`
 `
 
 const CARD_COMPONENTS = {
-    WorkoutCreate: WorkoutCreateCard,
     Workout: WorkoutCard,
     ScheduledWorkout: ScheduledWorkoutCard
 }
 
-const WorkoutList = ({ list, displayType, onOK, onDelete }) => {
+/**
+ * Shared two-way fold windowing for a multi-section scrollable container using a single
+ * IntersectionObserver. Cards outside the viewport + overscan margin render a sized skeleton
+ * instead of mounting heavy WorkoutGraph SVGs all at once.
+ */
+const useViewportFold = (rootEl) => {
+    const callbacksRef = useRef(new Map())
+    const observerRef = useRef(null)
+
+    useEffect(() => {
+        if (!rootEl || typeof IntersectionObserver === 'undefined') {
+            observerRef.current = null
+            return
+        }
+
+        const observer = new IntersectionObserver(
+            (entries) => {
+                entries.forEach((entry) => {
+                    const cb = callbacksRef.current.get(entry.target)
+                    cb?.(entry.isIntersecting)
+                })
+            },
+            { root: rootEl, rootMargin: FOLD_ROOT_MARGIN, threshold: 0 }
+        )
+
+        observerRef.current = observer
+        callbacksRef.current.forEach((_cb, el) => observer.observe(el))
+
+        return () => {
+            observer.disconnect()
+            observerRef.current = null
+        }
+    }, [rootEl])
+
+    return useCallback((el, onChange) => {
+        if (!el || typeof IntersectionObserver === 'undefined')
+            return () => {}
+
+        callbacksRef.current.set(el, onChange)
+        observerRef.current?.observe(el)
+
+        return () => {
+            callbacksRef.current.delete(el)
+            observerRef.current?.unobserve(el)
+        }
+    }, [])
+}
+
+const WorkoutFoldItem = ({ isList, observe, children }) => {
+    const [inFold, setInFold] = useState(() => typeof IntersectionObserver === 'undefined')
+    const itemRef = useRef(null)
+
+    useEffect(() => {
+        if (typeof IntersectionObserver === 'undefined')
+            return
+        return observe(itemRef.current, setInFold)
+    }, [observe, isList])
+
+    const ItemWrapper = isList ? RowItem : TileItem
+    const itemClassName = isList ? 'item workout-row' : 'item workout-tile'
+
+    return (
+        <ItemWrapper ref={itemRef} className={itemClassName}>
+            {inFold ? children : <WorkoutCardSkeleton list={isList} />}
+        </ItemWrapper>
+    )
+}
+
+const WorkoutList = ({ list, displayType, observe, onOK, onDelete }) => {
 
     const [cardData, setCardData] = useState(list.cards)
 
@@ -239,11 +310,9 @@ const WorkoutList = ({ list, displayType, onOK, onDelete }) => {
             return null
 
         const { observer, selected, ...content } = card.props ?? {}
-        const ItemWrapper = isList ? RowItem : TileItem
-        const itemClassName = isList ? 'item workout-row' : 'item workout-tile'
 
         return (
-            <ItemWrapper className={itemClassName} key={card.id}>
+            <WorkoutFoldItem key={card.id} isList={isList} observe={observe}>
                 <Card
                     {...content}
                     observer={card.observer}
@@ -252,9 +321,12 @@ const WorkoutList = ({ list, displayType, onOK, onDelete }) => {
                     onOK={onOK ? () => { onOK(card.id) } : undefined}
                     onDelete={onDelete ? () => { onDelete(card.id) } : undefined}
                 />
-            </ItemWrapper>
+            </WorkoutFoldItem>
         )
-    }).filter(Boolean), [cardData, header, isList, onOK, onDelete])
+    }).filter(Boolean), [cardData, header, isList, observe, onOK, onDelete])
+
+    if (cards.length === 0)
+        return null
 
     const ItemsContainer = isList ? RowsContainer : TilesContainer
     const containerClass = isList ? 'workout-rows' : 'workout-tiles'
@@ -276,6 +348,7 @@ export const WorkoutsScreen = ({
     displayType = 'tiles',
     onDisplayTypeSelected,
     onOK,
+    onCreateWorkout,
     closePage,
     onDelete,
     onImportWorkout,
@@ -286,6 +359,14 @@ export const WorkoutsScreen = ({
     // cleanly (and releases its observer subscription) when it appears or disappears
     const allLists = useMemo(() => [...(upcoming ? [upcoming] : []), ...(lists ?? [])], [upcoming, lists])
     const refDiv = useRef(null)
+    const [scrollContainer, setScrollContainer] = useState(null)
+
+    const setListRef = useCallback((el) => {
+        refDiv.current = el
+        setScrollContainer(el)
+    }, [])
+
+    const observeFold = useViewportFold(scrollContainer)
 
     // --- page-level drop overlay (same mechanism as the Routes page) ---
     const dragDepth = useRef(0)
@@ -346,60 +427,72 @@ export const WorkoutsScreen = ({
 
     useKey([UP, DOWN, PAGE_UP, PAGE_DOWN], onKey)
 
+    const hasRenderableWorkouts = useMemo(
+        () => allLists.some(list => (list.cards ?? []).some(card => Boolean(CARD_COMPONENTS[card.cardType]))),
+        [allLists]
+    )
+
     const renderContent = () => {
         if (loading)
             return <Center><Loader /></Center>
 
-        if (allLists.length === 0) {
-            return (
-                <StateArea className='empty-workouts'>
-                    <StateTitle>No workouts yet</StateTitle>
-                    <StateText align='center' color='white' text='Import a workout file (.zwo or .json) or drop it anywhere on this page.' />
-                </StateArea>
-            )
-        }
-
-        return allLists.map(list => (
-            <WorkoutList
-                key={list.id}
-                list={list}
-                displayType={displayType}
-                onOK={onOK}
-                onDelete={onDelete}
-            />
-        ))
+        return (
+            <>
+                {allLists.map(list => (
+                    <WorkoutList
+                        key={list.id}
+                        list={list}
+                        displayType={displayType}
+                        observe={observeFold}
+                        onOK={onOK}
+                        onDelete={onDelete}
+                    />
+                ))}
+                {!hasRenderableWorkouts ? (
+                    <StateArea className='empty-workouts'>
+                        <StateTitle>No workouts yet</StateTitle>
+                        <StateText align='center' text='Create a workout, import a workout file (.zwo or .json), or drop it anywhere on this page.' />
+                    </StateArea>
+                ) : null}
+            </>
+        )
     }
 
     return (
         <MainPage>
-            <View>
-                <NavigationBar closePage={closePage} selected='workouts' />
+            <AppThemeProvider>
+                <View>
+                    <NavigationBar closePage={closePage} selected='workouts' />
 
-                <ContentArea width='100%' className='workouts-page'
-                    onDragEnterCapture={onContentDragEnterCapture} onDragOverCapture={onContentDragOverCapture}
-                    onDragLeaveCapture={onContentDragLeaveCapture} onDropCapture={onContentDropCapture}>
-                    <HeaderLayout className='workouts-header'>
-                        <TitleCell><PageTitle>Workouts</PageTitle></TitleCell>
-                        <ImportSlot><ImportWorkoutButton onClick={onImportWorkout} /></ImportSlot>
-                    </HeaderLayout>
+                    <ContentArea width='100%' className='workouts-page'
+                        onDragEnterCapture={onContentDragEnterCapture} onDragOverCapture={onContentDragOverCapture}
+                        onDragLeaveCapture={onContentDragLeaveCapture} onDropCapture={onContentDropCapture}>
+                        <HeaderLayout className='workouts-header'>
+                            <HeaderSlot className='workouts-create' $area='create'>
+                                <CreateWorkoutButton onClick={onCreateWorkout} />
+                            </HeaderSlot>
+                            <TitleCell><PageTitle>Workouts</PageTitle></TitleCell>
+                            <HeaderSlot className='workouts-import' $area='import' $end>
+                                <ImportWorkoutButton onClick={onImportWorkout} />
+                            </HeaderSlot>
+                        </HeaderLayout>
 
-                    <Toolbar className='workouts-toolbar'>
-                        <DisplayTypeSelection selected={displayType} onSelected={onDisplayTypeSelected} />
-                    </Toolbar>
+                        <Toolbar className='workouts-toolbar'>
+                            <DisplayTypeSelection selected={displayType} onSelected={onDisplayTypeSelected} />
+                        </Toolbar>
 
-                    <AppThemeProvider>
-                        <ListContainer ref={refDiv} tabIndex={-1} className='workouts-list-scroll'>
+                        <ListContainer ref={setListRef} tabIndex={-1} className='workouts-list-scroll'>
                             {renderContent()}
                         </ListContainer>
-                    </AppThemeProvider>
 
-                    {dragActive && dropEnabled ?
-                        <DropOverlay className='workout-drop-overlay' width='100%' height='100%'
-                            multiple filters={WORKOUT_IMPORT_FILTERS} onDrop={onOverlayDrop}
-                            text={<DropOverlayTitle>{WORKOUT_DROP_OVERLAY_TITLE}</DropOverlayTitle>} />
-                        : null}
-                </ContentArea>
-            </View>
+                        {dragActive && dropEnabled ?
+                            <DropOverlay className='workout-drop-overlay' width='100%' height='100%'
+                                multiple filters={WORKOUT_IMPORT_FILTERS} onDrop={onOverlayDrop}
+                                text={<DropOverlayTitle>{WORKOUT_DROP_OVERLAY_TITLE}</DropOverlayTitle>} />
+                            : null}
+                    </ContentArea>
+                </View>
+            </AppThemeProvider>
         </MainPage>
     )
 }

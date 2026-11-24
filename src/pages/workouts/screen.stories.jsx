@@ -9,6 +9,7 @@ export default {
     decorators: [Story => <MemoryRouter><Story /></MemoryRouter>],
     argTypes: {
         onOK: { action: 'OK' },
+        onCreateWorkout: { action: 'create workout' },
         onDelete: { action: 'delete' },
         onDisplayTypeSelected: { action: 'displayTypeSelected' },
         onImportWorkout: { action: 'import workout' },

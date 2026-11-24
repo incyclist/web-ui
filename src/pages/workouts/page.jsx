@@ -82,6 +82,7 @@ export const WorkoutsPage = () => {
     const closePage = useCallback(() => { closePageLogger() }, [closePageLogger])
 
     const onOK = useCallback((id) => { service.onCardOK(id) }, [service])
+    const onCreateWorkout = useCallback(() => { service.onCardOK('Create') }, [service])
     const onDelete = useCallback((id) => { setConfirmDeleteId(id) }, [])
     const onDeleteYes = useCallback(() => {
         const id = confirmDeleteId
@@ -118,6 +119,7 @@ export const WorkoutsPage = () => {
             loading={loading}
             closePage={closePage}
             onOK={onOK}
+            onCreateWorkout={onCreateWorkout}
             onDelete={onDelete}
             onDisplayTypeSelected={onDisplayTypeSelected}
             onImportWorkout={onImportWorkout}

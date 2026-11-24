@@ -48,6 +48,26 @@ const text = {
     normal: base.text
 }
 
+const cardTokens = {
+    background: '#1c1824',
+    border: '#3a3248',
+    hoverBorder: base.primaryButton,
+    highlightBorder: base.primaryButton,
+    highlightAccent: base.primaryButton,
+    highlightGlow: 'rgba(221, 153, 51, 0.16)',
+    focusOutline: base.hover,
+    text: '#f7f5fa',
+    subtleText: '#bfb6ce',
+    mutedText: '#a99db9',
+    previewBackground: '#252330',
+    actionBorder: '#5c506a',
+    skeletonBackground: '#393244',
+    logoSurface: '#f7f5fa',
+    dropOverlayBackground: 'rgba(0, 0, 0, 0.6)',
+    dropOverlayBorder: base.primaryButton,
+    textShadow: 'rgba(0, 0, 0, 0.65)',
+}
+
 const _default = {
     title: {
         background:  "white",
@@ -138,6 +158,7 @@ const _default = {
     url: {
         color: 'blue'
     },
+    card: cardTokens,
     colors: base
 }
 
@@ -229,6 +250,10 @@ export const newUITheme = {
         
     },
     pageLists: {
+        background: 'linear-gradient(rgb(56,1,31,0.3),rgb(26,4,86,0.3))',
+    },
+    card: {
+        ...cardTokens,
         background: 'linear-gradient(rgb(56,1,31,0.3),rgb(26,4,86,0.3))',
     },
     dialogContent: {
