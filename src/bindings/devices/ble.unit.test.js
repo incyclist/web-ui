@@ -2,6 +2,11 @@ import { describe, test, expect, vi, beforeEach } from 'vitest'
 
 vi.mock('incyclist-services', () => ({
     useAppState: vi.fn(),
+    getKnownDeviceNames: vi.fn(),
+}))
+
+vi.mock('gd-eventlog', () => ({
+    EventLogger: vi.fn(function () { this.logEvent = vi.fn() }),
 }))
 
 vi.mock('../../utils', () => ({
@@ -15,15 +20,17 @@ vi.mock('../app-info', () => ({
     default: { getInstance: vi.fn(() => ({ isApp: () => false })) },
 }))
 
-import { useAppState } from 'incyclist-services'
+import { getKnownDeviceNames, useAppState } from 'incyclist-services'
 import { api, hasFeature, isElectron, isReactNative } from '../../utils'
 import getBleBinding from './ble'
 
-const webbleInstance = { name: 'webble-binding' }
+const knownNames = { version: 3, names: ['kickr', 'hrm*'] }
+const webbleInstance = { name: 'webble-binding', setKnownDeviceNames: vi.fn() }
 const bleInstance = { name: 'ble-binding' }
 
 beforeEach(() => {
     vi.clearAllMocks()
+    webbleInstance.setKnownDeviceNames.mockReset()
 
     isReactNative.mockReturnValue(false)
     isElectron.mockReturnValue(true)
@@ -33,6 +40,7 @@ beforeEach(() => {
     api.ble = { getInstance: vi.fn(() => bleInstance) }
 
     useAppState.mockReturnValue({ hasFeature: vi.fn(() => false) })
+    getKnownDeviceNames.mockReturnValue(knownNames)
 })
 
 describe('getBleBinding', () => {
@@ -63,6 +71,60 @@ describe('getBleBinding', () => {
             expect(getBleBinding()).toBeNull()
         })
 
+    })
+
+    describe('known device names', () => {
+
+        beforeEach(() => {
+            api.appSettings.getOSSync.mockReturnValue({ platform: 'linux' })
+        })
+
+        test('are handed to the webble binding when the desktop announces webble-known-names', () => {
+            hasFeature.mockImplementation((f) => ['appSettings.appInfo', 'webble', 'webble-known-names'].includes(f))
+
+            expect(getBleBinding()).toBe(webbleInstance)
+            expect(webbleInstance.setKnownDeviceNames).toHaveBeenCalledTimes(1)
+            expect(webbleInstance.setKnownDeviceNames).toHaveBeenCalledWith(knownNames)
+        })
+
+        test('are not handed over by a desktop shell that does not announce webble-known-names', () => {
+            hasFeature.mockImplementation((f) => ['appSettings.appInfo', 'webble'].includes(f))
+
+            expect(getBleBinding()).toBe(webbleInstance)
+            expect(webbleInstance.setKnownDeviceNames).not.toHaveBeenCalled()
+        })
+
+        test('are handed to the webble binding on windows, too', () => {
+            api.appSettings.getOSSync.mockReturnValue({ platform: 'win32' })
+            useAppState.mockReturnValue({ hasFeature: vi.fn((f) => f === 'WEBBLE_WINDOWS') })
+            hasFeature.mockImplementation((f) => ['appSettings.appInfo', 'webble', 'webble-known-names'].includes(f))
+
+            expect(getBleBinding()).toBe(webbleInstance)
+            expect(webbleInstance.setKnownDeviceNames).toHaveBeenCalledWith(knownNames)
+        })
+
+        test('a binding that does not know setKnownDeviceNames still works', () => {
+            hasFeature.mockImplementation((f) => ['appSettings.appInfo', 'webble', 'webble-known-names'].includes(f))
+            const old = { name: 'old-webble' }
+            api.webble.getInstance.mockReturnValue(old)
+
+            expect(getBleBinding()).toBe(old)
+        })
+
+        test('a failure to hand them over never breaks the binding', () => {
+            hasFeature.mockImplementation((f) => ['appSettings.appInfo', 'webble', 'webble-known-names'].includes(f))
+            webbleInstance.setKnownDeviceNames.mockImplementation(() => { throw new Error('ipc down') })
+
+            expect(getBleBinding()).toBe(webbleInstance)
+        })
+
+        test('the ble binding of the other paths gets nothing', () => {
+            api.appSettings.getOSSync.mockReturnValue({ platform: 'darwin' })
+            hasFeature.mockImplementation((f) => ['appSettings.appInfo', 'ble', 'webble-known-names'].includes(f))
+
+            expect(getBleBinding()).toBe(bleInstance)
+            expect(webbleInstance.setKnownDeviceNames).not.toHaveBeenCalled()
+        })
     })
 
     describe('win32', () => {
