@@ -100,6 +100,26 @@ describe('StartRideOverlay', () => {
             expect(screen.getByText(/Still starting/)).not.toBeNull()
         })
 
+        test('control device that is restarted automatically shows Reconnecting', () => {
+            render(<StartRideOverlay mode='GPX' startPhase='devices'
+                devices={[trainer({ startState: 'reconnecting', status: 'Starting' })]} />)
+            expect(screen.getByText('Reconnecting ...')).not.toBeNull()
+            expect(screen.queryByText('Starting ...')).toBeNull()
+        })
+
+        test('slow restart shows Still reconnecting', () => {
+            render(<StartRideOverlay mode='GPX' startPhase='devices'
+                devices={[trainer({ startState: 'reconnecting', status: 'Starting', slow: true })]} />)
+            expect(screen.getByText('Still reconnecting ...')).not.toBeNull()
+        })
+
+        test('upload progress wins over the restart', () => {
+            render(<StartRideOverlay mode='GPX' startPhase='devices'
+                devices={[trainer({ startState: 'uploading', status: 'Starting', stateText: 'uploading (40%)' })]} />)
+            expect(screen.getByText('uploading (40%)')).not.toBeNull()
+            expect(screen.queryByText(/reconnecting/i)).toBeNull()
+        })
+
         test('AVI converting shows Preparing (N%)', () => {
             render(<StartRideOverlay mode='Video' startPhase='content'
                 devices={[trainer()]}
@@ -111,6 +131,13 @@ describe('StartRideOverlay', () => {
     })
 
     describe('line under the header', () => {
+        test('reconnecting line wins over the slow line', () => {
+            render(<StartRideOverlay mode='GPX' startPhase='devices' startSlow={true}
+                devices={[trainer({ startState: 'reconnecting', status: 'Starting' })]} />)
+            expect(screen.getByText('No response yet. Reconnecting automatically ...')).not.toBeNull()
+            expect(screen.queryByText('This is taking longer than usual.')).toBeNull()
+        })
+
         test('slow wins over AVI line', () => {
             render(<StartRideOverlay mode='Video' startPhase='content' startSlow={true}
                 devices={[trainer()]}
