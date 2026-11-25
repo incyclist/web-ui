@@ -270,6 +270,8 @@ const PhasedDeviceStatus = ({ device }) => {
             return <Muted>– Ignored</Muted>
         case 'uploading':
             return <><Spinner aria-hidden='true' />{device.stateText?.length > 0 ? device.stateText : 'Uploading ...'}</>
+        case 'reconnecting':
+            return <><Spinner aria-hidden='true' />{device.slow ? 'Still reconnecting ...' : 'Reconnecting ...'}</>
         case 'starting':
         default:
             return <><Spinner aria-hidden='true' />{device.slow ? 'Still starting ...' : 'Starting ...'}</>
@@ -316,8 +318,11 @@ export const OverlayStartingPhased = (props) => {
     const heading = getPhaseHeading(startPhase, startContent)
 
     const isConverting = startContent?.kind === 'video' && startContent.progress !== undefined && startContent.state === 'loading'
+    const isReconnecting = controls.some(d => d.startState === 'reconnecting')
     let line = null
-    if (startSlow)
+    if (isReconnecting)
+        line = 'No response yet. Reconnecting automatically ...'
+    else if (startSlow)
         line = 'This is taking longer than usual.'
     else if (isConverting)
         line = 'This video has to be prepared before it can play. This can take a minute.'
