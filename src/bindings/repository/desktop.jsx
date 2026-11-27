@@ -3,6 +3,8 @@ import {EventLogger} from 'gd-eventlog'
 import { api, hasFeature } from '../../utils/electron/integration';
 import { usePath,fs, AppInfoBinding } from '..';
 
+const isValidPath = (path) => typeof path === 'string' && path.length > 0
+
 export class RepositoryAppBinding  { // implements extends AbstractJsonRepositoryBinding
     static _instance; 
     
@@ -15,34 +17,101 @@ export class RepositoryAppBinding  { // implements extends AbstractJsonRepositor
     
     constructor() {
         
-        const { appDir } = AppInfoBinding.getInstance().getAppInfo();
-        this.baseDir = appDir;
+        this.baseDir = AppInfoBinding.getInstance().getAppInfo()?.appDir;
         this.repositories = {}
+        this.pathErrorLogged = {}
         this.logger  = new EventLogger('Repository')
+    }
+
+    /**
+     * The app directory is looked up again as long as it is not known, so that a value that was not (yet) available when 
+     * the binding was created does not stay unusable for the whole session
+     */
+    getBaseDir() {
+        if (!isValidPath(this.baseDir)) {
+            try {
+                this.baseDir = AppInfoBinding.getInstance().getAppInfo()?.appDir
+            }
+            catch { /* handled by the caller */ }
+        }
+        return this.baseDir
     }
 
     getRepoFromUserSettings(name) {
         try {
             const repo =  useUserSettings().get(`repo.${name}`)
-            return repo
+            return isValidPath(repo) ? repo : null
         }
-        catch(err) {
+        catch {
             return null;
         }
 
     }
 
+    /**
+     * @returns the directory of the repository, or null if it could not be determined
+     */
     getPath(name) {
-        const path = usePath()
-        return this.getRepoFromUserSettings(name) || path.join( this.baseDir, name);        
+        const configured = this.getRepoFromUserSettings(name)
+        if (configured)
+            return configured
+
+        const baseDir = this.getBaseDir()
+        if (!isValidPath(baseDir))
+            return null
+
+        const repoDir = usePath().join( baseDir, name)
+        return isValidPath(repoDir) ? repoDir : null
+    }
+
+    /**
+     * Returns the directory of a repository. If it could not be determined when the repository was created, 
+     * it is determined (and created) now
+     */
+    async getRepoDir(repo) {
+        if (isValidPath(repo.repoDir))
+            return repo.repoDir
+
+        const repoDir = this.getPath(repo.name)
+        if (!repoDir)
+            return null
+
+        repo.status = await fs.ensureDir(repoDir)
+        repo.repoDir = repoDir
+        return repoDir
+    }
+
+    async getFileName(repo, resourceName) {
+        const repoDir = await this.getRepoDir(repo)
+        if (!repoDir)
+            return null
+
+        const fileName = usePath().join(repoDir, `${resourceName}.json`)
+        return isValidPath(fileName) ? fileName : null
+    }
+
+    // only log the types - the values are paths that contain the name of the user
+    logPathError(repoName, resourceName, fn) {
+        if (this.pathErrorLogged[repoName])
+            return
+        this.pathErrorLogged[repoName] = true
+
+        let settingType
+        try { settingType = typeof useUserSettings().get(`repo.${repoName}`) } catch { settingType = 'error' }
+
+        this.logger.logEvent({
+            message:'error', fn, repo:repoName, resource:resourceName, error:'repository path not available',
+            baseDirType: typeof this.baseDir, repoDirType: typeof this.repositories[repoName]?.repoDir, settingType
+        })
     }
 
     async create(name) {
 
         const repoDir = this.getPath(name)
-        const status = await fs.ensureDir(repoDir);
+        const status = repoDir ? await fs.ensureDir(repoDir) : false
 
         const repo = {
+            name,
             status,
             repoDir, 
             read: async (resource)=>{ return await this.read(name,resource)},
@@ -63,8 +132,11 @@ export class RepositoryAppBinding  { // implements extends AbstractJsonRepositor
     }
 
     async list(name) {
-        const path = usePath()
-        const repoDir = this.getRepoFromUserSettings(name) || path.join( this.baseDir, name);        
+        const repoDir = this.getPath(name)
+        if (!repoDir) {
+            this.logPathError(name, undefined, 'list')
+            return []
+        }
 
         const names = await fs.readdir(repoDir)   
         return names
@@ -77,10 +149,12 @@ export class RepositoryAppBinding  { // implements extends AbstractJsonRepositor
 
     async read(repoName,resourceName){
 
-        const path = usePath()
         const repo= await this.get(repoName)
-        const fileName = path.join(repo.repoDir, `${resourceName}.json`)
-
+        const fileName = await this.getFileName(repo, resourceName)
+        if (!fileName) {
+            this.logPathError(repoName, resourceName, 'read')
+            return null
+        }
 
         await this.waitForPrevWriteToFinish(repo);
 
@@ -99,8 +173,11 @@ export class RepositoryAppBinding  { // implements extends AbstractJsonRepositor
         try {
             if (hasFeature('fileSystem.unlink')) {
                 const repo= await this.get(repoName)
-                const path = usePath()
-                const fileName = path.join(repo.repoDir, `${resourceName}.json`)
+                const fileName = await this.getFileName(repo, resourceName)
+                if (!fileName) {
+                    this.logPathError(repoName, resourceName, 'delete')
+                    return false
+                }
                 return await api.fs.unlink(fileName)
                 
             }
@@ -121,10 +198,13 @@ export class RepositoryAppBinding  { // implements extends AbstractJsonRepositor
             return;
 
         const repo= await this.get(repoName)
-        const path = usePath()
         await this.waitForPrevWriteToFinish(repo);
 
-        const fileName = path.join(repo.repoDir, `${resourceName}.json`)
+        const fileName = await this.getFileName(repo, resourceName)
+        if (!fileName) {
+            this.logPathError(repoName, resourceName, 'write')
+            return false
+        }
 
         const promise = new Promise (async done=> {
             const str = JSON.stringify(data)
