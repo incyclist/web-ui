@@ -12,6 +12,7 @@ const { service, screenCalls } = vi.hoisted(() => ({
         onDisplayTypeSelected: vi.fn(),
         onOpenDetails: vi.fn(),
         onCardOK: vi.fn(),
+        onCreateWorkout: vi.fn(),
         onDelete: vi.fn(),
         onImportOpen: vi.fn(),
         onImportFiles: vi.fn(),
@@ -96,7 +97,8 @@ describe('WorkoutsPage', () => {
         act(() => { p.onCreateWorkout() })
         act(() => { p.onDisplayTypeSelected('list') })
         expect(service.onCardOK).toHaveBeenCalledWith('w1')
-        expect(service.onCardOK).toHaveBeenCalledWith('Create')
+        expect(service.onCreateWorkout).toHaveBeenCalledTimes(1)
+        expect(service.onCardOK).not.toHaveBeenCalledWith('Create')
         expect(service.onDisplayTypeSelected).toHaveBeenCalledWith('list')
         expect(screenCalls.at(-1).onRetry).toBeUndefined()
     })
